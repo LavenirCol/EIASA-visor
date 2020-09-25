@@ -49,12 +49,18 @@ filetemplate += '</div><!-- col -->';
 
 $(document).ready(function () {
 
-    //add files and folder
+    //add folder
     $("#btnaddfolder").click(function (e) {
         e.preventDefault();
         addFolder();
     });
 
+    //add files
+    $("#btnaddfile").click(function (e) {
+        e.preventDefault();
+        addFile();
+    });
+    
     // modulos
     $("#navmodulos").find(".nav-link").click(function () {
 
@@ -108,7 +114,7 @@ function getFolders() {
             var htmlf = "";
             $.each(result.data, function (idx, item) {
                 var ctrl = foldertemplate.replace('{{FOLDERNAME}}', item.folderName)
-                        .replace('{{FOLDERSIZE}}', '0 archivos, 0 MB')
+                        .replace('{{FOLDERSIZE}}', item.files + ' archivos, ' + (item.size == null? '0 Bytes':  item.size))
                         .replace('{{MODULEID}}', item.idmodule)
                         .replace('{{FOLDERID}}', item.idfolder);
                 htmlf += ctrl;
@@ -196,6 +202,7 @@ function getFilesFolder() {
                 htmlf += filetemplate.replace('{{FILENAME}}', item.name)
                         .replace('{{FILESIZE}}', item.size + ' KB')
                         .replace('{{FILEICON}}', item.type)
+                        .replace('{{FILETYPE}}', getmimetype(item.name))
                         .replace('{{FILECOLOR}}', color);
             });
             //show files content
@@ -254,4 +261,23 @@ function addFolder() {
             });
         }
     });
+}
+
+function addFile(){
+    if (active_module == 0) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Seleccione un módulo',
+            text: 'Debe seleccionar un módulo para adicionar un archivo.'
+        });
+        return;
+    }
+    if (active_folder == 0) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Seleccione una carpeta',
+            text: 'Debe seleccionar una carpeta para adicionar un archivo.'
+        });
+        return;
+    }
 }

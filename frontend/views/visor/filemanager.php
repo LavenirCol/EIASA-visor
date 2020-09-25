@@ -2,6 +2,22 @@
 /* @var $this yii\web\View */
 use \yii\helpers\Url;
 ?>
+<style>            
+    .link-02{
+        cursor: pointer;
+    }
+    .link-02:hover{
+        cursor: pointer;
+        text-decoration:underline;
+    }
+    .folderactive{
+        cursor: pointer;
+        border: 2px solid #0168fa;
+    }
+    .card-file p{
+        font-size: 9px;
+    }
+</style>
 <div class="filemgr-wrapper">
       <div class="filemgr-sidebar">
         <div class="filemgr-sidebar-header">

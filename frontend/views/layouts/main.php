@@ -29,18 +29,6 @@ AppAsset::register($this);
         .filemgr-content-body > div:first-child{
             max-width: 100% !Important;
         }
-        
-        .link-02{
-            cursor: pointer;
-        }
-        .link-02:hover{
-            cursor: pointer;
-            text-decoration:underline;
-        }
-        .folderactive{
-            cursor: pointer;
-            border: 2px solid #0168fa;
-        }
     </style>
     <script>
         var baseurl = '<?= Url::base(true);  ?>'; 

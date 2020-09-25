@@ -44,9 +44,33 @@ class VisorController extends \yii\web\Controller {
             $input = Yii::$app->request->post();
             $idmodule = $input['idmodule'];
             $idparentfolder = $input['idfolder'];
-            $folders = Folder::find()->where(['idmodule' => $idmodule, 'idParentFolder' => $idparentfolder])->orderBy('folderName')->all();
+            //$folders = Folder::find()->where(['idmodule' => $idmodule, 'idParentFolder' => $idparentfolder])->orderBy('folderName')->all();
 
-            //TODO: consultar cantida dde archivos
+            $connection = Yii::$app->getDb();
+            
+            $sql = "SELECT f.`idfolder`,
+               f.`folderName`,
+               f.`folderDefault`,
+               f.`idParentFolder`,
+               f.`folderCreationDate`,
+               f.`folderCreationUserId`,
+               f.`folderReadOnly`,
+               f.`idmodule`, 
+               count(d.iddocument) as files, 
+               CASE
+                    WHEN ABS(sum(d.size)) < 1024 THEN CONCAT( ROUND( sum(d.size), 2 ), ' Bytes')
+                  WHEN ABS(sum(d.size)) < 1048576 THEN CONCAT( ROUND( (sum(d.size)/1024), 2 ), ' KB')
+                  WHEN ABS(sum(d.size)) < 1073741824 THEN CONCAT( ROUND( (sum(d.size)/1048576), 2 ), ' MB')
+                  WHEN ABS(sum(d.size)) < 1099511627776 THEN CONCAT( ROUND( (sum(d.size)/1073741824), 2 ), ' GB' )
+                END as size
+               FROM folder f
+            left join document d on f.idfolder = d.idFolder
+            where f.idmodule = $idmodule and idParentFolder = $idparentfolder
+            group by f.`idfolder`,  f.`folderName`,  f.`folderDefault`,  f.`idParentFolder`,  f.`folderCreationDate`,  f.`folderCreationUserId`,  f.`folderReadOnly`,  f.`idmodule`
+            order by f.folderName";
+
+            $command = $connection->createCommand($sql);
+            $folders = $command->queryAll();
 
             $response = Yii::$app->response;
             $response->format = \yii\web\Response::FORMAT_JSON;
