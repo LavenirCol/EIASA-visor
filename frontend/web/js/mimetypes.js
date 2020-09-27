@@ -45,7 +45,7 @@ var mimetypes = [
     },
     {
         "extension": "avi",
-        "formato": "Archivo de película de audio y vídeo entrelazados o de sonido"
+        "formato": "Archivo de vídeo"
     },
     {
         "extension": "bat",
@@ -81,11 +81,11 @@ var mimetypes = [
     },
     {
         "extension": "doc",
-        "formato": "Documento de Microsoft Word anterior a Word 2007"
+        "formato": "Documento de Microsoft Word"
     },
     {
         "extension": "docm",
-        "formato": "Documento habilitado para macros de Microsoft Word"
+        "formato": "Documento de Microsoft Word habilitado para macros"
     },
     {
         "extension": "docx",
@@ -117,7 +117,7 @@ var mimetypes = [
     },
     {
         "extension": "gif",
-        "formato": "Archivo de formato de intercambio de gráficos"
+        "formato": "Archivo de imagen formato gif"
     },
     {
         "extension": "htm",
@@ -141,11 +141,11 @@ var mimetypes = [
     },
     {
         "extension": "jpg",
-        "formato": "Archivo de grupo unido de expertos fotográficos"
+        "formato": "Archivo de imagen formato jpg"
     },
     {
         "extension": "jpeg",
-        "formato": "Archivo de grupo unido de expertos fotográficos"
+        "formato": "Archivo de imagen formato jpeg"
     },
     {
         "extension": "m4a",
@@ -169,7 +169,7 @@ var mimetypes = [
     },
     {
         "extension": "mp3",
-        "formato": "Archivo de audio MPEG capa 3"
+        "formato": "Archivo de audio MPEG 3"
     },
     {
         "extension": "mp4",
@@ -181,7 +181,7 @@ var mimetypes = [
     },
     {
         "extension": "mpeg",
-        "formato": "Archivo de película de grupo MPEG"
+        "formato": "Archivo de película MPEG"
     },
     {
         "extension": "mpg",
@@ -197,15 +197,15 @@ var mimetypes = [
     },
     {
         "extension": "pdf",
-        "formato": "Archivo de formato de documento portátil"
+        "formato": "Archivo de documento PDF"
     },
     {
         "extension": "png",
-        "formato": "Archivo de gráficos de red portables"
+        "formato": "Archivo de imagen formato png"
     },
     {
         "extension": "pot",
-        "formato": "Plantilla de Microsoft PowerPoint antes de PowerPoint 2007"
+        "formato": "Plantilla de Microsoft PowerPoint"
     },
     {
         "extension": "potm",
@@ -221,7 +221,7 @@ var mimetypes = [
     },
     {
         "extension": "pps",
-        "formato": "Presentación de Microsoft PowerPoint antes de PowerPoint 2007"
+        "formato": "Presentación de Microsoft PowerPoint"
     },
     {
         "extension": "ppsm",
@@ -233,7 +233,7 @@ var mimetypes = [
     },
     {
         "extension": "ppt",
-        "formato": "Formato de Microsoft PowerPoint antes de PowerPoint 2007"
+        "formato": "Formato de Microsoft PowerPoint"
     },
     {
         "extension": "pptm",
@@ -301,7 +301,7 @@ var mimetypes = [
     },
     {
         "extension": "vsd",
-        "formato": "Dibujo de Microsoft Visio antes de Visio 2013"
+        "formato": "Dibujo de Microsoft Visio"
     },
     {
         "extension": "vsdm",
@@ -385,23 +385,23 @@ var mimetypes = [
     },
     {
         "extension": "xlm",
-        "formato": "Macro de Microsoft Excel antes de Excel 2007"
+        "formato": "Macro de Microsoft Excel"
     },
     {
         "extension": "xls",
-        "formato": "Hoja de cálculo de Microsoft Excel antes de Excel 2007"
+        "formato": "Hoja de cálculo de Microsoft Excel"
     },
     {
         "extension": "xlsm",
-        "formato": "Hoja de cálculo habilitada para macros de Microsoft Excel después de Microsoft Excel 2007"
+        "formato": "Hoja de cálculo habilitada para macros de Microsoft Excel"
     },
     {
         "extension": "xlsx",
-        "formato": "Hoja de cálculo de Microsoft Excel después de Excel 2007"
+        "formato": "Hoja de cálculo de Microsoft Excel"
     },
     {
         "extension": "xlt",
-        "formato": "Plantilla de Microsoft Excel antes de Excel 2007"
+        "formato": "Plantilla de Microsoft Excel"
     },
     {
         "extension": "xltm",

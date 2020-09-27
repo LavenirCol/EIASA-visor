@@ -19,7 +19,8 @@ class AppAsset extends AssetBundle
         'theme/dashforge/css/dashforge.filemgr.css',
         'theme/dashforge/css/skin.charcoal.css',
         'https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.7.2/dropzone.min.css',
-        'https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.21/b-1.6.3/b-colvis-1.6.3/b-flash-1.6.3/b-html5-1.6.3/b-print-1.6.3/r-2.2.5/sp-1.1.1/datatables.min.css'
+        'https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.21/b-1.6.3/b-colvis-1.6.3/b-flash-1.6.3/b-html5-1.6.3/b-print-1.6.3/r-2.2.5/sp-1.1.1/datatables.min.css',
+        'https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.css'
     ];
     public $js = [
         'theme/dashforge/lib/jquery/jquery.min.js',
@@ -35,6 +36,7 @@ class AppAsset extends AssetBundle
         'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js',
         'https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.21/b-1.6.3/b-colvis-1.6.3/b-flash-1.6.3/b-html5-1.6.3/b-print-1.6.3/r-2.2.5/sp-1.1.1/datatables.min.js',
         'https://cdn.jsdelivr.net/npm/sweetalert2@10',
+        'https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js',
         'js/mimetypes.js',
         'js/reportes.js',
         'js/filemanager.js'

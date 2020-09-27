@@ -61,9 +61,9 @@ use \yii\helpers\Url;
             <div class="media">
               <i data-feather="database" class="wd-30 ht-30"></i>
               <div class="media-body mg-l-10">
-                <div class="tx-12 mg-b-4">5.2GB usados de 50GB</div>
+                <div class="tx-12 mg-b-4"><?php echo $actualsize ?> de <?php echo $assignedsize ?> GB (<?php echo round(($sizeingb/$assignedsize)*100) ?>%)</div>
                 <div class="progress ht-3 mg-b-20">
-                  <div class="progress-bar wd-15p" role="progressbar" aria-valuenow="15" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div class="progress-bar" style="width:<?php echo round(($sizeingb/$assignedsize)*100) ?>%" role="progressbar" aria-valuenow="<?php echo ($sizeingb/$assignedsize) ?>" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
               </div><!-- media-body -->
             </div><!-- media -->

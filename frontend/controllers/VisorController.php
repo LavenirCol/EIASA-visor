@@ -38,7 +38,27 @@ class VisorController extends \yii\web\Controller {
 
     public function actionFilemanager() {
         $modulos = Module::find()->indexBy('idmodule')->all();
-        return $this->render('filemanager', array('modulos' => $modulos));
+        //directorio raiz
+        $keyassignedsize = Settings::find()->where(['key' => 'ASSIGNEDDISKSIZEGB'])->one();
+
+        $connection = Yii::$app->getDb();
+
+        $sql = "SELECT 
+                CASE
+                    WHEN ABS(sum(d.size)) < 1024 THEN CONCAT( ROUND( sum(d.size), 2 ), ' Bytes')
+                    WHEN ABS(sum(d.size)) < 1048576 THEN CONCAT( ROUND( (sum(d.size)/1024), 2 ), ' KB')
+                    WHEN ABS(sum(d.size)) < 1073741824 THEN CONCAT( ROUND( (sum(d.size)/1048576), 2 ), ' MB')
+                    WHEN ABS(sum(d.size)) < 1099511627776 THEN CONCAT( ROUND( (sum(d.size)/1073741824), 2 ), ' GB' )
+                 END as actualsize,
+                 ROUND( (sum(d.size)/1073741824), 2 ) as sizeingb
+                FROM document d ";
+
+        $sizes = $connection->createCommand($sql)->queryOne();
+
+        return $this->render('filemanager', array('modulos' => $modulos,
+                'assignedsize' => $keyassignedsize->value,
+                'actualsize' => $sizes['actualsize'],
+                'sizeingb' => $sizes['sizeingb']));
     }
 
     public function actionGetfolders() {
@@ -171,8 +191,34 @@ class VisorController extends \yii\web\Controller {
 
             $input = Yii::$app->request->post();
             $idfolder = $input['idfolder'];
-            $files = Document::find()->where(['idFolder' => $idfolder])->orderBy('name')->all();
+            //$files = Document::find()->where(['idFolder' => $idfolder])->orderBy('name')->all();
 
+            $connection = Yii::$app->getDb();
+            
+            $sql = "SELECT `document`.`iddocument`,
+                    `document`.`name`,
+                    `document`.`path`,
+                    `document`.`level1name`,
+                    `document`.`relativename`,
+                    `document`.`fullname`,
+                    `document`.`date`,
+                    CASE
+                        WHEN ABS(`document`.`size`) < 1024 THEN CONCAT( ROUND( `document`.`size`, 2 ), ' Bytes')
+                        WHEN ABS(`document`.`size`) < 1048576 THEN CONCAT( ROUND( (`document`.`size`/1024), 2 ), ' KB')
+                        WHEN ABS(`document`.`size`) < 1073741824 THEN CONCAT( ROUND( (`document`.`size`/1048576), 2 ), ' MB')
+                        WHEN ABS(`document`.`size`) < 1099511627776 THEN CONCAT( ROUND( (`document`.`size`/1073741824), 2 ), ' GB' )
+                    END as size,
+                    `document`.`type`,
+                    `document`.`iddocumentType`,
+                    `document`.`idFolder`,
+                    `document`.`fileUploadedUserId`
+                    FROM document
+                    where idFolder = $idfolder
+                    order by `document`.`name`";
+
+            $command = $connection->createCommand($sql);
+            $files = $command->queryAll();
+            
             $response = Yii::$app->response;
             $response->format = \yii\web\Response::FORMAT_JSON;
             $response->data = ['data' => $files];
@@ -240,7 +286,9 @@ class VisorController extends \yii\web\Controller {
                 $newdocument->iddocumentType= 1; // archivo cargado
                 $newdocument->idFolder = $idfolder;
                 $newdocument->fileUploadedUserId = Yii::$app->user->id;
-                $newdocument->save(false);             
+                $newdocument->save(false);
+                
+                //$this->createimage(154,120,$destination,'s',$type);
             }
  
             $returndata = ['data' => ''. $targetFile, 'error' => ''];
@@ -252,6 +300,19 @@ class VisorController extends \yii\web\Controller {
         }       
     }
 
+    public function createimage($width,$height,$destination,$thumb,$type)
+    {
+        $obj_imgl = new thumbnail_images;
+        $obj_imgl->PathImgOld = $destination.".".$type;
+        $obj_imgl->PathImgNew = $destination."$thumb.".$type;
+        $obj_imgl->NewWidth = $width;
+        if($height!='')
+        {
+            $obj_imgl->NewHeight = $height;
+        }
+        if (!$obj_imgl->create_thumbnail_images()) 
+            echo "error"; 
+    }
     
     public function actionGetfile($id, $d = false, $t = false){
         //$id= 20;
@@ -272,7 +333,7 @@ class VisorController extends \yii\web\Controller {
             header('Content-Length: ' . $file->size);            
         }
         if($t == 'true'){
-            return readfile($file->path . '/' . $file->fullname . '.jpg');
+            return readfile($file->path . '/' . $file->fullname);
 
         }else{
             return readfile($file->path . '/' . $file->fullname);
