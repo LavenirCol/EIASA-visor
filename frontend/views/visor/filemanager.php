@@ -17,6 +17,23 @@ use \yii\helpers\Url;
     .card-file p{
         font-size: 9px;
     }
+    
+    #formupload{
+        width: 100%;
+    }
+    
+    .dropzone{
+        cursor: pointer;
+        width: 100%;
+        border: 2px dashed #0087F7;
+        border-radius: 5px;
+        background: white;
+    }
+    
+    .card-file-thumb{
+        background-size: cover; 
+        background-repeat: no-repeat;
+    }
 </style>
 <div class="filemgr-wrapper">
       <div class="filemgr-sidebar">
@@ -107,20 +124,34 @@ use \yii\helpers\Url;
                     </tbody>
                 </table>            
             </div>
+            <div id="divfileupload" style="display:none">
+                <hr class="mg-y-40 bd-0">
+                <label class="d-block tx-medium tx-10 tx-uppercase tx-sans tx-spacing-1 tx-color-03 mg-b-15">Subir Archivos</label>
+                <div class="row row-xs" style="margin-bottom: 60px;">
+                    
+                    <!-- dropzone as a div in a form -->
+                    <form id="formupload" action="<?php echo Url::toRoute('visor/upload'); ?>" method="POST" enctype="multipart/form-data">
+                        <!-- dropzone field -->
+                        <div id="myDropzone" class="dropzone"></div>
+                    </form>
 
+                    <!-- submit button -->
+                    <button id="dropzoneSubmit" class="btn btn-block btn-primary">Subir</button>
+<!--                    <form action="<?php echo Url::toRoute('visor/upload'); ?>" class="dropzone" id="my-awesome-dropzone"></form>-->
+                </div><!-- row -->
+            </div>
             <div id="divfoldercontainer" style="display:none">
                 <hr class="mg-y-40 bd-0">
                 <label class="d-block tx-medium tx-10 tx-uppercase tx-sans tx-spacing-1 tx-color-03 mg-b-15">Carpetas</label>
                 <div class="row row-xs" id="foldercontainer">
                 </div><!-- row -->
             </div>
-            
             <div id="divfilecontainer" style="display:none">
                 <hr class="mg-y-40 bd-0">
                 <label class="d-block tx-medium tx-10 tx-uppercase tx-sans tx-spacing-1 tx-color-03 mg-b-15">Archivos</label>
                 <div class="row row-xs" id="filecontainer" style="margin-bottom: 60px;">
 
-                </div><!-- row -->
+                </div><!-- row -->                        
             </div>
           </div>
         </div><!-- filemgr-content-body -->

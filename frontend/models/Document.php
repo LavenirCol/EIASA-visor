@@ -39,11 +39,11 @@ class Document extends \yii\db\ActiveRecord
         return [
             [['name', 'path', 'level1name', 'relativename', 'fullname', 'date', 'size', 'type', 'iddocumentType', 'idFolder'], 'required'],
             [['iddocumentType', 'idFolder'], 'integer'],
-            [['name', 'level1name', 'relativename'], 'string', 'max' => 45],
-            [['path'], 'string', 'max' => 100],
-            [['fullname'], 'string', 'max' => 200],
+            [['name', 'level1name', 'relativename'], 'string', 'max' => 255],
+            [['path'], 'string', 'max' => 255],
+            [['fullname'], 'string', 'max' => 255],
             [['date', 'type'], 'string', 'max' => 20],
-            [['size'], 'string', 'max' => 10],
+            [['size'], 'string', 'max' => 20],
             [['iddocumentType'], 'exist', 'skipOnError' => true, 'targetClass' => Documenttype::className(), 'targetAttribute' => ['iddocumentType' => 'iddocumentType']],
         ];
     }

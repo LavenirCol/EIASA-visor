@@ -36,7 +36,7 @@ filetemplate += '        <a href="#" class="dropdown-item rename"><i data-feathe
 filetemplate += '        <a href="#" class="dropdown-item delete"><i data-feather="trash"></i>Eliminar</a>';
 filetemplate += '      </div>';
 filetemplate += '    </div><!-- dropdown -->';
-filetemplate += '    <div class="card-file-thumb {{FILECOLOR}}">';
+filetemplate += '    <div class="card-file-thumb {{FILECOLOR}}" style="{{FILESTYLE}}">';
 filetemplate += '      <i class="far {{FILEICON}}"></i>';
 filetemplate += '    </div>';
 filetemplate += '    <div class="card-body">';
@@ -100,6 +100,9 @@ $(document).ready(function () {
 
 function getFolders() {
 
+    $("#divfoldercontainer").hide();    
+    $("#divfilecontainer").hide();
+    $("#filecontainer").html('');
     $.ajax({
         type: 'POST',
         traditional: true,
@@ -107,7 +110,7 @@ function getFolders() {
         url: baseurl + '/visor/getfolders'
     }).then(function (result) {
         //console.log(result);
-        $("#divfoldercontainer").show();
+        $("#divfoldercontainer").show();    
         if (result.data.length == 0) {
             $("#foldercontainer").html('<h6>No hay carpetas asociadas a la carpeta</h6>');
         } else {
@@ -185,25 +188,37 @@ function getFilesFolder() {
             var htmlf = "";
             $.each(result.data, function (idx, item) {
 
+                var ext = item.name.slice((item.name.lastIndexOf(".") - 1 >>> 0) + 2);
+                var filestyle = "";
+                
                 var color = "tx-primary";
-                if (item.type.indexOf('excel') > 0) {
+                if (ext.indexOf('xls') > -1) {
                     color = "tx-success";
                 }
-                if (item.type.indexOf('powerpoint') > 0) {
+                if (ext.indexOf('ppt') > -1) {
                     color = "tx-orange";
                 }
-                if (item.type.indexOf('pdf') > 0) {
+                if (ext.indexOf('pdf') > -1) {
                     color = "tx-danger";
                 }
-                if (item.type.indexOf('image') > 0) {
-                    color = "tx-indigo";
-                }
 
+                //console.log(ext);
+                if(ext.indexOf('gif') > -1 
+                        || ext.indexOf('jpg') > -1
+                        || ext.indexOf('jpeg') > -1
+                        || ext.indexOf('png') > -1){
+                    color = "tx-indigo";
+                    filestyle = 'background-image: url(' + baseurl + '/visor/getfile?id=' + item.iddocument + '&t=true);';                    
+                }    
+                
                 htmlf += filetemplate.replace('{{FILENAME}}', item.name)
                         .replace('{{FILESIZE}}', item.size + ' KB')
                         .replace('{{FILEICON}}', item.type)
                         .replace('{{FILETYPE}}', getmimetype(item.name))
-                        .replace('{{FILECOLOR}}', color);
+                        .replace('{{FILECOLOR}}', color)
+                        .replace('{{FILESTYLE}}', filestyle);;
+            
+    
             });
             //show files content
             $("#filecontainer").html(htmlf);
@@ -280,72 +295,82 @@ function addFile(){
         });
         return;
     }
+
+    $("#divfileupload").fadeIn(1000);
 }
 
+Dropzone.autoDiscover = false;
 
-//uploadas Handles
-var Upload = function (file, id) {
-    this.file = file;
-    this.id = id;
-};
+// init dropzone on id (form or div)
+$(document).ready(function() {
 
-Upload.prototype.getType = function () {
-    return this.file.type;
-};
-Upload.prototype.getSize = function () {
-    return this.file.size;
-};
-Upload.prototype.getName = function () {
-    return this.file.name;
-};
-Upload.prototype.doUpload = function (inputresult) {
-    var that = this;
-    var formData = new FormData();
-    $("#progress-wrp").show();
-
-    // add assoc key values, this will be posts values
-    formData.append("id", this.id);
-    formData.append("file", this.file, this.getName());
-    formData.append("upload_file", true);
-
-    $.ajax({
-        type: "POST",
-        url: "/webapi/UploadFile",
-        xhr: function () {
-            var myXhr = $.ajaxSettings.xhr();
-            if (myXhr.upload) {
-                myXhr.upload.addEventListener('progress', that.progressHandling, false);
-            }
-            return myXhr;
-        },
-        success: function (result) {
-            // your callback here
-            $(inputresult).val(result.data.archivo);
-            setTimeout(function () {
-                $("#progress-wrp").hide();
-            }, 500);
-        },
-        error: function (error) {
-            // handle error
-        },
-        async: true,
-        data: formData,
-        cache: false,
-        contentType: false,
-        processData: false,
-        timeout: 60000
+    var myDropzone = new Dropzone("#myDropzone", {
+        url: baseurl + "/visor/upload",
+        paramName: "file",
+        autoProcessQueue: false,
+        uploadMultiple: true, // uplaod files in a single request
+        parallelUploads: 100, // use it with uploadMultiple
+        maxFilesize: 100, // MB
+        maxFiles: 5,
+        timeout: 180000,
+        //acceptedFiles: ".jpg, .jpeg, .png, .gif, .pdf",
+        addRemoveLinks: true,
+        // Language Strings
+        dictFileTooBig: "Archivo es muy grande ({{filesize}}mb). El máximo permitido es {{maxFilesize}}mb",
+        //dictInvalidFileType: "Invalid File Type",
+        dictCancelUpload: "Cancelar",
+        dictRemoveFile: "Remover",
+        dictMaxFilesExceeded: "Solo {{maxFiles}} archivos son permitidos",
+        dictDefaultMessage: "Haga click o arrastre los archivos aqui para subirlos",
     });
-};
 
-Upload.prototype.progressHandling = function (event) {
-    var percent = 0;
-    var position = event.loaded || event.position;
-    var total = event.total;
-    var progress_bar_id = "#progress-wrp";
-    if (event.lengthComputable) {
-        percent = Math.ceil(position / total * 100);
+});
+
+Dropzone.options.myDropzone = {
+    // The setting up of the dropzone
+    init: function() {
+        var myDropzone = this;
+
+        // First change the button to actually tell Dropzone to process the queue.
+        $("#dropzoneSubmit").on("click", function(e) {
+            // Make sure that the form isn't actually being sent.
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (myDropzone.files != "") {
+                myDropzone.processQueue();
+            } else {
+                $("#myDropzone").submit();
+            }
+
+        });
+
+        // on add file
+        this.on("addedfile", function(file) {
+            // console.log(file);
+        });
+        // on error
+        this.on("error", function(file, response) {
+            console.log(response);
+        });        
+        this.on('sending', function(file, xhr, formData){
+            formData.append('active_module', active_module);
+            formData.append('active_folder', active_folder);
+        });
+        // on start
+        this.on("sendingmultiple", function(file) {
+             // console.log(file);
+        });
+        // on complete
+        this.on("complete", function(file) { 
+            this.removeAllFiles(true); 
+        });
+        // on success
+        this.on("successmultiple", function(file) {
+            // submit form
+            $("#divfileupload").fadeOut(1000);
+            getFilesFolder();
+            //$("#formupload").submit();
+        });
     }
-    // update progressbars classes so it fits your code
-    $(progress_bar_id + " .progress-bar").css("width", +percent + "%");
-    $(progress_bar_id + " .status").text(percent + "%");
 };

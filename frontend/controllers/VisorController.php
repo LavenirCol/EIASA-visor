@@ -8,6 +8,9 @@ use app\models\Document;
 use app\models\Client;
 use app\models\Settings;
 use Yii;
+use yii\helpers\Url;
+//use Imagick;
+use tpmanc\imagick\Imagick;
 
 /**
  * Clase visor manager
@@ -181,34 +184,101 @@ class VisorController extends \yii\web\Controller {
     }
     
     
-    public function post_upload(){
+    public function actionUpload(){
 
-        $input = Input::all();
-        $rules = array(
-            'file' => 'image|max:3000',
-        );               
-        
-        $validation = Validator::make($input, $rules);
+        try{
+            $idmodule = Yii::$app->request->post('active_module');
+            $idfolder = Yii::$app->request->post('active_folder');
+            $actualfolder=  Folder::find()->where(['idmodule' => $idmodule,'idfolder' => $idfolder])->one();
 
-        if ($validation->fails())
-        {
-            return Response::make($validation->errors->first(), 400);
-        }
+            $foldername =  $actualfolder->folderName;
+            $idparentfolder = $actualfolder->idParentFolder;
 
-        $file = Input::file('file');
+            //directorio raiz
+            $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+            $root_path = $keyfolderraiz->value;
 
-        $extension = File::extension($file['name']);
-        $directory = path('public').'uploads/'.sha1(time());
-        $filename = sha1(time().time()).".{$extension}";
+            //crear en disco path
+            $fpath = "";
+            $idpfolder = $idparentfolder;
+            if($idpfolder > 0){
+                do {
+                  $pfolder=  Folder::find()->where(['idmodule' => $idmodule,'idfolder' => $idpfolder])->one();
+                  $fpath = $pfolder->folderName. '/'. $fpath;  
+                  $idpfolder = $pfolder->idParentFolder;
+                } while ($idpfolder > 0);
+            }
+            $modulo = Module::find()->where(['idmodule' => $idmodule])->one();
+            $vpath = Url::base(true). '/' . $modulo->moduleName. $fpath . '/' . $foldername;
+            $fpath = $root_path . '/' . $modulo->moduleName. $fpath . '/' . $foldername;
+            
+            $rights=0777;
+            $dirs = explode('/', $fpath);
+            $dir='';
+            foreach ($dirs as $part) {
+                $dir.=$part.'/';
+                if (!is_dir($dir) && strlen($dir)>0){
+                    mkdir($dir, $rights);
+                }
+            }
 
-        $upload_success = Input::upload('file', $directory, $filename);
-
-        if( $upload_success ) {
-        	return Response::json('success', 200);
-        } else {
-        	return Response::json('error', 400);
-        }
+            foreach($_FILES['file']['tmp_name'] as $key => $value) {
+                $tempFile = $_FILES['file']['tmp_name'][$key];
+                $targetFile =  $fpath.'/'. $_FILES['file']['name'][$key];
+                move_uploaded_file($tempFile,$targetFile);
+                
+                // adicionar FILE a BD
+                $newdocument = new Document();
+                $newdocument->name= $_FILES['file']['name'][$key];
+                $newdocument->path= $fpath;
+                $newdocument->level1name= 0;
+                $newdocument->relativename= $vpath .'/'. $_FILES['file']['name'][$key];
+                $newdocument->fullname= $_FILES['file']['name'][$key];
+                $newdocument->date= date("Y-m-d H:i:s");
+                $newdocument->size= $_FILES['file']['size'][$key];
+                $newdocument->type= $_FILES['file']['type'][$key];
+                $newdocument->iddocumentType= 1; // archivo cargado
+                $newdocument->idFolder = $idfolder;
+                $newdocument->fileUploadedUserId = Yii::$app->user->id;
+                $newdocument->save(false);             
+            }
+ 
+            $returndata = ['data' => ''. $targetFile, 'error' => ''];
+            return $this->result($returndata);
+            
+        } catch (Exception $ex) {
+            $returndata = ['data' => '', 'error' => $ex->getMessage()];
+            return $this->result($returndata);
+        }       
     }
+
+    
+    public function actionGetfile($id, $d = false, $t = false){
+        //$id= 20;
+        $file=  Document::find()->where(['iddocument' => $id])->one();
+        if ($file === null) {
+             throw new NotFoundHttpException(Yii::t('app', 'El archivo no existe'));
+        }
+      
+        header('Content-Description: EIASA Visor File Transfer');
+        header('Content-Type: '. $file->type);
+        header('Expires: 0');
+        header('Cache-Control: must-revalidate');
+        header('Pragma: public');
+        
+        if($d === 'true')
+        {
+            header('Content-Disposition: attachment; filename="'.$file->name.'"');
+            header('Content-Length: ' . $file->size);            
+        }
+        if($t == 'true'){
+            return readfile($file->path . '/' . $file->fullname . '.jpg');
+
+        }else{
+            return readfile($file->path . '/' . $file->fullname);
+        }        
+    }
+    
 
     public function actionGetcontactsclient() {
         if (Yii::$app->request->isAjax) {
