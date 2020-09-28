@@ -34,6 +34,34 @@ use \yii\helpers\Url;
         background-size: cover; 
         background-repeat: no-repeat;
     }
+    
+    .fancybox-slide--iframe .fancybox-content {
+        width  :  80%;
+        height :  80%;
+        max-width  : 80%;
+        max-height : 80%;
+        margin: 0;
+    }
+    
+    .search-form{
+        border: 1px solid #0168fa;
+        padding: 0px 0px 0px 11px;
+        border-radius: 7px;
+    }
+    
+    .search-form button{
+        border: none;
+        color: white;
+    }
+    
+    .dropdown-file .dropdown-link{
+        color: #0168fa;        
+    }
+    
+    .dropdown-file .dropdown-link svg{
+        width: 25px;
+        height: 25px;
+    }
 </style>
 <div class="filemgr-wrapper">
       <div class="filemgr-sidebar">
@@ -73,11 +101,56 @@ use \yii\helpers\Url;
 
       <div class="filemgr-content">
         <div class="filemgr-content-header">
-          <i data-feather="search"></i>
+          
           <div class="search-form">
-            <input type="search" class="form-control" placeholder="Buscar archivos...">
+            <i data-feather="search"></i>
+            <div class="input-group">
+              <input type="search" id="txtsearch" class="form-control" placeholder="Buscar archivos..." aria-label="Buscar archivos..." aria-describedby="button-addon2">
+              <div class="input-group-append">
+                <button class="btn btn-primary" type="button" id="btnsearch">Buscar</button>
+              </div>
+            </div>
           </div><!-- search-form -->
-          <nav class="nav d-none d-sm-flex mg-l-auto">
+          <nav class="nav d-none d-sm-flex mg-l-auto">            
+             <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="loadingindicator" style="display:none; margin: auto; background: rgb(255, 255, 255); shape-rendering: auto;" width="50px" height="50px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
+<circle cx="75" cy="50" fill="#b7d4fe" r="5">
+  <animate attributeName="r" values="3;3;5;3;3" times="0;0.1;0.2;0.3;1" dur="1s" repeatCount="indefinite" begin="-0.9166666666666666s"></animate>
+  <animate attributeName="fill" values="#b7d4fe;#b7d4fe;#0168fa;#b7d4fe;#b7d4fe" repeatCount="indefinite" times="0;0.1;0.2;0.3;1" dur="1s" begin="-0.9166666666666666s"></animate>
+</circle><circle cx="71.65063509461098" cy="62.5" fill="#b7d4fe" r="5">
+  <animate attributeName="r" values="3;3;5;3;3" times="0;0.1;0.2;0.3;1" dur="1s" repeatCount="indefinite" begin="-0.8333333333333334s"></animate>
+  <animate attributeName="fill" values="#b7d4fe;#b7d4fe;#0168fa;#b7d4fe;#b7d4fe" repeatCount="indefinite" times="0;0.1;0.2;0.3;1" dur="1s" begin="-0.8333333333333334s"></animate>
+</circle><circle cx="62.5" cy="71.65063509461096" fill="#b7d4fe" r="5">
+  <animate attributeName="r" values="3;3;5;3;3" times="0;0.1;0.2;0.3;1" dur="1s" repeatCount="indefinite" begin="-0.75s"></animate>
+  <animate attributeName="fill" values="#b7d4fe;#b7d4fe;#0168fa;#b7d4fe;#b7d4fe" repeatCount="indefinite" times="0;0.1;0.2;0.3;1" dur="1s" begin="-0.75s"></animate>
+</circle><circle cx="50" cy="75" fill="#b7d4fe" r="5">
+  <animate attributeName="r" values="3;3;5;3;3" times="0;0.1;0.2;0.3;1" dur="1s" repeatCount="indefinite" begin="-0.6666666666666666s"></animate>
+  <animate attributeName="fill" values="#b7d4fe;#b7d4fe;#0168fa;#b7d4fe;#b7d4fe" repeatCount="indefinite" times="0;0.1;0.2;0.3;1" dur="1s" begin="-0.6666666666666666s"></animate>
+</circle><circle cx="37.50000000000001" cy="71.65063509461098" fill="#b7d4fe" r="5">
+  <animate attributeName="r" values="3;3;5;3;3" times="0;0.1;0.2;0.3;1" dur="1s" repeatCount="indefinite" begin="-0.5833333333333334s"></animate>
+  <animate attributeName="fill" values="#b7d4fe;#b7d4fe;#0168fa;#b7d4fe;#b7d4fe" repeatCount="indefinite" times="0;0.1;0.2;0.3;1" dur="1s" begin="-0.5833333333333334s"></animate>
+</circle><circle cx="28.34936490538903" cy="62.5" fill="#b7d4fe" r="5">
+  <animate attributeName="r" values="3;3;5;3;3" times="0;0.1;0.2;0.3;1" dur="1s" repeatCount="indefinite" begin="-0.5s"></animate>
+  <animate attributeName="fill" values="#b7d4fe;#b7d4fe;#0168fa;#b7d4fe;#b7d4fe" repeatCount="indefinite" times="0;0.1;0.2;0.3;1" dur="1s" begin="-0.5s"></animate>
+</circle><circle cx="25" cy="50" fill="#b7d4fe" r="5">
+  <animate attributeName="r" values="3;3;5;3;3" times="0;0.1;0.2;0.3;1" dur="1s" repeatCount="indefinite" begin="-0.4166666666666667s"></animate>
+  <animate attributeName="fill" values="#b7d4fe;#b7d4fe;#0168fa;#b7d4fe;#b7d4fe" repeatCount="indefinite" times="0;0.1;0.2;0.3;1" dur="1s" begin="-0.4166666666666667s"></animate>
+</circle><circle cx="28.34936490538903" cy="37.50000000000001" fill="#b7d4fe" r="5">
+  <animate attributeName="r" values="3;3;5;3;3" times="0;0.1;0.2;0.3;1" dur="1s" repeatCount="indefinite" begin="-0.3333333333333333s"></animate>
+  <animate attributeName="fill" values="#b7d4fe;#b7d4fe;#0168fa;#b7d4fe;#b7d4fe" repeatCount="indefinite" times="0;0.1;0.2;0.3;1" dur="1s" begin="-0.3333333333333333s"></animate>
+</circle><circle cx="37.499999999999986" cy="28.349364905389038" fill="#b7d4fe" r="5">
+  <animate attributeName="r" values="3;3;5;3;3" times="0;0.1;0.2;0.3;1" dur="1s" repeatCount="indefinite" begin="-0.25s"></animate>
+  <animate attributeName="fill" values="#b7d4fe;#b7d4fe;#0168fa;#b7d4fe;#b7d4fe" repeatCount="indefinite" times="0;0.1;0.2;0.3;1" dur="1s" begin="-0.25s"></animate>
+</circle><circle cx="49.99999999999999" cy="25" fill="#b7d4fe" r="5">
+  <animate attributeName="r" values="3;3;5;3;3" times="0;0.1;0.2;0.3;1" dur="1s" repeatCount="indefinite" begin="-0.16666666666666666s"></animate>
+  <animate attributeName="fill" values="#b7d4fe;#b7d4fe;#0168fa;#b7d4fe;#b7d4fe" repeatCount="indefinite" times="0;0.1;0.2;0.3;1" dur="1s" begin="-0.16666666666666666s"></animate>
+</circle><circle cx="62.5" cy="28.349364905389034" fill="#b7d4fe" r="5">
+  <animate attributeName="r" values="3;3;5;3;3" times="0;0.1;0.2;0.3;1" dur="1s" repeatCount="indefinite" begin="-0.08333333333333333s"></animate>
+  <animate attributeName="fill" values="#b7d4fe;#b7d4fe;#0168fa;#b7d4fe;#b7d4fe" repeatCount="indefinite" times="0;0.1;0.2;0.3;1" dur="1s" begin="-0.08333333333333333s"></animate>
+</circle><circle cx="71.65063509461096" cy="37.499999999999986" fill="#b7d4fe" r="5">
+  <animate attributeName="r" values="3;3;5;3;3" times="0;0.1;0.2;0.3;1" dur="1s" repeatCount="indefinite" begin="0s"></animate>
+  <animate attributeName="fill" values="#b7d4fe;#b7d4fe;#0168fa;#b7d4fe;#b7d4fe" repeatCount="indefinite" times="0;0.1;0.2;0.3;1" dur="1s" begin="0s"></animate>
+</circle>
+<!-- [ldio] generated by https://loading.io/ --></svg>
 <!--            <a href="" class="nav-link"><i data-feather="list"></i></a>
             <a href="" class="nav-link"><i data-feather="alert-circle"></i></a>
             <a href="" class="nav-link"><i data-feather="settings"></i></a>-->

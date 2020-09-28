@@ -109,6 +109,18 @@ AppAsset::register($this);
 </footer>
 
 <?php $this->endBody() ?>
+<script>
+
+    $(document).ajaxStart(function () {
+        $("#loadingindicator").show();
+    });
+    $(document).ajaxStop(function () {
+        setTimeout(function(){            
+            $("#loadingindicator").hide();
+        },500);
+    });
+
+</script>
 </body>
 </html>
 <?php $this->endPage() ?>

@@ -18,21 +18,21 @@ foldertemplate += '             <a href="" class="dropdown-link" data-toggle="dr
 foldertemplate += '             <div class="dropdown-menu dropdown-menu-right">';
 foldertemplate += '                 <a href="#modalViewDetails" data-toggle="modal" class="dropdown-item details"><i data-feather="info"></i>Ver Detalles</a>';
 foldertemplate += '                 <a href="" class="dropdown-item download"><i data-feather="download"></i>Descargar</a>';
-//foldertemplate += '                 <a href="#" class="dropdown-item rename"><i data-feather="edit"></i>Renombrar</a>';
-foldertemplate += '                 <a href="#" class="dropdown-item delete"><i data-feather="trash"></i>Borrar</a>';
+//foldertemplate += '                 <a href="#" class="dropdown-item renamef"><i data-feather="edit"></i>Renombrar</a>';
+foldertemplate += '                 <a href="#" class="dropdown-item deletef"><i data-feather="trash"></i>Borrar</a>';
 foldertemplate += '              </div>';
 foldertemplate += '         </div><!-- dropdown -->';
 foldertemplate += '     </div><!-- media -->';
 foldertemplate += '</div><!-- col -->';
 
-var filetemplate = '<div class="col-6 col-sm-4 col-md-3 col-xl">';
+var filetemplate = '<div class="col-xs-6 col-sm-4 col-md-3 colfile" data-iddocument="{{FILEID}}">';
 filetemplate += '  <div class="card card-file">';
 filetemplate += '    <div class="dropdown-file">';
 filetemplate += '      <a href="" class="dropdown-link" data-toggle="dropdown"><i data-feather="more-vertical"></i></a>';
 filetemplate += '      <div class="dropdown-menu dropdown-menu-right">';
 //filetemplate += '        <a href="#modalViewDetails" data-toggle="modal" class="dropdown-item details"><i data-feather="info"></i>Ver Detalles</a>';
 filetemplate += '        <a href="{{FILEDOWNLOAD}}" class="dropdown-item download"><i data-feather="download"></i>Descargar</a>';
-//filetemplate += '        <a href="#" class="dropdown-item rename"><i data-feather="edit"></i>Renombrar</a>';
+filetemplate += '        <a href="#" class="dropdown-item rename"><i data-feather="edit"></i>Renombrar</a>';
 filetemplate += '        <a href="#" class="dropdown-item delete"><i data-feather="trash"></i>Eliminar</a>';
 filetemplate += '      </div>';
 filetemplate += '    </div><!-- dropdown -->';
@@ -61,7 +61,13 @@ $(document).ready(function () {
         e.preventDefault();
         addFile();
     });
-    
+
+    //search
+    $("#btnsearch").click(function (e) {
+        e.preventDefault();
+        search();
+    });
+
     // modulos
     $("#navmodulos").find(".nav-link").click(function () {
 
@@ -70,17 +76,17 @@ $(document).ready(function () {
 
         active_module = $(this).data("idmodule");
         active_folder = 0;
-        
+
         var title = $(this).find("span").html();
         $("#actualfoldertitle").html(title);
         $("#divfoldercontainer").hide();
         $("#foldercontainer").html('');
         $("#divfilecontainer").hide();
         $("#filecontainer").html('');
-        
+
         // add breadcumb
         $(".breadcrumb").html('');
-        $(".breadcrumb").append("<li class='breadcrumb-item active' data-idmodule='"+active_module+"' data-idfolder='0'>"+title+"<li>");
+        $(".breadcrumb").append("<li class='breadcrumb-item active' data-idmodule='" + active_module + "' data-idfolder='0'>" + title + "<li>");
 
         if ($(this).data("susctable") === 1)
         {
@@ -101,7 +107,7 @@ $(document).ready(function () {
 
 function getFolders() {
 
-    $("#divfoldercontainer").hide();    
+    $("#divfoldercontainer").hide();
     $("#divfilecontainer").hide();
     $("#filecontainer").html('');
     $.ajax({
@@ -111,14 +117,14 @@ function getFolders() {
         url: baseurl + '/visor/getfolders'
     }).then(function (result) {
         //console.log(result);
-        $("#divfoldercontainer").show();    
+        $("#divfoldercontainer").show();
         if (result.data.length == 0) {
             $("#foldercontainer").html('<h6>No hay carpetas asociadas a la carpeta</h6>');
         } else {
             var htmlf = "";
             $.each(result.data, function (idx, item) {
                 var ctrl = foldertemplate.replace('{{FOLDERNAME}}', item.folderName)
-                        .replace('{{FOLDERSIZE}}', item.files + ' archivos, ' + (item.size == null? '0 Bytes':  item.size))
+                        .replace('{{FOLDERSIZE}}', item.files + ' archivos, ' + (item.size == null ? '0 Bytes' : item.size))
                         .replace('{{MODULEID}}', item.idmodule)
                         .replace('{{FOLDERID}}', item.idfolder);
                 htmlf += ctrl;
@@ -133,7 +139,7 @@ function getFolders() {
                 active_folder = $(this).parent().parent().parent().data("idfolder");
                 $("#divfoldercontainer").find(".checkfolder").removeClass('folderactive');
                 $(this).addClass('folderactive');
-                
+
                 buildbreadcumbs($(this).html());
                 getFolders();
                 getFilesFolder();
@@ -142,13 +148,13 @@ function getFolders() {
     });
 }
 
-function buildbreadcumbs(newitem){
-    
+function buildbreadcumbs(newitem) {
+
     //actuales
     var britems = [];
-    if(active_folder> 0){
-        $.each($(".breadcrumb-item"), function(idx,item){
-            britems.push({ idmodule: $(item).data("idmodule"), idfolder: $(item).data("idfolder"), foldername: $(item).html()});
+    if (active_folder > 0) {
+        $.each($(".breadcrumb-item"), function (idx, item) {
+            britems.push({idmodule: $(item).data("idmodule"), idfolder: $(item).data("idfolder"), foldername: $(item).html()});
         });
 //        if(britems.length > 1){
 //            britems.pop();
@@ -156,12 +162,12 @@ function buildbreadcumbs(newitem){
     }
     //nuevos
     $(".breadcrumb").html('');
-    for(var i =0; i< britems.length; i++){
-        $(".breadcrumb").append("<li class='breadcrumb-item active'><a href='#' data-idmodule='"+britems[i].idmodule+"' data-idfolder='"+britems[i].idfolder+"'>"+britems[i].foldername+"</a></li>");
+    for (var i = 0; i < britems.length; i++) {
+        $(".breadcrumb").append("<li class='breadcrumb-item active'><a href='#' data-idmodule='" + britems[i].idmodule + "' data-idfolder='" + britems[i].idfolder + "'>" + britems[i].foldername + "</a></li>");
     }
-    $(".breadcrumb").append("<li class='breadcrumb-item active' data-idmodule='"+active_module+"' data-idfolder='"+active_folder+"'>"+newitem+"</li>");
+    $(".breadcrumb").append("<li class='breadcrumb-item active' data-idmodule='" + active_module + "' data-idfolder='" + active_folder + "'>" + newitem + "</li>");
 
-    $('.breadcrumb a').click(function(e){
+    $('.breadcrumb a').click(function (e) {
         e.preventDefault();
         active_module = $(this).data("idmodule");
         active_folder = $(this).data("idfolder");
@@ -182,77 +188,100 @@ function getFilesFolder() {
         url: baseurl + '/visor/getfilesfolder'
     }).then(function (result) {
         //console.log(result);
-        $("#divfilecontainer").show();
-        if (result.data.length == 0) {
-            $("#filecontainer").html('<h6>No hay archivos asociados a la carpeta</h6>');
-        } else {
-            var htmlf = "";
-            $.each(result.data, function (idx, item) {
-
-                var ext = item.name.slice((item.name.lastIndexOf(".") - 1 >>> 0) + 2);
-                var filestyle = "";
-                var fileicon = "fa-file";                
-                var color = "tx-teal";
-                
-                if (ext.indexOf('doc') > -1) {
-                    color = "tx-primary";
-                    fileicon = "fa-file-word";
-                }
-                if (ext.indexOf('xls') > -1) {
-                    color = "tx-success";
-                    fileicon = "fa-file-excel";
-                }
-                if (ext.indexOf('ppt') > -1) {
-                    color = "tx-orange";
-                    fileicon = "fa-file-powerpoint";
-                }
-                if (ext.indexOf('pdf') > -1) {
-                    color = "tx-danger";
-                    fileicon = "fa-file-pdf";
-                }
-                if (ext.indexOf('zip') > -1) {
-                    color = "tx-warning";
-                    fileicon = "fa-file-archive";
-                }
-                if (ext.indexOf('rar') > -1) {
-                    color = "tx-purple";
-                    fileicon = "fa-file-archive";
-                }
-
-                //console.log(ext);
-                if(ext.indexOf('gif') > -1 
-                        || ext.indexOf('jpg') > -1
-                        || ext.indexOf('jpeg') > -1
-                        || ext.indexOf('png') > -1){
-                    color = "";
-                    fileicon = "";
-                    filestyle = 'background-image: url(' + baseurl + '/visor/getfile?id=' + item.iddocument + '&t=true);';                    
-                }    
-                
-                htmlf += filetemplate.replace('{{FILENAME}}', item.name)
-                        .replace('{{FILESIZE}}', item.size)
-                        .replace('{{FILEICON}}', fileicon)
-                        .replace('{{FILETYPE}}', getmimetype(item.name))
-                        .replace('{{FILEDATE}}', item.date)
-                        .replace('{{FILECOLOR}}', color)
-                        .replace('{{FILESTYLE}}', filestyle)
-                        .replace('{{FILEDOWNLOAD}}', baseurl + '/visor/getfile?id=' + item.iddocument + '&d=true')
-                        .replace('{{FILEPREVIEW}}', '//docs.google.com/gview?url=' + baseurl + '/visor/getfile?id=' + item.iddocument + '&embedded=true');
-            
-    
-            });
-            //show files content
-            $("#filecontainer").html(htmlf);
-            feather.replace();
-
-            //bind events files
-            $(".linkpreview").fancybox({
-                'width': 600, // or whatever
-                'height': 320,
-                'type': 'iframe'
-            });
-        }
+        processfiles(result, 0);
     });
+}
+
+function processfiles(result, isfolder) {
+    $("#divfilecontainer").show();
+    if (result.data.length === 0) {
+        if (isfolder === 0) {
+            $("#filecontainer").html('<h6>No hay archivos asociados a la carpeta</h6>');
+        }
+        if (isfolder === 1) {
+            $("#filecontainer").html('<h6>No se encontraron archivos con el nombre buscado</h6>');
+        }
+    } else {
+        var htmlf = "";
+        $.each(result.data, function (idx, item) {
+
+            var ext = item.name.slice((item.name.lastIndexOf(".") - 1 >>> 0) + 2);
+            var filestyle = "";
+            var fileicon = "fa-file";
+            var color = "tx-teal";
+
+            if (ext.indexOf('doc') > -1) {
+                color = "tx-primary";
+                fileicon = "fa-file-word";
+            }
+            if (ext.indexOf('xls') > -1) {
+                color = "tx-success";
+                fileicon = "fa-file-excel";
+            }
+            if (ext.indexOf('ppt') > -1) {
+                color = "tx-orange";
+                fileicon = "fa-file-powerpoint";
+            }
+            if (ext.indexOf('pdf') > -1) {
+                color = "tx-danger";
+                fileicon = "fa-file-pdf";
+            }
+            if (ext.indexOf('zip') > -1) {
+                color = "tx-warning";
+                fileicon = "fa-file-archive";
+            }
+            if (ext.indexOf('rar') > -1) {
+                color = "tx-purple";
+                fileicon = "fa-file-archive";
+            }
+
+            //console.log(ext);
+            if (ext.indexOf('gif') > -1
+                    || ext.indexOf('jpg') > -1
+                    || ext.indexOf('jpeg') > -1
+                    || ext.indexOf('png') > -1) {
+                color = "";
+                fileicon = "";
+                filestyle = 'background-image: url(' + baseurl + '/visor/getfile?id=' + item.iddocument + '&t=true); filter: opacity(0.5);';
+            }
+
+            htmlf += filetemplate.replace('{{FILENAME}}', item.name)
+                    .replace('{{FILEID}}', item.iddocument)
+                    .replace('{{FILESIZE}}', item.size)
+                    .replace('{{FILEICON}}', fileicon)
+                    .replace('{{FILETYPE}}', getmimetype(item.name))
+                    .replace('{{FILEDATE}}', item.date)
+                    .replace('{{FILECOLOR}}', color)
+                    .replace('{{FILESTYLE}}', filestyle)
+                    .replace('{{FILEDOWNLOAD}}', baseurl + '/visor/getfile?id=' + item.iddocument + '&d=true')
+                    .replace('{{FILEPREVIEW}}', '//docs.google.com/gview?url=' + baseurl + '/visor/getfile?id=' + item.iddocument + '&embedded=true');
+
+
+        });
+        //show files content
+        $("#filecontainer").html(htmlf);
+        feather.replace();
+
+        //bind events files
+        $(".linkpreview").fancybox({
+            'type': 'iframe'
+        });
+
+        //renombrar archivo
+        $(".rename").off("click").on("click", function (e) {
+            e.preventDefault();
+            var iddocument = $(this).closest(".colfile").data("iddocument");
+            renamefile(iddocument);
+        });
+        
+        //eliminar archivo
+        $(".delete").off("click").on("click", function (e) {
+            e.preventDefault();
+            var iddocument = $(this).closest(".colfile").data("iddocument");
+            deletefile(iddocument);
+        });
+
+    }
 }
 
 function addFolder() {
@@ -275,17 +304,17 @@ function addFolder() {
         confirmButtonText: 'Crear',
         showLoaderOnConfirm: true,
         preConfirm: (foldername) => {
-           return  $.ajax({
+            return  $.ajax({
                 type: 'POST',
                 traditional: true,
                 data: {idmodule: active_module, idfolder: active_folder, foldername: foldername},
                 url: baseurl + '/visor/createfolder'
             }).then(function (result) {
                 //console.log(result);
-                if(result.error !== ''){
+                if (result.error !== '') {
                     Swal.showValidationMessage(result.error);
                     return false;
-                }else{
+                } else {
                     console.log(result);
                     getFolders();
                     return true;
@@ -294,7 +323,7 @@ function addFolder() {
         },
         allowOutsideClick: () => !Swal.isLoading()
     }).then((result) => {
-        
+
         if (result.isConfirmed) {
             Swal.fire({
                 icon: 'success',
@@ -304,7 +333,7 @@ function addFolder() {
     });
 }
 
-function addFile(){
+function addFile() {
     if (active_module == 0) {
         Swal.fire({
             icon: 'error',
@@ -325,10 +354,125 @@ function addFile(){
     $("#divfileupload").fadeIn(1000);
 }
 
+function search() {
+
+    var title = 'Búsqueda';
+    $("#actualfoldertitle").html(title);
+    $("#divfoldercontainer").hide();
+    $("#foldercontainer").html('');
+    $("#divfilecontainer").hide();
+    $("#filecontainer").html('');
+
+    var term = $("#txtsearch").val();
+
+    if (term.length < 3) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Búsqueda archivos',
+            text: 'Debe digitar una nombre de archivo para buscar.'
+        });
+        return;
+    }
+
+    $.ajax({
+        type: 'POST',
+        traditional: true,
+        data: {term: term},
+        url: baseurl + '/visor/getfilessearch'
+    }).then(function (result) {
+        //console.log(result);
+        processfiles(result, 1);
+    });
+
+}
+
+function renamefile(iddocument) {
+    console.log(iddocument);
+    Swal.fire({
+        title: 'Renombrar archivo',
+        text: 'Digite el nuevo nombre de archivo',
+        input: 'text',
+        inputAttributes: {
+            autocapitalize: 'off'
+        },
+        showCancelButton: true,
+        confirmButtonText: 'Renombrar',
+        showLoaderOnConfirm: true,
+        preConfirm: (newfilename) => {
+            return  $.ajax({
+                type: 'POST',
+                traditional: true,
+                data: {idmodule: active_module, idfolder: active_folder, idfile: iddocument, newname: newfilename},
+                url: baseurl + '/visor/renamefile'
+            }).then(function (result) {
+                //console.log(result);
+                if (result.error !== '') {
+                    Swal.showValidationMessage(result.error);
+                    return false;
+                } else {
+                    console.log(result);
+                    getFilesFolder();
+                    return true;
+                }
+            });
+        },
+        allowOutsideClick: () => !Swal.isLoading()
+    }).then((result) => {
+
+        if (result.isConfirmed) {
+            Swal.fire({
+                icon: 'success',
+                text: 'Archivo renombrado correctamente'
+            });
+        }
+    });
+}
+
+function deletefile(iddocument) {
+    console.log(iddocument);
+
+    Swal.fire({
+        title: 'Está seguro de eliminar el archivo?',
+        text: "No podrá recuperar el archivo!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Si, Eliminar el archivo!'
+    }).then((result) => {
+        if (result.isConfirmed) {            
+            $.ajax({
+                type: 'POST',
+                traditional: true,
+                data: {idfile: iddocument},
+                url: baseurl + '/visor/deletefile'
+            }).then(function (resultado) {
+                //console.log(result);
+                if (resultado.error !== '') {
+                    Swal.fire({
+                        icon: 'error',
+                        text: resultado.error
+                    });
+                } else {
+                    
+                    getFilesFolder();
+                    Swal.fire({
+                        icon: 'success',
+                        text: 'Archivo eliminado correctamente'
+                    });
+                }
+            });
+
+        }
+    });    
+}
+
+
+///DROPZONE
 Dropzone.autoDiscover = false;
 
 // init dropzone on id (form or div)
-$(document).ready(function() {
+$(document).ready(function () {
 
     var myDropzone = new Dropzone("#myDropzone", {
         url: baseurl + "/visor/upload",
@@ -354,15 +498,15 @@ $(document).ready(function() {
 
 Dropzone.options.myDropzone = {
     // The setting up of the dropzone
-    init: function() {
+    init: function () {
         var myDropzone = this;
 
         // First change the button to actually tell Dropzone to process the queue.
-        $("#dropzoneSubmit").on("click", function(e) {
+        $("#dropzoneSubmit").on("click", function (e) {
             // Make sure that the form isn't actually being sent.
             e.preventDefault();
             e.stopPropagation();
-            
+
             if (myDropzone.files != "") {
                 myDropzone.processQueue();
             } else {
@@ -372,27 +516,27 @@ Dropzone.options.myDropzone = {
         });
 
         // on add file
-        this.on("addedfile", function(file) {
+        this.on("addedfile", function (file) {
             // console.log(file);
         });
         // on error
-        this.on("error", function(file, response) {
+        this.on("error", function (file, response) {
             console.log(response);
-        });        
-        this.on('sending', function(file, xhr, formData){
+        });
+        this.on('sending', function (file, xhr, formData) {
             formData.append('active_module', active_module);
             formData.append('active_folder', active_folder);
         });
         // on start
-        this.on("sendingmultiple", function(file) {
-             // console.log(file);
+        this.on("sendingmultiple", function (file) {
+            // console.log(file);
         });
         // on complete
-        this.on("complete", function(file) { 
-            this.removeAllFiles(true); 
+        this.on("complete", function (file) {
+            this.removeAllFiles(true);
         });
         // on success
-        this.on("successmultiple", function(file) {
+        this.on("successmultiple", function (file) {
             // submit form
             $("#divfileupload").fadeOut(1000);
             getFilesFolder();

@@ -229,6 +229,47 @@ class VisorController extends \yii\web\Controller {
         }
     }
     
+     public function actionGetfilessearch() {
+        if (Yii::$app->request->isAjax) {
+
+            $input = Yii::$app->request->post();
+            $term = $input['term'];
+
+            $connection = Yii::$app->getDb();
+            
+            $sql = "SELECT `document`.`iddocument`,
+                    `document`.`name`,
+                    `document`.`path`,
+                    `document`.`level1name`,
+                    `document`.`relativename`,
+                    `document`.`fullname`,
+                    `document`.`date`,
+                    CASE
+                        WHEN ABS(`document`.`size`) < 1024 THEN CONCAT( ROUND( `document`.`size`, 2 ), ' Bytes')
+                        WHEN ABS(`document`.`size`) < 1048576 THEN CONCAT( ROUND( (`document`.`size`/1024), 2 ), ' KB')
+                        WHEN ABS(`document`.`size`) < 1073741824 THEN CONCAT( ROUND( (`document`.`size`/1048576), 2 ), ' MB')
+                        WHEN ABS(`document`.`size`) < 1099511627776 THEN CONCAT( ROUND( (`document`.`size`/1073741824), 2 ), ' GB' )
+                    END as size,
+                    `document`.`type`,
+                    `document`.`iddocumentType`,
+                    `document`.`idFolder`,
+                    `document`.`fileUploadedUserId`
+                    FROM document
+                    where `document`.`name` like '%$term%'
+                    order by `document`.`name`";
+
+            $command = $connection->createCommand($sql);
+            $files = $command->queryAll();
+            
+            $response = Yii::$app->response;
+            $response->format = \yii\web\Response::FORMAT_JSON;
+            $response->data = ['data' => $files];
+            $response->statusCode = 200;
+            return $response;
+        } else {
+            throw new \yii\web\BadRequestHttpException;
+        }
+    }
     
     public function actionUpload(){
 
@@ -326,11 +367,12 @@ class VisorController extends \yii\web\Controller {
         header('Expires: 0');
         header('Cache-Control: must-revalidate');
         header('Pragma: public');
+        header('Content-Length: ' . $file->size);            
+        header('Content-Disposition: inline; filename="'.$file->name.'"');
         
         if($d === 'true')
         {
             header('Content-Disposition: attachment; filename="'.$file->name.'"');
-            header('Content-Length: ' . $file->size);            
         }
         if($t == 'true'){
             return readfile($file->path . '/' . $file->fullname);
@@ -340,6 +382,91 @@ class VisorController extends \yii\web\Controller {
         }        
     }
     
+    
+    public function actionRenamefile() {
+        if (Yii::$app->request->isAjax) {
+
+            try {
+                $input = Yii::$app->request->post();
+                $idmodule = $input['idmodule'];
+                $idfolder = $input['idfolder'];
+                $iddocument = $input['idfile'];
+                $newname = $input['newname'];
+
+                if (preg_match('/[\'^£$%&*()}{@#~?><>,|=+¬]/', $newname))
+                {
+                     $returndata = ['data' => '', 'error' => 'El nombre del archivo tiene carácteres no válidos'];
+                     return $this->result($returndata);
+                }
+
+                //verifica si ya extiste
+                $existearchivo = Document::find()->where(['idFolder' => $idfolder,
+                            'LOWER(name)' => $newname])->exists();
+
+                if ($existearchivo) {
+                    $returndata = ['data' => '', 'error' => 'Ya existe una archivo con ese nombre'];
+                    return $this->result($returndata);
+                } 
+
+                $document = Document::find()->where(['iddocument'=>$iddocument])->one();
+
+                if(rename($document->path ."/".$document->name, $document->path ."/".$newname)){
+                    $document->relativename = str_replace($document->name, $newname, $document->relativename);
+                    $document->name = $newname;
+                    $document->fullname = $newname;
+                    $document->save();
+
+                    $returndata = ['data' => $newname, 'error' => ''];
+                    return $this->result($returndata);
+                }else{
+                    $returndata = ['data' => '', 'error' => 'No se puede renombrar el archivo'];
+                    return $this->result($returndata);                    
+                }                
+
+            } catch (Exception $ex) {
+                $returndata = ['data' => '', 'error' => $ex->getMessage()];
+                return $this->result($returndata);
+            }
+
+        } else {
+            throw new \yii\web\BadRequestHttpException;
+        }
+    }
+    
+    public function actionDeletefile() {
+        if (Yii::$app->request->isAjax) {
+
+            try {
+                $input = Yii::$app->request->post();
+                $iddocument = $input['idfile'];
+
+                $document = Document::find()->where(['iddocument'=>$iddocument])->one();
+                
+                if(!file_exists($document->path ."/".$document->name)){
+                    $returndata = ['data' => '', 'error' => 'No existe el archivo'];
+                    return $this->result($returndata);    
+                }
+                
+                if(unlink($document->path ."/".$document->name)){
+                    
+                    $document->delete();
+                    $returndata = ['data' => 'Archivo eliminado correctamente', 'error' => ''];
+                    return $this->result($returndata);
+
+                }else{
+                    $returndata = ['data' => '', 'error' => 'No se puede eliminar el archivo'];
+                    return $this->result($returndata);                    
+                }                
+
+            } catch (Exception $ex) {
+                $returndata = ['data' => '', 'error' => $ex->getMessage()];
+                return $this->result($returndata);
+            }
+
+        } else {
+            throw new \yii\web\BadRequestHttpException;
+        }
+    }    
 
     public function actionGetcontactsclient() {
         if (Yii::$app->request->isAjax) {
