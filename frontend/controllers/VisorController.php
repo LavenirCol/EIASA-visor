@@ -142,12 +142,13 @@ class VisorController extends \yii\web\Controller {
                 //crear en disco path
                 $fpath = "";
                 $idpfolder = $idparentfolder;
-                do {
-                  $pfolder=  Folder::find()->where(['idmodule' => $idmodule,'idfolder' => $idpfolder])->one();
-                  $fpath = $pfolder->folderName. '/'. $fpath;  
-                  $idpfolder = $pfolder->idParentFolder;
-                } while ($idpfolder > 0);
-
+                if($idpfolder > 0){
+                    do {
+                      $pfolder=  Folder::find()->where(['idmodule' => $idmodule,'idfolder' => $idpfolder])->one();
+                      $fpath = $pfolder->folderName. '/'. $fpath;  
+                      $idpfolder = $pfolder->idParentFolder;
+                    } while ($idpfolder > 0);
+                }
                 $modulo = Module::find()->where(['idmodule' => $idmodule])->one();
                 $fpath = $root_path . '/' . $modulo->moduleName. '/' . $fpath . '/' . $foldername;
 
@@ -398,7 +399,11 @@ class VisorController extends \yii\web\Controller {
                      $returndata = ['data' => '', 'error' => 'El nombre del archivo tiene carácteres no válidos'];
                      return $this->result($returndata);
                 }
-
+                
+                $document = Document::find()->where(['iddocument'=>$iddocument])->one();
+                $ext = $ext = substr(strrchr($document->name, '.'), 1);
+                $newname = $newname.'.'.$ext;
+                
                 //verifica si ya extiste
                 $existearchivo = Document::find()->where(['idFolder' => $idfolder,
                             'LOWER(name)' => $newname])->exists();
@@ -407,8 +412,6 @@ class VisorController extends \yii\web\Controller {
                     $returndata = ['data' => '', 'error' => 'Ya existe una archivo con ese nombre'];
                     return $this->result($returndata);
                 } 
-
-                $document = Document::find()->where(['iddocument'=>$iddocument])->one();
 
                 if(rename($document->path ."/".$document->name, $document->path ."/".$newname)){
                     $document->relativename = str_replace($document->name, $newname, $document->relativename);
@@ -468,6 +471,64 @@ class VisorController extends \yii\web\Controller {
         }
     }    
 
+    
+    public function actionDeletefolder() {
+        if (Yii::$app->request->isAjax) {
+
+            try {
+                $input = Yii::$app->request->post();
+                $idfolder = $input['idfolder'];
+
+                $actualfolder=  Folder::find()->where(['idfolder' => $idfolder])->one();
+                $idmodule = $actualfolder->idmodule;
+                $foldername =  $actualfolder->folderName;
+                $idparentfolder = $actualfolder->idParentFolder;
+
+                //directorio raiz
+                $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+                $root_path = $keyfolderraiz->value;
+
+                //crear en disco path
+                $fpath = "";
+                $idpfolder = $idparentfolder;
+                if($idpfolder > 0){
+                    do {
+                      $pfolder=  Folder::find()->where(['idmodule' => $idmodule,'idfolder' => $idpfolder])->one();
+                      $fpath = $pfolder->folderName. '/'. $fpath;  
+                      $idpfolder = $pfolder->idParentFolder;
+                    } while ($idpfolder > 0);
+                }
+                $modulo = Module::find()->where(['idmodule' => $idmodule])->one();
+                $vpath = Url::base(true). '/' . $modulo->moduleName. $fpath . '/' . $foldername;
+                $fpath = $root_path . '/' . $modulo->moduleName. $fpath . '/' . $foldername;
+                
+                if(!file_exists($$fpath)){
+                    $returndata = ['data' => '', 'error' => 'No existe la carpeta'];
+                    return $this->result($returndata);    
+                }
+                
+                if(unlink($document->path ."/".$document->name)){
+                    
+                    $document->delete();
+                    $returndata = ['data' => 'Archivo eliminado correctamente', 'error' => ''];
+                    return $this->result($returndata);
+
+                }else{
+                    $returndata = ['data' => '', 'error' => 'No se puede eliminar la carpeta'];
+                    return $this->result($returndata);                    
+                }                
+
+            } catch (Exception $ex) {
+                $returndata = ['data' => '', 'error' => $ex->getMessage()];
+                return $this->result($returndata);
+            }
+
+        } else {
+            throw new \yii\web\BadRequestHttpException;
+        }
+    }    
+
+    
     public function actionGetcontactsclient() {
         if (Yii::$app->request->isAjax) {
 

@@ -58,10 +58,10 @@ use \yii\helpers\Url;
         color: #0168fa;        
     }
     
-    .dropdown-file .dropdown-link svg{
+/*    .dropdown-file .dropdown-link svg{
         width: 25px;
         height: 25px;
-    }
+    }*/
 </style>
 <div class="filemgr-wrapper">
       <div class="filemgr-sidebar">

@@ -17,9 +17,9 @@ foldertemplate += '        <div class="dropdown-file">';
 foldertemplate += '             <a href="" class="dropdown-link" data-toggle="dropdown"><i data-feather="more-vertical"></i></a>';
 foldertemplate += '             <div class="dropdown-menu dropdown-menu-right">';
 foldertemplate += '                 <a href="#modalViewDetails" data-toggle="modal" class="dropdown-item details"><i data-feather="info"></i>Ver Detalles</a>';
-foldertemplate += '                 <a href="" class="dropdown-item download"><i data-feather="download"></i>Descargar</a>';
+//foldertemplate += '                 <a href="" class="dropdown-item download"><i data-feather="download"></i>Descargar</a>';
 //foldertemplate += '                 <a href="#" class="dropdown-item renamef"><i data-feather="edit"></i>Renombrar</a>';
-foldertemplate += '                 <a href="#" class="dropdown-item deletef"><i data-feather="trash"></i>Borrar</a>';
+//foldertemplate += '                 <a href="#" class="dropdown-item deletef"><i data-feather="trash"></i>Borrar</a>';
 foldertemplate += '              </div>';
 foldertemplate += '         </div><!-- dropdown -->';
 foldertemplate += '     </div><!-- media -->';
@@ -143,6 +143,20 @@ function getFolders() {
                 buildbreadcumbs($(this).html());
                 getFolders();
                 getFilesFolder();
+            });
+            
+            //renombrar folder
+            $(".renamef").off("click").on("click", function (e) {
+                e.preventDefault();
+                var idfolder = $(this).closest(".checkfolder").data("idfolder");
+                renamefolder(idfolder);
+            });
+
+            //eliminar folder
+            $(".deletef").off("click").on("click", function (e) {
+                e.preventDefault();
+                var idfolder = $(this).closest(".checkfolder").data("idfolder");
+                deletefolder(idfolder);
             });
         }
     });
@@ -386,11 +400,93 @@ function search() {
 
 }
 
+function renamefolder(idfolder) {
+    console.log(idfolder);
+    Swal.fire({
+        title: 'Renombrar carpeta',
+        text: 'Digite el nuevo nombre de carpeta',
+        input: 'text',
+        inputAttributes: {
+            autocapitalize: 'off'
+        },
+        showCancelButton: true,
+        confirmButtonText: 'Renombrar',
+        showLoaderOnConfirm: true,
+        preConfirm: (newfoldername) => {
+            return  $.ajax({
+                type: 'POST',
+                traditional: true,
+                data: {idmodule: active_module, idfolder: active_folder, newname: newfoldername},
+                url: baseurl + '/visor/renamefolder'
+            }).then(function (result) {
+                //console.log(result);
+                if (result.error !== '') {
+                    Swal.showValidationMessage(result.error);
+                    return false;
+                } else {
+                    console.log(result);
+                    getFolders();
+                    getFilesFolder();
+                    return true;
+                }
+            });
+        },
+        allowOutsideClick: () => !Swal.isLoading()
+    }).then((result) => {
+
+        if (result.isConfirmed) {
+            Swal.fire({
+                icon: 'success',
+                text: 'Carpeta renombrada correctamente'
+            });
+        }
+    });
+}
+
+function deletefolder(idfolder) {
+    console.log(idfolder);
+
+    Swal.fire({
+        title: 'Está seguro de eliminar esta carpeta?',
+        text: "No podrá recuperar el contenido de la carpeta!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Si, Eliminar la carpeta!'
+    }).then((result) => {
+        if (result.isConfirmed) {            
+            $.ajax({
+                type: 'POST',
+                traditional: true,
+                data: {idfolder: idfolfer},
+                url: baseurl + '/visor/deleteffolder'
+            }).then(function (resultado) {
+                //console.log(result);
+                if (resultado.error !== '') {
+                    Swal.fire({
+                        icon: 'error',
+                        text: resultado.error
+                    });
+                } else {
+                    
+                    getFilesFolder();
+                    Swal.fire({
+                        icon: 'success',
+                        text: 'Carpeta y su contenido eliminado correctamente'
+                    });
+                }
+            });
+
+        }
+    });    
+}
+
 function renamefile(iddocument) {
     console.log(iddocument);
     Swal.fire({
         title: 'Renombrar archivo',
-        text: 'Digite el nuevo nombre de archivo',
+        text: 'Digite el nuevo nombre de archivo (sin extensión)',
         input: 'text',
         inputAttributes: {
             autocapitalize: 'off'
@@ -466,7 +562,6 @@ function deletefile(iddocument) {
         }
     });    
 }
-
 
 ///DROPZONE
 Dropzone.autoDiscover = false;

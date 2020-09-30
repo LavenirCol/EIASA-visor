@@ -54,6 +54,7 @@ AppAsset::register($this);
         <li class="nav-item"><a href="<?php echo Url::toRoute('site/index'); ?>" class="nav-link"><i data-feather="home"></i> Inicio</a></li>
         <li class="nav-item"><a href="<?php echo Url::toRoute('reports/index'); ?>" class="nav-link"><i data-feather="box"></i> Reportes</a></li>
         <li class="nav-item"><a href="<?php echo Url::toRoute('visor/filemanager'); ?>" class="nav-link"><i data-feather="file-text"></i> File Manager</a></li>
+        <li class="nav-item"><a href="<?php echo Url::toRoute('user/index'); ?>" class="nav-link"><i data-feather="users"></i> Usuarios</a></li>
         <?php
           }
         ?>
