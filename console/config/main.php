@@ -14,12 +14,16 @@ return [
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
+        '@frontend' => dirname(__DIR__).'\frontend\web'
     ],
     'controllerMap' => [
         'fixture' => [
             'class' => 'yii\console\controllers\FixtureController',
             'namespace' => 'common\fixtures',
           ],
+//        'hello' => [
+//            'class' => 'yii\console\controllers\HelloController',
+//          ],
     ],
     'components' => [
         'log' => [

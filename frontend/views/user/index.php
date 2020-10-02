@@ -33,34 +33,37 @@ $this->params['breadcrumbs'][] = $this->title;
         <div class="user-index">
 
             <p>
-                <?= Html::a(Yii::t('app', 'Nuevo Usuario'), ['create'], ['class' => 'btn btn-success']) ?>
+                <?= Html::a(Yii::t('app', 'Nuevo Usuario'), ['site/signup'], ['class' => 'btn btn-success']) ?>
             </p>
 
-            <?php Pjax::begin(); ?>
-            <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
-
-            <?= GridView::widget([
-                'dataProvider' => $dataProvider,
-                'filterModel' => $searchModel,
-                'columns' => [
-                    ['class' => 'yii\grid\SerialColumn'],
-
-                    'id',
-                    'username',
-                    //'auth_key',
-                    //'password_hash',
-                    //'password_reset_token',
-                    'email:email',
-                    'status',
-                    'created_at',
-                    'updated_at',
-                    //'verification_token',
-
-                    ['class' => 'yii\grid\ActionColumn'],
-                ],
-            ]); ?>
-
-            <?php Pjax::end(); ?>
+            <table class="table table-condensed table-striped dataTable" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Estado</th>
+                        <th>Creado En</th>
+                        <th>Perfil</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach((array) $users as $user){ ?>
+                    <tr>
+                        <th><?php echo $user['id'] ?></th>
+                        <th><?php echo $user['username'] ?></th>
+                        <th><?php echo $user['email'] ?></th>
+                        <th><?php echo $user['status'] ?></th>
+                        <th><?php echo gmdate("Y-m-d H:i:s", $user['created_at']); ?></th>
+                        <th><?php echo $user['name'] ?></th>
+                    </tr>
+                    
+                    <?php 
+                    }
+                    //var_dump($users);
+                    ?>
+                </tbody>
+            </table>
 
         </div>
 

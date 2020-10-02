@@ -35,13 +35,34 @@ class UserController extends Controller
      */
     public function actionIndex()
     {
-        $searchModel = new UserSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+//        $searchModel = new UserSearch();
+//        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+//
+//        return $this->render('index', [
+//            'searchModel' => $searchModel,
+//            'dataProvider' => $dataProvider,
+//        ]);
+        
+        $connection = Yii::$app->getDb();
+            
+            $sql = "SELECT `user`.`id`,
+                    `user`.`username`,
+                    `user`.`auth_key`,
+                    `user`.`password_hash`,
+                    `user`.`password_reset_token`,
+                    `user`.`email`,
+                    `user`.`status`,
+                    `user`.`created_at`,
+                    `user`.`updated_at`,
+                    `user`.`verification_token`,
+                    `user`.`idProfile`,
+                        `profiles`.`name`
+                FROM `user` inner join `profiles` on   `user`.`idProfile` =   `profiles`.`id`";
 
-        return $this->render('index', [
-            'searchModel' => $searchModel,
-            'dataProvider' => $dataProvider,
-        ]);
+            $command = $connection->createCommand($sql);
+            $users = $command->queryAll();
+        
+        return $this->render('index', ['users' => $users]);
     }
 
     /**

@@ -150,7 +150,7 @@ class VisorController extends \yii\web\Controller {
                     } while ($idpfolder > 0);
                 }
                 $modulo = Module::find()->where(['idmodule' => $idmodule])->one();
-                $fpath = $root_path . '/' . $modulo->moduleName. '/' . $fpath . '/' . $foldername;
+                $fpath = $root_path . '/' . $modulo->moduleName. '/' . $fpath . $foldername;
 
                 $rights=0777;
                 $dirs = explode('/', $fpath);
@@ -289,16 +289,18 @@ class VisorController extends \yii\web\Controller {
             //crear en disco path
             $fpath = "";
             $idpfolder = $idparentfolder;
+            $modulo = Module::find()->where(['idmodule' => $idmodule])->one();
             if($idpfolder > 0){
                 do {
                   $pfolder=  Folder::find()->where(['idmodule' => $idmodule,'idfolder' => $idpfolder])->one();
                   $fpath = $pfolder->folderName. '/'. $fpath;  
                   $idpfolder = $pfolder->idParentFolder;
                 } while ($idpfolder > 0);
+                $vpath = Url::base(true). '/' . $modulo->moduleName. '/' . $fpath. $foldername;
+                $fpath = $root_path . '/' . $modulo->moduleName. '/' . $fpath . $foldername;
+            }else{
+                
             }
-            $modulo = Module::find()->where(['idmodule' => $idmodule])->one();
-            $vpath = Url::base(true). '/' . $modulo->moduleName. $fpath . '/' . $foldername;
-            $fpath = $root_path . '/' . $modulo->moduleName. $fpath . '/' . $foldername;
             
             $rights=0777;
             $dirs = explode('/', $fpath);
