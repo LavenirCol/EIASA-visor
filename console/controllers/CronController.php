@@ -7,6 +7,7 @@ use yii\helpers\Console;
 use yii\helpers\BaseConsole;
 
 use app\models\Client;
+use app\models\Contract;
 use app\models\Document;
 use app\models\Documenttype;
 use app\models\Folder;
@@ -14,7 +15,10 @@ use app\models\Module;
 use app\models\Settings;
 
 class CronController extends Controller {
-    // Example of function to call a REST API
+    
+    /*
+     * ejecucion API dollibar
+     */
     function callAPI($method, $entity, $data = false)
     {
         //prod
@@ -75,6 +79,84 @@ class CronController extends Controller {
         return $result;
     }
     
+    /*
+     * Crea un nuevo folde en disco y base de datos
+     */
+    function Createfolder($idmodule, $idparentfolder, $foldername) {
+        try {
+
+            if (preg_match('/[\'^£$%&*()}{@#~?><>,|=+¬]/', $foldername))
+            {
+                 $returndata = ['data' => '', 'error' => 'El nombre de la carpeta tiene carácteres no válidos'];
+                 return $returndata;
+            }
+
+            //verifica si ya extiste
+            $existefolder = Folder::find()->where(['idmodule' => $idmodule,
+                        'idParentFolder' => $idparentfolder,
+                        'LOWER(folderName)' => $foldername])->exists();
+
+            if ($existefolder) {
+                $returndata = ['data' => '', 'error' => 'Ya existe una carpeta con ese nombre'];
+                return $returndata;
+            } 
+
+            //varifica directorio raiz
+            $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+            $root_path = $keyfolderraiz->value;
+            if (!@is_dir($root_path)) {
+
+                $returndata = ['data' => '', 'error' => 'Directorio raíz no encontrado! '.$root_path];
+                return $returndata;
+            }
+
+            //crear en disco path
+            $fpath = "";
+            $idpfolder = $idparentfolder;
+            if($idpfolder > 0){
+                do {
+                  $pfolder=  Folder::find()->where(['idmodule' => $idmodule,'idfolder' => $idpfolder])->one();
+                  $fpath = $pfolder->folderName. '/'. $fpath;  
+                  $idpfolder = $pfolder->idParentFolder;
+                } while ($idpfolder > 0);
+            }
+            $modulo = Module::find()->where(['idmodule' => $idmodule])->one();
+            $fpath = $root_path . '/' . $modulo->moduleName. '/' . $fpath . $foldername;
+
+            $rights=0777;
+            $dirs = explode('/', $fpath);
+            $dir='';
+            foreach ($dirs as $part) {
+                $dir.=$part.'/';
+                if (!is_dir($dir) && strlen($dir)>0){
+                    mkdir($dir, $rights);
+                }
+            }
+
+            //crear en base de datos
+            $newfolder = new Folder();
+            $newfolder->folderName= $foldername;
+            $newfolder->folderDefault = 1; //syncfolder
+            $newfolder->idParentFolder = $idparentfolder;
+            $newfolder->folderCreationDate = date("Y-m-d H:i:s");
+            $newfolder->folderCreationUserId = 1;//Administrator Yii::$app->user->id;
+            $newfolder->folderReadOnly = 0;
+            $newfolder->idmodule = $idmodule;
+
+            $newfolder->save();
+
+            $returndata = ['data' => $newfolder, 'error' => ''];
+            return $returndata;
+
+        } catch (Exception $ex) {
+            $returndata = ['data' => '', 'error' => $ex->getMessage()];
+            return $returndata;
+        }
+    }   
+    
+    /*
+     *  funcion publica de inicio cron
+     */    
     public function actionSyncdata() {
         echo "Inicio cron job \n"; // your logic for deleting old post goes here
         echo "Consultando Clientes...\n"; // your logic for deleting old post goes here
@@ -122,12 +204,40 @@ class CronController extends Controller {
                             )
                     ), true);
                     
-                    if(!isset($contracts)){
+                    echo "procesando contratos \n";
+                    if(isset($contracts)){
                         foreach ((array)$contracts as $contract) {
                                                 
                             // crea folder de cliente en modulo suscriptores
+                            $idmodule = 1; //suscriptores
+                            $suscfolder = $this->Createfolder($idmodule, 0, $contract['ref']);
+                            if($suscfolder['error'] == ""){
+                                // crea contract
+                                $newcontracts = new Contract();
+                                $newcontracts->id = $contract['id'];
+                                $newcontracts->entity = $contract['entity'];
+                                $newcontracts->socid = $contract['socid'];
+                                $newcontracts->ref = $contract['ref'];
+                                $newcontracts->fk_soc = $contract['fk_soc'];
+                                $newcontracts->idFolder = $suscfolder['data']->idfolder;
+                                $newcontracts->save(false);
+                            }
+                            
                             // crea folder de cliente en modulo facturacion
-                            // crea contract
+                            $idmodule = 2; //facturacion
+                            $factfolder = $this->Createfolder($idmodule, 0, $contract['ref']);
+                            if($factfolder['error'] == ''){
+                                // crea contract
+                                $newcontractf = new Contract();
+                                $newcontractf->id = $contract['id'];
+                                $newcontractf->entity = $contract['entity'];
+                                $newcontractf->socid = $contract['socid'];
+                                $newcontractf->ref = $contract['ref'];
+                                $newcontractf->fk_soc = $contract['fk_soc'];
+                                $newcontractf->idFolder = $factfolder['data']->idfolder;
+                                $newcontractf->save(false);
+                            }
+
 
                         }
                     }

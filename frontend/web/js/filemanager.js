@@ -93,8 +93,8 @@ $(document).ready(function () {
             $("#divtablasuscriptores").show();
             $('#divtablasuscriptores').off('click').on('click', 'button.selectsuscriptor', function () {
                 var idcliente = $(this).data("idcliente");
-                //TODO: get folders client
-                getFoldersModule(idcliente);
+                //get folders client
+                getFolders(idcliente);
             });
 
         } else {
@@ -105,15 +105,17 @@ $(document).ready(function () {
 
 });
 
-function getFolders() {
-
+function getFolders(idcliente) {
+    if(idcliente === undefined){
+        idcliente = 0;
+    }   
     $("#divfoldercontainer").hide();
     $("#divfilecontainer").hide();
     $("#filecontainer").html('');
     $.ajax({
         type: 'POST',
         traditional: true,
-        data: {idmodule: active_module, idfolder: active_folder},
+        data: {idmodule: active_module, idfolder: active_folder, idcliente: idcliente},
         url: baseurl + '/visor/getfolders'
     }).then(function (result) {
         //console.log(result);

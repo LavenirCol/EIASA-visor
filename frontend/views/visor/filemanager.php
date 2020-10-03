@@ -157,7 +157,7 @@ use \yii\helpers\Url;
           </nav>
         </div><!-- filemgr-content-header -->
         <div class="filemgr-content-body">
-          <div class="pd-20 pd-lg-25 pd-xl-30">
+          <div class="pd-20 pd-lg-25 pd-xl-30" style="margin-bottom:150px">
             <h4 class="mg-b-15 mg-lg-b-25" id="actualfoldertitle"></h4>
             <nav aria-label="breadcrumb">
               <ol class="breadcrumb mg-b-0">
@@ -174,6 +174,8 @@ use \yii\helpers\Url;
                     <thead>
                         <tr>
                             <th>Código Cliente</th>
+                            <th>Código Acceso</th>
+                            <th>Cédula</th>
                             <th>Nombres</th>
                             <th>Departamento</th>
                             <th>Municipio</th>
@@ -184,16 +186,20 @@ use \yii\helpers\Url;
                         </tr>
                     </thead>
                     <tbody>
+                        <?php foreach((array)$clientes as $cliente){ ?>
                         <tr>
-                            <td>CU2007-00003</td>
-                            <td>Gustavo Barragan</td>
-                            <td>Colombia - Bogotá</td>
-                            <td>Bogotá DC</td>
-                            <td>CAlle 71 a # 91A 33</td>
-                            <td>3143390071</td>
-                            <td>gustavoabarragn@lavenir.com.co</td>
-                            <td><button class="btn btn-primary btn-sm selectsuscriptor" data-idcliente="1" >Seleccionar</button></td>
-                        </tr> 
+                            <td><?php echo $cliente['code_client'] ?></td>
+                            <td><?php echo $cliente['access_id'] ?></td>
+                            <td><?php echo $cliente['idprof1'] ?></td>
+                            <td><?php echo $cliente['name'] ?></td>
+                            <td><?php echo $cliente['state'] ?></td>
+                            <td><?php echo $cliente['town'] ?></td>
+                            <td><?php echo $cliente['address'] ?></td>
+                            <td><?php echo $cliente['phone'] ?></td>
+                            <td><?php echo $cliente['email'] ?></td>
+                            <td><button class="btn btn-primary btn-sm selectsuscriptor" data-idcliente="<?php echo $cliente['idClient'] ?>" >Seleccionar</button></td>
+                        </tr>
+                        <?php } ?>
                     </tbody>
                 </table>            
             </div>

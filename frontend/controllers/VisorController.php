@@ -55,10 +55,13 @@ class VisorController extends \yii\web\Controller {
 
         $sizes = $connection->createCommand($sql)->queryOne();
 
+        $clientes = Client::find()->indexBy('idClient')->all();
+
         return $this->render('filemanager', array('modulos' => $modulos,
                 'assignedsize' => $keyassignedsize->value,
                 'actualsize' => $sizes['actualsize'],
-                'sizeingb' => $sizes['sizeingb']));
+                'sizeingb' => $sizes['sizeingb'],
+                'clientes'=> $clientes));
     }
 
     public function actionGetfolders() {
@@ -67,6 +70,7 @@ class VisorController extends \yii\web\Controller {
             $input = Yii::$app->request->post();
             $idmodule = $input['idmodule'];
             $idparentfolder = $input['idfolder'];
+            $idcliente = $input['idcliente'];
             //$folders = Folder::find()->where(['idmodule' => $idmodule, 'idParentFolder' => $idparentfolder])->orderBy('folderName')->all();
 
             $connection = Yii::$app->getDb();
@@ -299,7 +303,8 @@ class VisorController extends \yii\web\Controller {
                 $vpath = Url::base(true). '/' . $modulo->moduleName. '/' . $fpath. $foldername;
                 $fpath = $root_path . '/' . $modulo->moduleName. '/' . $fpath . $foldername;
             }else{
-                
+                $vpath = Url::base(true). '/' . $modulo->moduleName. '/' . $fpath. $foldername;
+                $fpath = $root_path . '/' . $modulo->moduleName. '/' . $fpath . $foldername;
             }
             
             $rights=0777;
@@ -315,6 +320,7 @@ class VisorController extends \yii\web\Controller {
             foreach($_FILES['file']['tmp_name'] as $key => $value) {
                 $tempFile = $_FILES['file']['tmp_name'][$key];
                 $targetFile =  $fpath.'/'. $_FILES['file']['name'][$key];
+                //var_dump($targetFile);exit;
                 move_uploaded_file($tempFile,$targetFile);
                 
                 // adicionar FILE a BD
