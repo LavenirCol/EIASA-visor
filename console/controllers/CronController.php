@@ -32,11 +32,11 @@ class CronController extends Controller {
 
     function callAPI($method, $entity, $data = false) {
         //prod
-        //$apikey = 'gFmK1A57ZQolc0V33727Jo4ohxyAGIPh';
-        //$url = 'https://megayacrm.lavenirapps.co/api/index.php/'.$entity;
+        $apikey = 'gFmK1A57ZQolc0V33727Jo4ohxyAGIPh';
+        $url = 'https://megayacrm.lavenirapps.co/api/index.php/'.$entity;
         //dev
-        $apikey = '1bo1dgm0B4Xd48nW3iNZXvaJh1AXCH36';
-        $url = 'https://eiasa-dev.lavenirapps.co/api/index.php/' . $entity;
+        //$apikey = '1bo1dgm0B4Xd48nW3iNZXvaJh1AXCH36';
+        //$url = 'https://eiasa-dev.lavenirapps.co/api/index.php/' . $entity;
         $curl = curl_init();
         $httpheader = ['DOLAPIKEY: ' . $apikey];
 
@@ -251,46 +251,49 @@ class CronController extends Controller {
         foreach ((array) $contracts as $contract) {
 
             // crea folder de cliente en modulo suscriptores                        
-            $suscfolder = $this->Createfolder($this->idmodulesusc, 0, $contract['ref']);
+            if(isset($contract['ref'])){
+                $suscfolder = $this->Createfolder($this->idmodulesusc, 0, $contract['ref']);
 
-            if ($suscfolder['error'] == "") {
-                //crear disco path
-                $fpath = $this->root_path . '/' . $this->modulosusc->moduleName . '/' . $suscfolder['data']->folderName;
-                $vpath = $this->root_vpath . '/' . $this->modulosusc->moduleName. '/' . $suscfolder['data']->folderName . '/';
+                if ($suscfolder['error'] == "") {
+                    //crear disco path
+                    $fpath = $this->root_path . '/' . $this->modulosusc->moduleName . '/' . $suscfolder['data']->folderName;
+                    $vpath = $this->root_vpath . '/' . $this->modulosusc->moduleName. '/' . $suscfolder['data']->folderName . '/';
 
-                // crea contract
-                $newcontracts = new Contract();
-                $newcontracts->id = $contract['id'];
-                $newcontracts->entity = $contract['entity'];
-                $newcontracts->socid = $contract['socid'];
-                $newcontracts->ref = $contract['ref'];
-                $newcontracts->fk_soc = $contract['fk_soc'];
-                $newcontracts->idFolder = $suscfolder['data']->idfolder;
-                $newcontracts->save(false);
+                    // crea contract
+                    $newcontracts = new Contract();
+                    $newcontracts->id = $contract['id'];
+                    $newcontracts->entity = $contract['entity'];
+                    $newcontracts->socid = $contract['socid'];
+                    $newcontracts->ref = $contract['ref'];
+                    $newcontracts->fk_soc = $contract['fk_soc'];
+                    $newcontracts->idFolder = $suscfolder['data']->idfolder;
+                    $newcontracts->save(false);
 
-                // consulta documentos contract
-                $documents = json_decode($this->CallAPI("GET", "documents", array(
-                            "modulepart" => "contract",
-                            "sortfield" => "name",
-                            "sortorder" => "ASC",
-                            "id" => $contract['id']
-                                )
-                        ), true);
+                    // consulta documentos contract
+                    $documents = json_decode($this->CallAPI("GET", "documents", array(
+                                "modulepart" => "contract",
+                                "sortfield" => "name",
+                                "sortorder" => "ASC",
+                                "id" => $contract['id']
+                                    )
+                            ), true);
 
-                echo "procesando documents contract (". sizeof($documents) .")\n";
-                foreach ((array) $documents as $document) {
-                    //var_dump($document);                                                                                
-                    $newdocument = new Document();
-                    $newdocument->attributes = $document;
-                    $newdocument->date = gmdate("Y-m-d H:i:s", $document['date']);
-                    $newdocument->iddocumentType = 2; // documento contract
-                    $newdocument->idFolder = $suscfolder['data']->idfolder;
-                    $newdocument->type = 'pending';
-                    $newdocument->path = $fpath;
-                    $newdocument->relativename = $vpath . $document['name'];
-                    $newdocument->save(false);
-                }                                               
+                    echo "procesando documents contract (". sizeof($documents) .")\n";
+                    foreach ((array) $documents as $document) {
+                        //var_dump($document);                                                                                
+                        $newdocument = new Document();
+                        $newdocument->attributes = $document;
+                        $newdocument->date = gmdate("Y-m-d H:i:s", $document['date']);
+                        $newdocument->iddocumentType = 2; // documento contract
+                        $newdocument->idFolder = $suscfolder['data']->idfolder;
+                        $newdocument->type = 'pending';
+                        $newdocument->path = $fpath;
+                        $newdocument->relativename = $vpath . $document['name'];
+                        $newdocument->save(false);
+                    }                                               
+                }
             }
+            
         }
     }
 
@@ -311,45 +314,47 @@ class CronController extends Controller {
         echo "procesando proposals (". sizeof($proposals) .")\n";
         foreach ((array) $proposals as $proposal) {
 
-            // crea folder de cliente en modulo suscriptores                        
-            $suscfolder = $this->Createfolder($this->idmodulesusc, 0, $proposal['ref']);
+            if(isset($proposal['ref'])){
+                // crea folder de cliente en modulo suscriptores                        
+                $suscfolder = $this->Createfolder($this->idmodulesusc, 0, $proposal['ref']);
 
-            if ($suscfolder['error'] == "") {
-                //crear disco path
-                $fpath = $this->root_path . '/' . $this->modulosusc->moduleName . '/' . $suscfolder['data']->folderName;
-                $vpath = $this->root_vpath . '/' . $this->modulosusc->moduleName. '/' . $suscfolder['data']->folderName . '/';
+                if ($suscfolder['error'] == "") {
+                    //crear disco path
+                    $fpath = $this->root_path . '/' . $this->modulosusc->moduleName . '/' . $suscfolder['data']->folderName;
+                    $vpath = $this->root_vpath . '/' . $this->modulosusc->moduleName. '/' . $suscfolder['data']->folderName . '/';
 
-                // crea proposal
-                $newproposal = new Proposal();
-                $newproposal->id = $proposal['id'];
-                $newproposal->entity = $proposal['entity'];
-                $newproposal->socid = $proposal['socid'];
-                $newproposal->ref = $proposal['ref'];
-                $newproposal->idFolder = $suscfolder['data']->idfolder;
-                $newproposal->save(false);
+                    // crea proposal
+                    $newproposal = new Proposal();
+                    $newproposal->id = $proposal['id'];
+                    $newproposal->entity = $proposal['entity'];
+                    $newproposal->socid = $proposal['socid'];
+                    $newproposal->ref = $proposal['ref'];
+                    $newproposal->idFolder = $suscfolder['data']->idfolder;
+                    $newproposal->save(false);
 
-                // consulta documentos proposal
-                $documents = json_decode($this->CallAPI("GET", "documents", array(
-                            "modulepart" => "proposal",
-                            "sortfield" => "name",
-                            "sortorder" => "ASC",
-                            "id" => $proposal['id']
-                                )
-                        ), true);
+                    // consulta documentos proposal
+                    $documents = json_decode($this->CallAPI("GET", "documents", array(
+                                "modulepart" => "proposal",
+                                "sortfield" => "name",
+                                "sortorder" => "ASC",
+                                "id" => $proposal['id']
+                                    )
+                            ), true);
 
-                echo "procesando documents proposal (". sizeof($documents) .")\n";
-                foreach ((array) $documents as $document) {
-                    //var_dump($document);                                                                                
-                    $newdocument = new Document();
-                    $newdocument->attributes = $document;
-                    $newdocument->date = gmdate("Y-m-d H:i:s", $document['date']);
-                    $newdocument->iddocumentType = 3; // documento proposal
-                    $newdocument->idFolder = $suscfolder['data']->idfolder;
-                    $newdocument->type = 'pending';
-                    $newdocument->path = $fpath;
-                    $newdocument->relativename = $vpath . $document['name'];
-                    $newdocument->save(false);
-                }                                               
+                    echo "procesando documents proposal (". sizeof($documents) .")\n";
+                    foreach ((array) $documents as $document) {
+                        //var_dump($document);                                                                                
+                        $newdocument = new Document();
+                        $newdocument->attributes = $document;
+                        $newdocument->date = gmdate("Y-m-d H:i:s", $document['date']);
+                        $newdocument->iddocumentType = 3; // documento proposal
+                        $newdocument->idFolder = $suscfolder['data']->idfolder;
+                        $newdocument->type = 'pending';
+                        $newdocument->path = $fpath;
+                        $newdocument->relativename = $vpath . $document['name'];
+                        $newdocument->save(false);
+                    }                                               
+                }
             }
         }
     }
@@ -371,45 +376,48 @@ class CronController extends Controller {
         echo "procesando invoices (". sizeof($invoices) .")\n";
         foreach ((array) $invoices as $invoice) {
 
-            // crea folder de cliente en modulo suscriptores                        
-            $suscfolder = $this->Createfolder($this->idmodulefact, 0, $invoice['ref']);
+            if(isset( $invoice['ref'])){
+                // crea folder de cliente en modulo suscriptores                        
+                $suscfolder = $this->Createfolder($this->idmodulefact, 0, $invoice['ref']);
 
-            if ($suscfolder['error'] == "") {
-                //crear disco path
-                $fpath = $this->root_path . '/' . $this->modulofact->moduleName . '/' . $suscfolder['data']->folderName;
-                $vpath = $this->root_vpath . '/' . $this->modulofact->moduleName. '/' . $suscfolder['data']->folderName . '/';
+                if ($suscfolder['error'] == "") {
+                    //crear disco path
+                    $fpath = $this->root_path . '/' . $this->modulofact->moduleName . '/' . $suscfolder['data']->folderName;
+                    $vpath = $this->root_vpath . '/' . $this->modulofact->moduleName. '/' . $suscfolder['data']->folderName . '/';
 
-                // crea invoice
-                $newinvoice = new Invoices();
-                $newinvoice->id = $invoice['id'];
-                $newinvoice->entity = $invoice['entity'];
-                $newinvoice->socid = $invoice['socid'];
-                $newinvoice->ref = $invoice['ref'];
-                $newinvoice->idFolder = $suscfolder['data']->idfolder;
-                $newinvoice->save(false);
+                    // crea invoice
+                    $newinvoice = new Invoices();
+                    $newinvoice->id = $invoice['id'];
+                    $newinvoice->entity = $invoice['entity'];
+                    $newinvoice->socid = $invoice['socid'];
+                    $newinvoice->ref = $invoice['ref'];
+                    $newinvoice->idFolder = $suscfolder['data']->idfolder;
+                    $newinvoice->save(false);
 
-                // consulta documentos invoices
-                $documents = json_decode($this->CallAPI("GET", "documents", array(
-                            "modulepart" => "invoice",
-                            "sortfield" => "name",
-                            "sortorder" => "ASC",
-                            "id" => $invoice['id']
-                                )
-                        ), true);
+                    // consulta documentos invoices
+                    $documents = json_decode($this->CallAPI("GET", "documents", array(
+                                "modulepart" => "invoice",
+                                "sortfield" => "name",
+                                "sortorder" => "ASC",
+                                "id" => $invoice['id']
+                                    )
+                            ), true);
 
-                echo "procesando documents proposal (". sizeof($documents) .")\n";
-                foreach ((array) $documents as $document) {
-                    //var_dump($document);                                                                                
-                    $newdocument = new Document();
-                    $newdocument->attributes = $document;
-                    $newdocument->date = gmdate("Y-m-d H:i:s", $document['date']);
-                    $newdocument->iddocumentType = 4; // documento invoices
-                    $newdocument->idFolder = $suscfolder['data']->idfolder;
-                    $newdocument->type = 'pending';
-                    $newdocument->path = $fpath;
-                    $newdocument->relativename = $vpath . $document['name'];
-                    $newdocument->save(false);
-                }                                               
+                    echo "procesando documents proposal (". sizeof($documents) .")\n";
+                    foreach ((array) $documents as $document) {
+                        //var_dump($document);                                                                                
+                        $newdocument = new Document();
+                        $newdocument->attributes = $document;
+                        $newdocument->date = gmdate("Y-m-d H:i:s", $document['date']);
+                        $newdocument->iddocumentType = 4; // documento invoices
+                        $newdocument->idFolder = $suscfolder['data']->idfolder;
+                        $newdocument->type = 'pending';
+                        $newdocument->path = $fpath;
+                        $newdocument->relativename = $vpath . $document['name'];
+                        $newdocument->save(false);
+                    }                                               
+                }
+            
             }
         }
     }
