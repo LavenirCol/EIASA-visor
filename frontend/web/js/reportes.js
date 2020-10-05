@@ -8,8 +8,8 @@ $(document).ready(function(){
     //table settings
     $.extend(true, $.fn.dataTable.defaults, {
         "searching": true,
-        "ordering": false,
-        "pageLength": 10,
+        "ordering": true,
+        "pageLength": 5,
         "autoWidth": true,
         "language": {
             "sProcessing": "Procesando...",

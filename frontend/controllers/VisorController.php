@@ -72,7 +72,13 @@ class VisorController extends \yii\web\Controller {
             $idparentfolder = $input['idfolder'];
             $idcliente = $input['idcliente'];
             //$folders = Folder::find()->where(['idmodule' => $idmodule, 'idParentFolder' => $idparentfolder])->orderBy('folderName')->all();
-
+            if((int)$idmodule === 1 || (int)$idmodule === 2){ // suscriptores -facturacion
+                if((int)$idcliente === 0)
+                {
+                    $idparentfolder = -1;
+                }
+            }
+            
             $connection = Yii::$app->getDb();
             
             $sql = "SELECT f.`idfolder`,
@@ -91,9 +97,21 @@ class VisorController extends \yii\web\Controller {
                   WHEN ABS(sum(d.size)) < 1099511627776 THEN CONCAT( ROUND( (sum(d.size)/1073741824), 2 ), ' GB' )
                 END as size
                FROM folder f
-            left join document d on f.idfolder = d.idFolder
-            where f.idmodule = $idmodule and idParentFolder = $idparentfolder
-            group by f.`idfolder`,  f.`folderName`,  f.`folderDefault`,  f.`idParentFolder`,  f.`folderCreationDate`,  f.`folderCreationUserId`,  f.`folderReadOnly`,  f.`idmodule`
+            left join document d on f.idfolder = d.idFolder 
+            where f.idmodule = $idmodule and idParentFolder = $idparentfolder ";
+            
+            if((int)$idcliente > 0 && (int)$idmodule === 1 ) //suscriptores
+            {
+                $sql = $sql . " and (d.idfolder in ( select idFolder from contract co where co.fk_soc = '$idcliente' )";
+                $sql = $sql . " or d.idfolder in ( select idFolder from proposal pr where pr.socid = '$idcliente' ))";
+            }
+            
+            if((int)$idcliente > 0 && (int)$idmodule === 2 ) // facturacion
+            {
+                $sql = $sql . " and d.idfolder in ( select idFolder from invoices inv where inv.socid = '$idcliente' )";
+            }
+            
+            $sql = $sql . " group by f.`idfolder`,  f.`folderName`,  f.`folderDefault`,  f.`idParentFolder`,  f.`folderCreationDate`,  f.`folderCreationUserId`,  f.`folderReadOnly`,  f.`idmodule`
             order by f.folderName";
 
             $command = $connection->createCommand($sql);
@@ -384,10 +402,10 @@ class VisorController extends \yii\web\Controller {
             header('Content-Disposition: attachment; filename="'.$file->name.'"');
         }
         if($t == 'true'){
-            return readfile($file->path . '/' . $file->fullname);
+            return readfile($file->path . '/' . $file->name);
 
         }else{
-            return readfile($file->path . '/' . $file->fullname);
+            return readfile($file->path . '/' . $file->name);
         }        
     }
     

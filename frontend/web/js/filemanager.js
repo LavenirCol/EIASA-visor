@@ -94,6 +94,7 @@ $(document).ready(function () {
             $('#divtablasuscriptores').off('click').on('click', 'button.selectsuscriptor', function () {
                 var idcliente = $(this).data("idcliente");
                 //get folders client
+                active_folder = 0; // siempre en = para buscar en clientes
                 getFolders(idcliente);
             });
 
