@@ -181,7 +181,10 @@ class CronController extends Controller {
         $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
         
         echo "Consultando Clientes...\n"; // your logic for deleting old post goes here
-        $this->syncClients();
+        $limit = 3000;
+        for ($i = 1; $i <= 10; $i++) {
+            $this->syncClients($limit, $i);
+        }
         // sincroniza archivos
         echo "Sincronizando Archivos...\n"; // your logic for deleting old post goes here
         $this->syncFiles();
@@ -192,20 +195,22 @@ class CronController extends Controller {
      * Sincroniza clientes, contratos y crea folders sucriptores y facturacion
      */
 
-    public function syncClients() {        
+    public function syncClients($limit,$page) {        
         // consulta lista de clientes
         $clientSearch = json_decode($this->CallAPI("GET", "thirdparties", array(
                     "sortfield" => "t.rowid",
                     "sortorder" => "ASC",
                     "mode" => "1",
+                    "limit" => $limit,
+                    "page" => $page,
                     "sqlfilters" => "(t.idprof6 != '')"
                         )
                 ), true);
 
         if (isset($clientSearch["error"]) && $clientSearch["error"]["code"] >= "300") {
-            echo "Error Clientes " . $clientSearch["error"]["message"] . "\n";
+            echo "($page) Error Clientes " . $clientSearch["error"]["message"] . "\n";
         } else {
-            echo "Clientes Encontrados: " . sizeof($clientSearch) . "\n";
+            echo "($page) Clientes Encontrados: " . sizeof($clientSearch) . "\n";
             foreach ((array) $clientSearch as $client) {                
                 echo "----------------------------------------\n";
                 echo "Inicio Cliente ".date("Y-m-d H:i:s"). "\n";
@@ -285,20 +290,28 @@ class CronController extends Controller {
                                 "id" => $contract['id']
                                     )
                             ), true);
+                    
+                    if (isset($proposals["error"]) && $proposals["error"]["code"] >= 300) {
+                        echo "procesando documents contract (0)\n";
+                        
+                    }else{
 
-                    echo "procesando documents contract (". sizeof($documents) .")\n";
-                    foreach ((array) $documents as $document) {
-                        //var_dump($document);                                                                                
-                        $newdocument = new Document();
-                        $newdocument->attributes = $document;
-                        $newdocument->date = gmdate("Y-m-d H:i:s", $document['date']);
-                        $newdocument->iddocumentType = 2; // documento contract
-                        $newdocument->idFolder = $suscfolder['data']->idfolder;
-                        $newdocument->type = 'pending';
-                        $newdocument->path = $fpath;
-                        $newdocument->relativename = $vpath . $document['name'];
-                        $newdocument->save(false);
-                    }                                               
+                        echo "procesando documents contract (". sizeof($documents) .")\n";
+                        foreach ((array) $documents as $document) {
+                            //var_dump($document);
+                            if(isset($document['name'])){
+                                $newdocument = new Document();
+                                $newdocument->attributes = $document;
+                                $newdocument->date = isset($document['date']) ? gmdate("Y-m-d H:i:s", $document['date']) : "";
+                                $newdocument->iddocumentType = 2; // documento contract
+                                $newdocument->idFolder = $suscfolder['data']->idfolder;
+                                $newdocument->type = 'pending';
+                                $newdocument->path = $fpath;
+                                $newdocument->relativename = $vpath . $document['name'];
+                                $newdocument->save(false);
+                            }
+                        }      
+                    }
                 }
             }
             
@@ -354,19 +367,26 @@ class CronController extends Controller {
                                     )
                             ), true);
 
-                    echo "procesando documents proposal (". sizeof($documents) .")\n";
-                    foreach ((array) $documents as $document) {
-                        //var_dump($document);                                                                                
-                        $newdocument = new Document();
-                        $newdocument->attributes = $document;
-                        $newdocument->date = gmdate("Y-m-d H:i:s", $document['date']);
-                        $newdocument->iddocumentType = 3; // documento proposal
-                        $newdocument->idFolder = $suscfolder['data']->idfolder;
-                        $newdocument->type = 'pending';
-                        $newdocument->path = $fpath;
-                        $newdocument->relativename = $vpath . $document['name'];
-                        $newdocument->save(false);
-                    }                                               
+                    if (isset($proposals["error"]) && $proposals["error"]["code"] >= 300) {
+                        echo "procesando documents contract (0)\n";
+                        
+                    }else{
+                        echo "procesando documents proposal (". sizeof($documents) .")\n";
+                        foreach ((array) $documents as $document) {
+                            //var_dump($document);                 
+                            if(isset($document['name'])){
+                                $newdocument = new Document();
+                                $newdocument->attributes = $document;
+                                $newdocument->date = isset($document['date']) ? gmdate("Y-m-d H:i:s", $document['date']) : "";
+                                $newdocument->iddocumentType = 3; // documento proposal
+                                $newdocument->idFolder = $suscfolder['data']->idfolder;
+                                $newdocument->type = 'pending';
+                                $newdocument->path = $fpath;
+                                $newdocument->relativename = $vpath . $document['name'];
+                                $newdocument->save(false);
+                            }
+                        }   
+                    }
                 }
             }
         }
@@ -420,20 +440,27 @@ class CronController extends Controller {
                                 "id" => $invoice['id']
                                     )
                             ), true);
-
-                    echo "procesando documents proposal (". sizeof($documents) .")\n";
-                    foreach ((array) $documents as $document) {
-                        //var_dump($document);                                                                                
-                        $newdocument = new Document();
-                        $newdocument->attributes = $document;
-                        $newdocument->date = gmdate("Y-m-d H:i:s", $document['date']);
-                        $newdocument->iddocumentType = 4; // documento invoices
-                        $newdocument->idFolder = $suscfolder['data']->idfolder;
-                        $newdocument->type = 'pending';
-                        $newdocument->path = $fpath;
-                        $newdocument->relativename = $vpath . $document['name'];
-                        $newdocument->save(false);
-                    }                                               
+                    
+                    if (isset($documents["error"]) && $documents["error"]["code"] >= 300) {
+                        echo "procesando documents invoices (0)\n";
+                        
+                    }else{
+                        echo "procesando documents invoices (". sizeof($documents) .")\n";
+                        foreach ((array) $documents as $document) {
+                            //var_dump($document);      
+                            if(isset($document['name'])){
+                                $newdocument = new Document();
+                                $newdocument->attributes = $document;
+                                $newdocument->date = isset($document['date']) ? gmdate("Y-m-d H:i:s", $document['date']) : "";
+                                $newdocument->iddocumentType = 4; // documento invoices
+                                $newdocument->idFolder = $suscfolder['data']->idfolder;
+                                $newdocument->type = 'pending';
+                                $newdocument->path = $fpath;
+                                $newdocument->relativename = $vpath . $document['name'];
+                                $newdocument->save(false);
+                            }
+                        }  
+                    }
                 }
             
             }

@@ -91,6 +91,8 @@ $(document).ready(function () {
         if ($(this).data("susctable") === 1)
         {
             $("#divtablasuscriptores").show();
+            $(window).trigger('resize');
+            
             $('#divtablasuscriptores').off('click').on('click', 'button.selectsuscriptor', function () {
                 var idcliente = $(this).data("idcliente");
                 //get folders client
