@@ -15,6 +15,7 @@ use app\models\Invoices;
 use app\models\Module;
 use app\models\Proposal;
 use app\models\Settings;
+use app\models\Tickets;
 
 class CronController extends Controller {
     
@@ -222,6 +223,8 @@ class CronController extends Controller {
                     $this->processcontracts($client['id']);
                     $this->processproposals($client['id']);
                     $this->processinvoices($client['id']);
+                    $this->processtickets($client['id']);
+                    
                 } else {
 
                     //TODO:CLiente existe
@@ -247,6 +250,11 @@ class CronController extends Controller {
                         )
                 ), true);
 
+        if (isset($contracts["error"]) && $contracts["error"]["code"] >= 300) {
+            echo "procesando contracts (0)\n";
+            return;
+        }
+        
         echo "procesando contracts (". sizeof($contracts) .")\n";
         foreach ((array) $contracts as $contract) {
 
@@ -311,6 +319,11 @@ class CronController extends Controller {
                         )
                 ), true);
 
+        if (isset($proposals["error"]) && $proposals["error"]["code"] >= 300) {
+            echo "procesando proposals (0)\n";
+            return;
+        }
+
         echo "procesando proposals (". sizeof($proposals) .")\n";
         foreach ((array) $proposals as $proposal) {
 
@@ -373,6 +386,11 @@ class CronController extends Controller {
                         )
                 ), true);
 
+        if (isset($invoices["error"]) && $invoices["error"]["code"] >= 300) {
+            echo "procesando invoices (0)\n";
+            return;
+        }
+        
         echo "procesando invoices (". sizeof($invoices) .")\n";
         foreach ((array) $invoices as $invoice) {
 
@@ -418,6 +436,50 @@ class CronController extends Controller {
                     }                                               
                 }
             
+            }
+        }
+    }
+    
+    
+   /*
+     * Process tickets
+     */
+    
+    public function processtickets($thirdparty_id){        
+        // consulta tickets
+        echo "consultando tickets thirdparty_id(". $thirdparty_id .")\n";
+        $tickets = json_decode($this->CallAPI("GET", "tickets", array(
+                    "sortfield" => "t.rowid",
+                    "sortorder" => "ASC",
+                    "socid" => $thirdparty_id
+                        )
+                ), true);
+
+        if (isset($tickets["error"]) && $tickets["error"]["code"] >= 300) {
+            echo "procesando tickets (0)\n";
+            return;
+        }
+        
+        echo "procesando tickets (". sizeof($tickets) .")\n";
+        foreach ((array) $tickets as $ticket) {
+
+            if(isset( $ticket['ref'])){
+                // crea ticket
+                $newticket = new Tickets();
+                $newticket->id = $ticket['id'];
+                $newticket->socid = $ticket['socid'];
+                $newticket->ref = $ticket['ref'];
+                $newticket->fk_soc = $ticket['fk_soc'];
+                $newticket->subject = $ticket['subject'];
+                $newticket->message = $ticket['message'];
+                $newticket->type_label = $ticket['type_label'];
+                $newticket->category_label = $ticket['category_label'];
+                $newticket->severity_label = $ticket['severity_label'];
+                $newticket->datec = $ticket['datec'];
+                $newticket->date_read = $ticket['date_read'];
+                $newticket->date_close = $ticket['date_close'];
+
+                $newticket->save(false);            
             }
         }
     }
