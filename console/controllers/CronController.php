@@ -181,8 +181,9 @@ class CronController extends Controller {
         $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
         
         echo "Consultando Clientes...\n"; // your logic for deleting old post goes here
-        $limit = 3000;
-        for ($i = 1; $i <= 10; $i++) {
+        
+        $limit = 100;
+        for ($i = 1; $i <= 65; $i++) {
             $this->syncClients($limit, $i);
         }
         // sincroniza archivos
@@ -223,6 +224,8 @@ class CronController extends Controller {
                     $newclient->attributes = $client;
                     $newclient->idClient = $client['id'];
                     $newclient->access_id = $client['idprof6'];
+                    $newclient->address = str_replace(array("\n", "\r"), ' ', $client['address']);
+                    $newclient->name = str_replace("\xC5\x84", 'ñ', $client['name']);
                     $newclient->save(false);
                     
                     $this->processcontracts($client['id']);

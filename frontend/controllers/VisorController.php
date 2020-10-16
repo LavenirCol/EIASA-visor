@@ -528,15 +528,15 @@ class VisorController extends \yii\web\Controller {
                 $vpath = Url::base(true). '/' . $modulo->moduleName. $fpath . '/' . $foldername;
                 $fpath = $root_path . '/' . $modulo->moduleName. $fpath . '/' . $foldername;
                 
-                if(!file_exists($$fpath)){
+                if(!is_dir($fpath)){
                     $returndata = ['data' => '', 'error' => 'No existe la carpeta'];
                     return $this->result($returndata);    
                 }
                 
-                if(unlink($document->path ."/".$document->name)){
+                if(rmdir($fpath)){
                     
-                    $document->delete();
-                    $returndata = ['data' => 'Archivo eliminado correctamente', 'error' => ''];
+                    $actualfolder->delete();
+                    $returndata = ['data' => 'Carpeta eliminada correctamente', 'error' => ''];
                     return $this->result($returndata);
 
                 }else{

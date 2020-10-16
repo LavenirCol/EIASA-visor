@@ -1,6 +1,7 @@
 <?php
 
 namespace frontend\controllers;
+use Yii;
 
 class ReportsController extends \yii\web\Controller
 {
@@ -26,6 +27,11 @@ class ReportsController extends \yii\web\Controller
     
     public function actionPqrs()
     {
-        return $this->render('pqrs');
+        $connection = Yii::$app->getDb();
+        $sql = "SELECT t.*, c.access_id, c.name, c.town, c.state FROM tickets t inner join client c on t.fk_soc = c.idClient";
+
+        $pqrs = $connection->createCommand($sql)->queryAll();
+        
+        return $this->render('pqrs', array('pqrs' => $pqrs));
     }
 }

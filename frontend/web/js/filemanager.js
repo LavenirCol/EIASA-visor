@@ -19,7 +19,7 @@ foldertemplate += '             <div class="dropdown-menu dropdown-menu-right">'
 foldertemplate += '                 <a href="#modalViewDetails" data-toggle="modal" class="dropdown-item details"><i data-feather="info"></i>Ver Detalles</a>';
 //foldertemplate += '                 <a href="" class="dropdown-item download"><i data-feather="download"></i>Descargar</a>';
 //foldertemplate += '                 <a href="#" class="dropdown-item renamef"><i data-feather="edit"></i>Renombrar</a>';
-//foldertemplate += '                 <a href="#" class="dropdown-item deletef"><i data-feather="trash"></i>Borrar</a>';
+foldertemplate += '                 <a href="#" class="dropdown-item deletef"><i data-feather="trash"></i>Borrar</a>';
 foldertemplate += '              </div>';
 foldertemplate += '         </div><!-- dropdown -->';
 foldertemplate += '     </div><!-- media -->';
@@ -129,9 +129,10 @@ function getFolders(idcliente) {
             var htmlf = "";
             $.each(result.data, function (idx, item) {
                 var ctrl = foldertemplate.replace('{{FOLDERNAME}}', item.folderName)
-                        .replace('{{FOLDERSIZE}}', item.files + ' archivos, ' + (item.size == null ? '0 Bytes' : item.size))
+                        .replace('{{FOLDERSIZE}}', item.files + ' archivos, ' + (item.size === null ? '0 Bytes' : item.size))
                         .replace('{{MODULEID}}', item.idmodule)
-                        .replace('{{FOLDERID}}', item.idfolder);
+                        .replace('{{FOLDERID}}', item.idfolder)
+                        .replace('deletef', (Number(item.files) === 0 ? 'deletef' : 'd-none'));
                 htmlf += ctrl;
             });
             //show folder content
@@ -464,8 +465,8 @@ function deletefolder(idfolder) {
             $.ajax({
                 type: 'POST',
                 traditional: true,
-                data: {idfolder: idfolfer},
-                url: baseurl + '/visor/deleteffolder'
+                data: {idfolder: idfolder},
+                url: baseurl + '/visor/deletefolder'
             }).then(function (resultado) {
                 //console.log(result);
                 if (resultado.error !== '') {
@@ -474,8 +475,8 @@ function deletefolder(idfolder) {
                         text: resultado.error
                     });
                 } else {
-                    
-                    getFilesFolder();
+                    getFolders();
+                    //getFilesFolder();
                     Swal.fire({
                         icon: 'success',
                         text: 'Carpeta y su contenido eliminado correctamente'
@@ -581,7 +582,7 @@ $(document).ready(function () {
         uploadMultiple: true, // uplaod files in a single request
         parallelUploads: 100, // use it with uploadMultiple
         maxFilesize: 1024, // MB
-        maxFiles: 5,
+        maxFiles: 25,
         //chunking: true,
         timeout: 180000,
         //acceptedFiles: ".jpg, .jpeg, .png, .gif, .pdf",

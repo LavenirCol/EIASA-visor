@@ -22,19 +22,33 @@
 <div class="content">
     <div class="container pd-x-0 pd-lg-x-10 pd-xl-x-0">
       <div class="row">
-          <div class="col-lg-12">
+          <div class="col-lg-12 mb-5">
             <table class="table table-condensed table-striped dataTable" style="width:100%">
                 <thead>
                     <tr>
                         <th>Departamento</th>
                         <th>Municipio</th>
-                        <th>DANE</th>
-                        <th>ID Punto</th>
-                        <th>Ticket</th>
+                        <th>Código Acceso</th>
+                        <th>Cliente</th>
+                        <th>Ref Ticket</th>
+                        <th>Tipo</th>
+                        <th>Asunto</th>
+                        <th>Detalle</th>
                     </tr>
                 </thead>
                 <tbody>
-                    
+                    <?php foreach((array)$pqrs as $pqr){ ?>
+                    <tr>
+                        <td><?php echo $pqr['state'] ?></td>
+                        <td><?php echo $pqr['town'] ?></td>
+                        <td><?php echo $pqr['access_id'] ?></td>
+                        <td><?php echo $pqr['name'] ?></td>
+                        <td><?php echo $pqr['ref'] ?></td>
+                        <td><?php echo $pqr['type_label'] ?><br><small><?php echo $pqr['category_label'] ?> - <?php echo $pqr['severity_label'] ?></small></td>
+                        <td><?php echo $pqr['subject'] ?></td>
+                        <td><?php echo $pqr['message'] ?></td>
+                    </tr>
+                    <?php } ?>                   
                 </tbody>
             </table>
           </div>
