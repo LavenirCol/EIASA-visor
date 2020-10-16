@@ -192,6 +192,26 @@ class CronController extends Controller {
         exit();
     }
 
+    public function actionSynconlyfiles() {
+        echo "Inicio cron job \n"; // your logic for deleting old post goes here
+        //verifica directorio raiz
+        $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+        $this->root_path = $keyfolderraiz->value;
+        //varifica urlbase raiz
+        $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
+        $this->root_vpath = $keyurlbase->value;        // modulo suscriptores
+
+        //modulo suscriptores
+        $this->modulosusc = Module::find()->where(['idmodule' => $this->idmodulesusc])->one();
+        // modulo facturacion
+        $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
+
+        // sincroniza archivos
+        echo "Sincronizando Archivos...\n"; // your logic for deleting old post goes here
+        $this->syncFiles();
+        exit();
+    }
+    
     /*
      * Sincroniza clientes, contratos y crea folders sucriptores y facturacion
      */
