@@ -62,6 +62,14 @@ use \yii\helpers\Url;
         width: 25px;
         height: 25px;
     }*/
+
+    table.dataTable thead th{
+        font-size: 12px !important;
+    }
+    
+    tbody td{
+        font-size: 12px;
+    }
 </style>
 <div class="filemgr-wrapper">
       <div class="filemgr-sidebar">
@@ -169,11 +177,44 @@ use \yii\helpers\Url;
             <hr class="mg-y-40 bd-0">
             
             <div id="divtablasuscriptores" style="width:100%; display:none">
-                <label class="d-block tx-medium tx-10 tx-uppercase tx-sans tx-spacing-1 tx-color-03 mg-b-15">Búsqueda</label>
+                <div class="toast" id="cardclient" role="alert" aria-live="assertive" aria-atomic="true" style=" display:none; opacity: 1;max-width: 100%; width:100%">
+                    <div class="toast-header">
+                      <h6 class="tx-inverse tx-14 mg-b-0 mg-r-auto">Suscriptor</h6>
+<!--                      <small>11 mins ago</small>-->
+                      <button type="button" class="ml-2 mb-1 close tx-normal" data-dismiss="toast" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                      </button>
+                    </div>
+                    <div class="toast-body">
+                        <div class="row">
+                            <div class="col-md-2"><small><b>Código Acceso</b></small><br><small id="data-1"></small></div>
+                            <div class="col-md-3">
+                                <small><b>Cédula</b></small><br><small id="data-2"></small>
+                                <br>
+                                <small><b>Nombres</b></small><br><small id="data-3"></small>
+                            </div>
+                            <div class="col-md-2">
+                                <small><b>Departamento</b></small><br><small id="data-4"></small>
+                                <br>
+                                <small><b>Municipio</b></small><br><small id="data-5"></small>
+                            </div>
+                            <div class="col-md-2"><small><b>Dirección</b></small><br><small id="data-6"></small></div>
+                            <div class="col-md-3">
+                                <small><b>Teléfono</b></small><br><small id="data-7"></small>
+                                <br>
+                                <small><b>Correo</b></small><br><small id="data-8"></small>
+                            </div>
+                        </div>
+                        <div class="row"><div class="col-md-12"><button class="btn btn-sm btn-primary" style="padding:5px 7px;font-size: 10px;" id="btnclosecard"><< Atrás</button></div></div>
+                    </div>
+                </div>
+
+                <label class="d-block tx-medium tx-10 tx-uppercase tx-sans tx-spacing-1 tx-color-03 mg-b-15" id="lblbusqueda">Búsqueda</label>
                 <table class="table table-condensed table-striped dataTable" style="width:100%;">
                     <thead>
                         <tr>
-                            <th>Código Cliente</th>
+<!--                            <th>Código Cliente</th>-->
+                            <th></th>
                             <th>Código Acceso</th>
                             <th>Cédula</th>
                             <th>Nombres</th>
@@ -188,8 +229,12 @@ use \yii\helpers\Url;
                     <tbody>
                         <?php foreach((array)$clientes as $cliente){ ?>
                         <tr>
-                            <td><?php echo $cliente['code_client'] ?></td>
-                            <td><?php echo $cliente['access_id'] ?></td>
+<!--                            <td><?php echo $cliente['code_client'] ?></td>-->
+                            <td>
+                                <button class="btn btn-primary btn-sm selectsuscriptor" style="padding: 5px;font-size: 10px;margin-top: 5px;" data-idcliente="<?php echo $cliente['idClient'] ?>" >Seleccionar</button>
+                            </td>
+                            <td><?php echo $cliente['access_id'] ?>                                
+                            </td>
                             <td><?php echo $cliente['idprof1'] ?></td>
                             <td><?php echo $cliente['name'] ?></td>
                             <td><?php echo $cliente['state'] ?></td>
@@ -197,7 +242,7 @@ use \yii\helpers\Url;
                             <td><?php echo $cliente['address'] ?></td>
                             <td><?php echo $cliente['phone'] ?></td>
                             <td><?php echo $cliente['email'] ?></td>
-                            <td><button class="btn btn-primary btn-sm selectsuscriptor" data-idcliente="<?php echo $cliente['idClient'] ?>" >Seleccionar</button></td>
+                            <td></td>
                         </tr>
                         <?php } ?>
                     </tbody>

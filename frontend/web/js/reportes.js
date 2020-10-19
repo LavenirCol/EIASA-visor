@@ -43,7 +43,17 @@ $(document).ready(function(){
         'ordering': true,
         'info': true,
         'autoWidth': true,
-        'responsive': true,
+        responsive: {
+            details: {
+                type: 'column',
+                target: -1
+            }
+        },
+        columnDefs: [ {
+            className: 'control',
+            orderable: false,
+            targets:   -1
+        } ],
         'dom': 'Bfrtip',
         'buttons': [
             'copy', 'excel', 'print'

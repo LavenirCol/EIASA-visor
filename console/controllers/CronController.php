@@ -472,15 +472,20 @@ class CronController extends Controller {
                         foreach ((array) $documents as $document) {
                             //var_dump($document);      
                             if(isset($document['name'])){
-                                $newdocument = new Document();
-                                $newdocument->attributes = $document;
-                                $newdocument->date = isset($document['date']) ? gmdate("Y-m-d H:i:s", $document['date']) : "";
-                                $newdocument->iddocumentType = 4; // documento invoices
-                                $newdocument->idFolder = $suscfolder['data']->idfolder;
-                                $newdocument->type = 'pending';
-                                $newdocument->path = $fpath;
-                                $newdocument->relativename = $vpath . $document['name'];
-                                $newdocument->save(false);
+                                $ext = end(explode('.', document['name']));
+                                if($ext === 'odt' || $ext === 'json'){
+                                    //no inserta tipo odt, json
+                                }else{
+                                    $newdocument = new Document();
+                                    $newdocument->attributes = $document;
+                                    $newdocument->date = isset($document['date']) ? gmdate("Y-m-d H:i:s", $document['date']) : "";
+                                    $newdocument->iddocumentType = 4; // documento invoices
+                                    $newdocument->idFolder = $suscfolder['data']->idfolder;
+                                    $newdocument->type = 'pending';
+                                    $newdocument->path = $fpath;
+                                    $newdocument->relativename = $vpath . $document['name'];
+                                    $newdocument->save(false);
+                                }
                             }
                         }  
                     }
