@@ -2,6 +2,9 @@
 /* @var $this yii\web\View */
 use \yii\helpers\Url;
 ?>
+<script>
+    var profile = <?php echo Yii::$app->user->identity->attributes['idProfile'] ?>;
+</script>
 <style>            
     .link-02{
         cursor: pointer;
@@ -74,6 +77,7 @@ use \yii\helpers\Url;
 <div class="filemgr-wrapper">
       <div class="filemgr-sidebar">
         <div class="filemgr-sidebar-header">
+        <?php if(Yii::$app->user->identity->attributes['idProfile']  < 3){ ?>
           <div class="dropdown dropdown-icon flex-fill mg-l-10">
             <button class="btn btn-xs btn-block btn-primary" data-toggle="dropdown">Archivos <i data-feather="chevron-down"></i></button>
             <div class="dropdown-menu tx-13">
@@ -81,6 +85,7 @@ use \yii\helpers\Url;
               <a href="#" id="btnaddfolder" class="dropdown-item"><i data-feather="folder"></i><span>Nueva Carpeta</span></a>
             </div><!-- dropdown-menu -->
           </div><!-- dropdown -->
+        <?php } ?>
         </div><!-- filemgr-sidebar-header -->
         <div class="filemgr-sidebar-body">
           <div class="pd-t-20 pd-b-10 pd-x-10">

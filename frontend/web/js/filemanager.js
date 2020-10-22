@@ -19,7 +19,9 @@ foldertemplate += '             <div class="dropdown-menu dropdown-menu-right">'
 foldertemplate += '                 <a href="#modalViewDetails" data-toggle="modal" class="dropdown-item details"><i data-feather="info"></i>Ver Detalles</a>';
 //foldertemplate += '                 <a href="" class="dropdown-item download"><i data-feather="download"></i>Descargar</a>';
 //foldertemplate += '                 <a href="#" class="dropdown-item renamef"><i data-feather="edit"></i>Renombrar</a>';
-foldertemplate += '                 <a href="#" class="dropdown-item deletef"><i data-feather="trash"></i>Borrar</a>';
+if(profile < 3 ){
+    foldertemplate += '                 <a href="#" class="dropdown-item deletef"><i data-feather="trash"></i>Borrar</a>';
+}
 foldertemplate += '              </div>';
 foldertemplate += '         </div><!-- dropdown -->';
 foldertemplate += '     </div><!-- media -->';
@@ -32,8 +34,10 @@ filetemplate += '      <a href="" class="dropdown-link" data-toggle="dropdown"><
 filetemplate += '      <div class="dropdown-menu dropdown-menu-right">';
 //filetemplate += '        <a href="#modalViewDetails" data-toggle="modal" class="dropdown-item details"><i data-feather="info"></i>Ver Detalles</a>';
 filetemplate += '        <a href="{{FILEDOWNLOAD}}" class="dropdown-item download"><i data-feather="download"></i>Descargar</a>';
-filetemplate += '        <a href="#" class="dropdown-item rename"><i data-feather="edit"></i>Renombrar</a>';
-filetemplate += '        <a href="#" class="dropdown-item delete"><i data-feather="trash"></i>Eliminar</a>';
+if(profile < 3 ){
+    filetemplate += '        <a href="#" class="dropdown-item rename"><i data-feather="edit"></i>Renombrar</a>';
+    filetemplate += '        <a href="#" class="dropdown-item delete"><i data-feather="trash"></i>Eliminar</a>';
+}
 filetemplate += '      </div>';
 filetemplate += '    </div><!-- dropdown -->';
 filetemplate += '    <div class="card-file-thumb {{FILECOLOR}}" style="{{FILESTYLE}}">';
