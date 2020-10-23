@@ -12,12 +12,20 @@ class ReportsController extends \yii\web\Controller
 
     public function actionInventarios()
     {
-        return $this->render('inventarios');
+        $connection = Yii::$app->getDb();
+        $sql = "SELECT h.* FROM hsstock h";        
+        $invs = $connection->createCommand($sql)->queryAll();
+
+        return $this->render('inventarios', array('invs' => $invs));
     }
 
     public function actionInstalacion()
     {
-        return $this->render('instalacion');
+        $connection = Yii::$app->getDb();
+        $sql = "SELECT h.* FROM hstask h";        
+        $inst = $connection->createCommand($sql)->queryAll();
+
+        return $this->render('instalacion', array('inst' => $inst));
     }
     
     public function actionOperacion()

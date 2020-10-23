@@ -16,6 +16,8 @@ use app\models\Module;
 use app\models\Proposal;
 use app\models\Settings;
 use app\models\Tickets;
+use app\models\Hsstock;
+use app\models\Hstask;
 
 class CronController extends Controller {
     
@@ -589,5 +591,220 @@ class CronController extends Controller {
         fclose($file);
 
         return $output_file;
+    }
+    
+    /**********UMBRELLA **********/
+    
+    /*
+     * ejecucion API umbrella
+     */
+
+    function callAPIUmbrella($method, $entity, $data = false) {
+        //prod
+        $url = 'https://megaya.lavenirapps.co/api/'.$entity;
+        //dev
+        //$url = 'http://dev-umbrellav2.lavenirapps.co/web/api/' . $entity;
+        $curl = curl_init();
+        $httpheader = [];
+        
+        switch ($method) {
+            case "POST":
+                curl_setopt($curl, CURLOPT_POST, 1);
+                $httpheader[] = "Content-Type:application/json";
+
+                if ($data)
+                    curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+
+                break;
+            case "PUT":
+
+                curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'PUT');
+                $httpheader[] = "Content-Type:application/json";
+
+                if ($data)
+                    curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+
+                break;
+            default:
+                if ($data)
+                    $url = sprintf("%s?%s", $url, http_build_query($data));
+        }
+
+        // Authentication:
+        curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        curl_setopt($curl, CURLOPT_USERPWD, "visor:b6b9bb58d10c866a7ed07504e28ba831");
+
+        curl_setopt($curl, CURLOPT_URL, $url);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $httpheader);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+
+        $result = curl_exec($curl);
+        if ($result === false) {
+            $err = 'Curl error: ' . curl_error($curl);
+            //$output_array[] = array('code' => 0, 'message' => $err);
+
+            echo 'EIASAVISOR UMBRELLA - CURLError:' . $err . '\n';
+            echo 'EIASAVISOR UMBRELLA - MESSAGE:' . json_encode($data) . "\n";
+        }
+
+        curl_close($curl);
+
+        return $result;
+    }
+    
+    
+    public function actionSyncnetwork() {
+        echo "Inicio cron job network \n"; // your logic for deleting old post goes here
+        
+        echo "Borrando datos locales \n"; 
+        
+        Yii::$app->db->createCommand()->truncateTable('hsstock')->execute();
+        Yii::$app->db->createCommand()->truncateTable('hstask')->execute();
+        
+        $this->syncInventory();
+        $this->syncTasks();
+        
+        exit();
+    }
+    
+    
+    /*
+     * Sincroniza inventario
+     */
+    
+    public function syncInventory() {
+        echo "----------------------------------------\n";
+        echo "Inicio syncinventory ".date("Y-m-d H:i:s"). "\n";
+        $inventories = json_decode($this->callAPIUmbrella("POST", "hsStock", json_encode(array(
+                    //"datecreate" => "t.rowid",
+                    "rows" => "1",
+                    "page" => "0"
+                    )
+                )), true);
+
+        if ($inventories["code"] === '0') {
+            echo "procesando inventario error ".$inventories['error']. " \n";
+            return;
+        }
+        
+        $filter = $inventories["filter"];
+        $rows = 1000;        
+        $total = (int)$filter["items"];
+        if ($total == 0) {
+            echo "procesando total inventario (0)\n";
+            return;
+        }
+        
+        $pages = ceil($total / $rows);
+        
+        echo "procesando total inventario (". $total .")\n";
+        echo "procesando paginas inventario (". $pages .")\n";
+        
+        for($i=0;$i<$pages;$i++){
+            $inventories = json_decode($this->callAPIUmbrella("POST", "hsStock", json_encode(array(
+                //"datecreate" => "t.rowid",
+                "rows" => $rows,
+                "page" => $i
+                )
+            )), true);
+
+            if ($inventories["code"] === '0') {
+                echo "procesando inventario pagina ($i) error ".$inventories['error']. " \n";
+                continue;
+            }
+            echo "procesando inventario pagina ($i) (". sizeof($inventories["data"]) .")\n";
+            
+            foreach ((array) $inventories["data"] as $inv) {
+                // crea inventario
+                $newinv = new Hsstock();
+                $newinv->id = $inv['id'];
+                $newinv->pid = $inv['pid'];
+                $newinv->name = $inv['name'];
+                $newinv->sku = $inv['sku'];
+                $newinv->health_reg = $inv['health_reg'];
+                $newinv->location = $inv['location'];
+                $newinv->city = $inv['city'];
+                $newinv->district = $inv['district'];
+                $newinv->code = $inv['code'];
+                $newinv->lat = $inv['lat'];
+                $newinv->lng = $inv['lng'];
+
+                $newinv->save(false);    
+            }
+            
+        }
+
+        echo "Fin syncinventory ".date("Y-m-d H:i:s"). "\n";
+    }
+
+    /*
+     * Sincroniza servicios
+     */
+    
+    public function syncTasks() {
+        echo "----------------------------------------\n";
+        echo "Inicio synctasks ".date("Y-m-d H:i:s"). "\n";
+        $tasks = json_decode($this->callAPIUmbrella("POST", "hsTask", json_encode(array(
+                    //"datecreate" => "t.rowid",
+                    "rows" => "1",
+                    "page" => "0"
+                    )
+                )), true);
+
+        if ($tasks["code"] === '0') {
+            echo "procesando tasks error ".$tasks['error']. " \n";
+            return;
+        }
+        
+        $filter = $tasks["filter"];
+        $rows = 1000;        
+        $total = (int)$filter["items"];
+        if ($total == 0) {
+            echo "procesando total tasks (0)\n";
+            return;
+        }
+        
+        $pages = ceil($total / $rows);
+        
+        echo "procesando total tasks (". $total .")\n";
+        echo "procesando paginas tasks (". $pages .")\n";
+        
+        for($i=0;$i<$pages;$i++){
+            $tasks = json_decode($this->callAPIUmbrella("POST", "hsTask", json_encode(array(
+                //"datecreate" => "t.rowid",
+                "rows" => $rows,
+                "page" => $i
+                )
+            )), true);
+
+            if ($tasks["code"] === '0') {
+                echo "procesando tasks pagina ($i) error ".$tasks['error']. " \n";
+                continue;
+            }
+            echo "procesando tasks pagina ($i) (". sizeof($tasks["data"]) .")\n";
+            
+            foreach ((array) $tasks["data"] as $task) {
+                // crea task
+                $newtask= new Hstask();
+                $newtask->uuid = $task['uuid'];
+                $newtask->datecreate = $task['datecreate'];
+                $newtask->dateupdate = $task['dateupdate'];
+                $newtask->reference = $task['reference'];
+                $newtask->template = $task['template'];
+                $newtask->address = $task['address'];
+                $newtask->city = $task['city'];
+                $newtask->district = $task['district'];
+                $newtask->code = $task['code'];
+                $newtask->status = $task['status'];
+                $newtask->pdf = $task['pdf'];
+
+                $newtask->save(false);    
+            }
+            
+        }
+
+        echo "Fin synctasks ".date("Y-m-d H:i:s"). "\n";
     }
 }

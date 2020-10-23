@@ -26,14 +26,42 @@
             <table class="table table-condensed table-striped dataTable" style="width:100%">
                 <thead>
                     <tr>
+                        <th>Id</th>
+                        <th>Referencia</th>
+                        <th>Plantilla</th>
+                        <th>Dirección</th>
+                        <th>Ciudad</th>
                         <th>Departamento</th>
-                        <th>Municipio</th>
-                        <th>DANE</th>
-                        <th>ID Punto</th>
+                        <th>Código</th>
+                        <th>Latitud</th>
+                        <th>Longitud</th>
+                        <th>Estado</th>
+                        <th>PDF</th>
+                        <th>Fecha Creación</th>
+                        <th>Fecha Actualización</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    
+                    <?php foreach((array)$inst as $ins){ ?>
+                    <tr>
+                        <td><?php echo $ins['uuid'] ?></td>
+                        <td><?php echo $ins['reference'] ?></td>
+                        <td><?php echo $ins['template'] ?></td>
+                        <td><?php echo $ins['address'] ?></td>
+                        <td><?php echo $ins['city'] ?></td>
+                        <td><?php echo $ins['district'] ?></td>
+                        <td><?php echo $ins['code'] ?></td>
+                        <td><?php echo $ins['lat'] ?></td>
+                        <td><?php echo $ins['lng'] ?></td>
+                        <td><?php echo $ins['status'] ?></td>
+                        <td> <a target="_blank" href="<?php echo $ins['pdf'] ?>"><?php echo $ins['pdf'] ?></a></td>
+                        <td><?php echo $ins['datecreate'] ?></td>
+                        <td><?php echo $ins['dateupdate'] ?></td>
+                        <td></td>
+                    </tr>
+                    <?php } ?>   
+              
                 </tbody>
             </table>
           </div>

@@ -45,17 +45,19 @@ $this->params['breadcrumbs'][] = $this->title;
                         <th>Estado</th>
                         <th>Creado En</th>
                         <th>Perfil</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach((array) $users as $user){ ?>
                     <tr>
-                        <th><?php echo $user['id'] ?></th>
-                        <th><?php echo $user['username'] ?></th>
-                        <th><?php echo $user['email'] ?></th>
-                        <th><?php echo $user['status'] ?></th>
-                        <th><?php echo gmdate("Y-m-d H:i:s", $user['created_at']); ?></th>
-                        <th><?php echo $user['name'] ?></th>
+                        <td><?php echo $user['id'] ?></td>
+                        <td><?php echo $user['username'] ?></td>
+                        <td><?php echo $user['email'] ?></td>
+                        <td><?php echo $user['status'] ?></td>
+                        <td><?php echo gmdate("Y-m-d H:i:s", $user['created_at']); ?></td>
+                        <td><?php echo $user['name'] ?></td>
+                        <td></td>
                     </tr>
                     
                     <?php 
