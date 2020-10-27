@@ -59,4 +59,52 @@ $(document).ready(function(){
             'copy', 'excel', 'print'
         ]
     });
+    
+    
+    // Serever side
+    
+    function makeserverprocessing(datatable, ajaxcall){
+        $(datatable).DataTable({
+            "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
+            'paging': true,
+            'searching': true,
+            'ordering': true,
+            'info': true,
+            'autoWidth': true,
+            responsive: true,
+//            responsive: {
+//                details: {
+//                    type: 'column',
+//                    target: -1
+//                }
+//            },
+//            columnDefs: [ {
+//                className: 'control',
+//                orderable: false,
+//                targets:   -1
+//            } ],
+            'dom': 'Bfrtip',
+            'buttons': [
+                'copy', 'excel', 'print'
+            ],
+            "processing": true,
+            "serverSide": true,
+
+            "ajax": {
+                url: baseurl + ajaxcall,
+                type: "post",
+                error: function()
+                {
+                   alert('error');
+                }
+
+            }
+        });
+    }
+    
+    //inventarios
+    makeserverprocessing('#dataTableInventarios','/reports/inventariosserver');
+    
+    //instalacion
+    makeserverprocessing('#dataTableInstalacion','/reports/instalacionserver');
 });

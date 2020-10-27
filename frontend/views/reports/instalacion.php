@@ -22,8 +22,8 @@
 <div class="content">
     <div class="container pd-x-0 pd-lg-x-10 pd-xl-x-0">
       <div class="row">
-          <div class="col-lg-12">
-            <table class="table table-condensed table-striped dataTable" style="width:100%">
+          <div class="col-lg-12 mb-5">
+            <table class="table table-condensed table-striped" id="dataTableInstalacion" style="width:100%">
                 <thead>
                     <tr>
                         <th>Id</th>
@@ -39,29 +39,10 @@
                         <th>PDF</th>
                         <th>Fecha Creación</th>
                         <th>Fecha Actualización</th>
-                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach((array)$inst as $ins){ ?>
-                    <tr>
-                        <td><?php echo $ins['uuid'] ?></td>
-                        <td><?php echo $ins['reference'] ?></td>
-                        <td><?php echo $ins['template'] ?></td>
-                        <td><?php echo $ins['address'] ?></td>
-                        <td><?php echo $ins['city'] ?></td>
-                        <td><?php echo $ins['district'] ?></td>
-                        <td><?php echo $ins['code'] ?></td>
-                        <td><?php echo $ins['lat'] ?></td>
-                        <td><?php echo $ins['lng'] ?></td>
-                        <td><?php echo $ins['status'] ?></td>
-                        <td> <a target="_blank" href="<?php echo $ins['pdf'] ?>"><?php echo $ins['pdf'] ?></a></td>
-                        <td><?php echo $ins['datecreate'] ?></td>
-                        <td><?php echo $ins['dateupdate'] ?></td>
-                        <td></td>
-                    </tr>
-                    <?php } ?>   
-              
+
                 </tbody>
             </table>
           </div>

@@ -25,7 +25,7 @@ $this->title = 'EIASA Visor';
           <div class="row row-xs mg-b-25">
             <div class="col-sm-6 col-md-4 mg-t-10 mg-sm-t-0">
               <div class="card card-profile">
-                <img src="http://themepixels.me/demo/dashforge1.1/assets/img/img4.jpg" class="card-img-top" alt="">
+                <img src="<?= Url::base(true);  ?>/img/img4.jpg" class="card-img-top" alt="">
                 <div class="card-body tx-13">
                   <div>
                     <a href="">
@@ -46,7 +46,7 @@ $this->title = 'EIASA Visor';
             </div><!-- col -->
             <div class="col-sm-6 col-md-4 mg-t-10 mg-md-t-0">
               <div class="card card-profile">
-                <img src="http://themepixels.me/demo/dashforge1.1/assets/img/img3.jpg" class="card-img-top" alt="">
+                <img src="<?= Url::base(true);  ?>/img/img3.jpg" class="card-img-top" alt="">
                 <div class="card-body tx-13">
                   <div>
                     <a href="">

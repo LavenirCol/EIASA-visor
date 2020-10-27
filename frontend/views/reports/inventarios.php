@@ -22,8 +22,8 @@
 <div class="content">
     <div class="container pd-x-0 pd-lg-x-10 pd-xl-x-0">
       <div class="row">
-          <div class="col-lg-12">
-            <table class="table table-condensed table-striped dataTable" style="width:100%">
+          <div class="col-lg-12 mb-5">
+            <table class="table table-condensed table-striped" id="dataTableInventarios" style="width:100%">
                 <thead>
                     <tr>
                         <th>Id</th>
@@ -37,26 +37,9 @@
                         <th>Código</th>
                         <th>Latitud</th>
                         <th>Longitud</th>
-                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach((array)$invs as $inv){ ?>
-                    <tr>
-                        <td><?php echo $inv['id'] ?></td>
-                        <td><?php echo $inv['pid'] ?></td>
-                        <td><?php echo $inv['name'] ?></td>
-                        <td><?php echo $inv['sku'] ?></td>
-                        <td><?php echo $inv['health_reg'] ?></td>
-                        <td><?php echo $inv['location'] ?></td>
-                        <td><?php echo $inv['city'] ?></td>
-                        <td><?php echo $inv['district'] ?></td>
-                        <td><?php echo $inv['code'] ?></td>
-                        <td><?php echo $inv['lat'] ?></td>
-                        <td><?php echo $inv['lng'] ?></td>
-                        <td></td>
-                    </tr>
-                    <?php } ?>   
               
                 </tbody>
             </table>
