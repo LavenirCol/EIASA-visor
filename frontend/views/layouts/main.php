@@ -40,11 +40,11 @@ AppAsset::register($this);
     <a href="" id="mainMenuOpen" class="burger-menu d-none"><i data-feather="menu"></i></a>
     <a href="" id="filemgrMenu" class="burger-menu d-lg-none"><i data-feather="arrow-left"></i></a>
     <div class="navbar-brand">
-        <a href="<?php echo Url::toRoute('site/index'); ?>" class="df-logo"><img width="70px" src="https://www.eiasa.com.co/wp-content/uploads/2020/06/Logotipo_eia.png"/></a>
+        <a href="<?php echo Url::toRoute('site/index'); ?>" class="df-logo"><img width="100px" src="<?= Url::base(true);  ?>/img/MEGAYA-Logo-blanco.png"/></a>
     </div><!-- navbar-brand -->
     <div id="navbarMenu" class="navbar-menu-wrapper">
       <div class="navbar-menu-header">
-        <a href="<?php echo Url::toRoute('site/index'); ?>" class="df-logo"><img width="70px" src="https://www.eiasa.com.co/wp-content/uploads/2020/06/Logotipo_eia.png"/></a>
+        <a href="<?php echo Url::toRoute('site/index'); ?>" class="df-logo"><img width="100px" src="<?= Url::base(true);  ?>/img/MEGAYA-Logo-blanco.png"/></a>
         <a id="mainMenuClose" href=""><i data-feather="x"></i></a>
       </div><!-- navbar-menu-header -->
       <ul class="nav navbar-menu">
@@ -105,7 +105,7 @@ AppAsset::register($this);
 
 <footer class="footer fixed-bottom">
     <div class="container">
-        <p class="pull-left">&copy; EIASA Visor <?= date('Y') ?></p>
+        <p class="pull-left">&copy; Sistema de Información UT Energía Telecomunicaciones S3 <?= date('Y') ?></p>
 <!--        <p class="pull-left">&copy; <?= Html::encode(Yii::$app->name) ?> <?= date('Y') ?></p>-->
 <!--        <p class="pull-right"><?= Yii::powered() ?></p>-->
     </div>

@@ -9,6 +9,7 @@ use app\models\Client;
 use app\models\Settings;
 use Yii;
 use yii\helpers\Url;
+use yii\base\Exception;
 //use Imagick;
 use tpmanc\imagick\Imagick;
 
@@ -199,7 +200,7 @@ class VisorController extends \yii\web\Controller {
                 $returndata = ['data' => $newfolder, 'error' => ''];
                 return $this->result($returndata);
 
-            } catch (Exception $ex) {
+            } catch (\Exception $ex) {
                 $returndata = ['data' => '', 'error' => $ex->getMessage()];
                 return $this->result($returndata);
             }
@@ -362,7 +363,7 @@ class VisorController extends \yii\web\Controller {
             $returndata = ['data' => ''. $targetFile, 'error' => ''];
             return $this->result($returndata);
             
-        } catch (Exception $ex) {
+        } catch (\Exception $ex) {
             $returndata = ['data' => '', 'error' => $ex->getMessage()];
             return $this->result($returndata);
         }       
@@ -452,7 +453,7 @@ class VisorController extends \yii\web\Controller {
                     return $this->result($returndata);                    
                 }                
 
-            } catch (Exception $ex) {
+            } catch (\Exception $ex) {
                 $returndata = ['data' => '', 'error' => $ex->getMessage()];
                 return $this->result($returndata);
             }
@@ -487,7 +488,7 @@ class VisorController extends \yii\web\Controller {
                     return $this->result($returndata);                    
                 }                
 
-            } catch (Exception $ex) {
+            } catch (\Exception $ex) {
                 $returndata = ['data' => '', 'error' => $ex->getMessage()];
                 return $this->result($returndata);
             }
@@ -495,8 +496,79 @@ class VisorController extends \yii\web\Controller {
         } else {
             throw new \yii\web\BadRequestHttpException;
         }
-    }    
+    }
+    
+    public function actionRenamefolder() {
+        if (Yii::$app->request->isAjax) {
 
+            try {
+                $input = Yii::$app->request->post();
+                $idmodule = $input['idmodule'];
+                $idfolder = $input['idfolder'];
+                $newname = $input['newname'];
+
+                if (preg_match('/[\'^£$%&*()}{@#~?><>,|=+¬]/', $newname))
+                {
+                     $returndata = ['data' => '', 'error' => 'El nombre de la carpeta tiene carácteres no válidos'];
+                     return $this->result($returndata);
+                }
+
+                //verifica si ya extiste
+                $existefolder = Folder::find()->where(['idmodule' => $idmodule,
+                            'LOWER(folderName)' => $newname])->exists();
+
+                if ($existefolder) {
+                    $returndata = ['data' => '', 'error' => 'Ya existe una carpeta con ese nombre'];
+                    return $this->result($returndata);
+                } 
+
+                $actualfolder=  Folder::find()->where(['idmodule' => $idmodule,'idfolder' => $idfolder])->one();
+
+                $foldername =  $actualfolder->folderName;
+                $idparentfolder = $actualfolder->idParentFolder;
+
+                //directorio raiz
+                $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+                $root_path = $keyfolderraiz->value;
+
+                //crear en disco path
+                $fpath = "";
+                $npath = "";
+                $idpfolder = $idparentfolder;
+                $modulo = Module::find()->where(['idmodule' => $idmodule])->one();
+                if($idpfolder > 0){
+                    do {
+                      $pfolder=  Folder::find()->where(['idmodule' => $idmodule,'idfolder' => $idpfolder])->one();
+                      $fpath = $pfolder->folderName. '/'. $fpath;  
+                      $idpfolder = $pfolder->idParentFolder;
+                    } while ($idpfolder > 0);
+                    $fpath = $root_path . '/' . $modulo->moduleName. '/' . $fpath . $foldername;
+                    $npath = $root_path . '/' . $modulo->moduleName. '/' . $npath . $newname;
+                }else{
+                    $fpath = $root_path . '/' . $modulo->moduleName. '/' . $fpath . $foldername;
+                    $npath = $root_path . '/' . $modulo->moduleName. '/' . $npath . $newname;
+                }
+
+                if(rename($fpath, $npath)){
+                    $actualfolder->folderName = $newname;
+                    $actualfolder->save();
+
+                    $returndata = ['data' => $newname, 'error' => ''];
+                    return $this->result($returndata);
+                }else{
+                    $returndata = ['data' => '', 'error' => 'No se puede renombrar la carpeta'];
+                    return $this->result($returndata);                    
+                }                
+
+            } catch (\Exception $ex) {
+                $returndata = ['data' => '', 'error' => $ex->getMessage()];
+                return $this->result($returndata);
+            }
+
+        } else {
+            throw new \yii\web\BadRequestHttpException;
+        }
+    }
     
     public function actionDeletefolder() {
         if (Yii::$app->request->isAjax) {
@@ -544,7 +616,7 @@ class VisorController extends \yii\web\Controller {
                     return $this->result($returndata);                    
                 }                
 
-            } catch (Exception $ex) {
+            } catch (\Exception $ex) {
                 $returndata = ['data' => '', 'error' => $ex->getMessage()];
                 return $this->result($returndata);
             }

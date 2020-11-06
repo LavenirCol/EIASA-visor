@@ -2,7 +2,7 @@
 use \yii\helpers\Url;
 
 /* @var $this yii\web\View */
-$this->title = 'EIASA Visor';
+$this->title = 'Sistema de Información UT Energía Telecomunicaciones S3';
 ?>
 <div class="content content-fixed bd-b pb-0">
   <div class="container pd-x-0 pd-lg-x-10 pd-xl-x-0">
@@ -13,7 +13,7 @@ $this->title = 'EIASA Visor';
             <li class="breadcrumb-item active" aria-current="page">Inicio</li>
           </ol>
         </nav>
-        <h4 class="mg-b-0">EIASA Visor</h4>
+        <h4 class="mg-b-0"><?php echo $this->title ?></h4>
       </div>
     </div>
   </div><!-- container -->

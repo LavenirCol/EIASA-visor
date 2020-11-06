@@ -18,8 +18,8 @@ foldertemplate += '             <a href="" class="dropdown-link" data-toggle="dr
 foldertemplate += '             <div class="dropdown-menu dropdown-menu-right">';
 foldertemplate += '                 <a href="#modalViewDetails" data-toggle="modal" class="dropdown-item details"><i data-feather="info"></i>Ver Detalles</a>';
 //foldertemplate += '                 <a href="" class="dropdown-item download"><i data-feather="download"></i>Descargar</a>';
-//foldertemplate += '                 <a href="#" class="dropdown-item renamef"><i data-feather="edit"></i>Renombrar</a>';
 if(profile < 3 ){
+    foldertemplate += '                 <a href="#" class="dropdown-item renamef"><i data-feather="edit"></i>Renombrar</a>';    
     foldertemplate += '                 <a href="#" class="dropdown-item deletef"><i data-feather="trash"></i>Borrar</a>';
 }
 foldertemplate += '              </div>';
@@ -173,10 +173,23 @@ function getFolders(idcliente) {
         } else {
             var htmlf = "";
             $.each(result.data, function (idx, item) {
-                var ctrl = foldertemplate.replace('{{FOLDERNAME}}', item.folderName)
+                var foldername ="";
+                if(idcliente > 0){
+                    if(item.folderName.indexOf('CT') == 0){
+                        foldername = "CONTRATO " + item.folderName;
+                    }else if(item.folderName.indexOf('PR') == 0){
+                        foldername = "DOCUMENTOS SOPORTE " + item.folderName;
+                    }else{
+                        foldername = item.folderName;
+                    }
+                }else{
+                    foldername = item.folderName;
+                }
+                var ctrl = foldertemplate.replace('{{FOLDERNAME}}', foldername)
                         .replace('{{FOLDERSIZE}}', item.files + ' archivos, ' + (item.size === null ? '0 Bytes' : item.size))
                         .replace('{{MODULEID}}', item.idmodule)
                         .replace('{{FOLDERID}}', item.idfolder)
+                        .replace('renamef', (Number(item.files) === 0 ? 'renamef' : 'd-none'))
                         .replace('deletef', (Number(item.files) === 0 ? 'deletef' : 'd-none'));
                 htmlf += ctrl;
             });
@@ -483,7 +496,7 @@ function renamefolder(idfolder) {
             return  $.ajax({
                 type: 'POST',
                 traditional: true,
-                data: {idmodule: active_module, idfolder: active_folder, newname: newfoldername},
+                data: {idmodule: active_module, idfolder: idfolder, newname: newfoldername},
                 url: baseurl + '/visor/renamefolder'
             }).then(function (result) {
                 //console.log(result);
