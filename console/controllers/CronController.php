@@ -325,7 +325,9 @@ class CronController extends Controller {
                         foreach ((array) $documents as $document) {
                             //var_dump($document);
                             if(isset($document['name'])){
-                                $ext = end(explode('.', document['name']));
+                                $name = $document['name'];
+                                $names = explode('.', $name );
+                                $ext = end($names);
                                 if($ext === 'odt' || $ext === 'json'){
                                     //no inserta tipo odt, json
                                 }else{
@@ -479,7 +481,9 @@ class CronController extends Controller {
                         foreach ((array) $documents as $document) {
                             //var_dump($document);      
                             if(isset($document['name'])){
-                                $ext = end(explode('.', document['name']));
+                                $name = $document['name'];
+                                $names = explode('.', $name );
+                                $ext = end($names);
                                 if($ext === 'odt' || $ext === 'json'){
                                     //no inserta tipo odt, json
                                 }else{

@@ -9,7 +9,7 @@ $(document).ready(function(){
     $.extend(true, $.fn.dataTable.defaults, {
         "searching": true,
         "ordering": true,
-        "pageLength": 5,
+        "pageLength": 10,
         "autoWidth": true,
         "language": {
             "sProcessing": "Procesando...",
@@ -54,12 +54,50 @@ $(document).ready(function(){
             orderable: false,
             targets:   -1
         } ],
+        lengthMenu: [
+            [ 10, 25, 50, -1 ],
+            [ '10', '25', '50', 'Todo' ]
+        ],
         'dom': 'Bfrtip',
         'buttons': [
-            'copy', 'excel', 'print'
+            'pageLength','copy', 'excel', 'print',
+            {
+                extend: 'pdf',
+                orientation: 'landscape',
+                pageSize: 'LEGAL'
+            }
         ]
     });
     
+    
+    $('.dataTablec').DataTable({
+        'paging': false,
+        'searching': true,
+        'ordering': true,
+        "order": [[ 3, "desc" ]],
+        'info': true,
+        'autoWidth': true,
+        responsive: {
+            details: {
+                type: 'column',
+                target: -1
+            }
+        },
+        columnDefs: [ {
+            className: 'control',
+            orderable: false,
+            targets:   -1
+        } ],
+        'dom': 'Bfrtip',
+        'buttons': [
+            'copy', 'excel', 'print',
+            {
+                extend: 'pdf',
+                orientation: 'landscape',
+                pageSize: 'LEGAL'
+            }
+        ]
+    });
     
     // Serever side
     

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2a2532c91db1981b6d5af185fd2f0c16",
+    "content-hash": "1b222d6ce0fdb8f940602ce6b8d52a09",
     "packages": [
         {
             "name": "bower-asset/bootstrap",
@@ -53,7 +53,7 @@
             "version": "3.5.1",
             "source": {
                 "type": "git",
-                "url": "https://github.com/jquery/jquery-dist.git",
+                "url": "git@github.com:jquery/jquery-dist.git",
                 "reference": "4c0e4becb8263bb5b3e6dadc448d8e7305ef8215"
             },
             "dist": {
@@ -86,7 +86,7 @@
             "version": "2.0.7.1",
             "source": {
                 "type": "git",
-                "url": "https://github.com/yiisoft/jquery-pjax.git",
+                "url": "git@github.com:yiisoft/jquery-pjax.git",
                 "reference": "aef7b953107264f00234902a3880eb50dafc48be"
             },
             "dist": {
@@ -374,6 +374,69 @@
                 "random"
             ],
             "time": "2018-07-02T15:55:56+00:00"
+        },
+        {
+            "name": "phpoffice/phpexcel",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/PHPOffice/PHPExcel.git",
+                "reference": "1441011fb7ecdd8cc689878f54f8b58a6805f870"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/PHPOffice/PHPExcel/zipball/1441011fb7ecdd8cc689878f54f8b58a6805f870",
+                "reference": "1441011fb7ecdd8cc689878f54f8b58a6805f870",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "ext-xml": "*",
+                "ext-xmlwriter": "*",
+                "php": "^5.2|^7.0"
+            },
+            "require-dev": {
+                "squizlabs/php_codesniffer": "2.*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "PHPExcel": "Classes/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "LGPL-2.1"
+            ],
+            "authors": [
+                {
+                    "name": "Maarten Balliauw",
+                    "homepage": "http://blog.maartenballiauw.be"
+                },
+                {
+                    "name": "Mark Baker",
+                    "homepage": "http://markbakeruk.net"
+                },
+                {
+                    "name": "Franck Lefevre",
+                    "homepage": "http://rootslabs.net"
+                },
+                {
+                    "name": "Erik Tilt"
+                }
+            ],
+            "description": "PHPExcel - OpenXML - Read, Create and Write Spreadsheet documents in PHP - Spreadsheet engine",
+            "homepage": "https://github.com/PHPOffice/PHPExcel",
+            "keywords": [
+                "OpenXML",
+                "excel",
+                "php",
+                "spreadsheet",
+                "xls",
+                "xlsx"
+            ],
+            "abandoned": "phpoffice/phpspreadsheet",
+            "time": "2018-11-22T23:07:24+00:00"
         },
         {
             "name": "swiftmailer/swiftmailer",
@@ -906,53 +969,6 @@
                 }
             ],
             "time": "2020-07-14T12:35:20+00:00"
-        },
-        {
-            "name": "tpmanc/yii2-imagick",
-            "version": "dev-master",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/tpmanc/yii2-imagick.git",
-                "reference": "be5f3c1dc1b1f18acde1f4672bf6d4dc77f2fd1a"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/tpmanc/yii2-imagick/zipball/be5f3c1dc1b1f18acde1f4672bf6d4dc77f2fd1a",
-                "reference": "be5f3c1dc1b1f18acde1f4672bf6d4dc77f2fd1a",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.4.0"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "*"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "tpmanc\\imagick\\": ""
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-3-Clause"
-            ],
-            "authors": [
-                {
-                    "name": "tpmanc",
-                    "email": "tpxtrime@mail.ru",
-                    "homepage": "https://tpmanc.github.io",
-                    "role": "Developer"
-                }
-            ],
-            "description": "Yii 2 class for working with Imagick",
-            "homepage": "https://github.com/tpmanc/yii2-imagick",
-            "keywords": [
-                "imagick",
-                "yii",
-                "yii2"
-            ],
-            "time": "2019-12-10T08:54:28+00:00"
         },
         {
             "name": "yiisoft/yii2",
@@ -4623,7 +4639,7 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "tpmanc/yii2-imagick": 20
+        "phpoffice/phpexcel": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,

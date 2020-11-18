@@ -19,7 +19,7 @@
   </div><!-- container -->
 </div><!-- content -->
 
-<div class="content">
+<!--<div class="content">
     <div class="container pd-x-0 pd-lg-x-10 pd-xl-x-0">
       <div class="row">
           <div class="col-lg-12 mb-5">
@@ -37,6 +37,40 @@
                         <th>Código</th>
                         <th>Latitud</th>
                         <th>Longitud</th>
+                    </tr>
+                </thead>
+                <tbody>
+              
+                </tbody>
+            </table>
+          </div>
+      </div>
+    </div>
+</div>-->
+
+<div class="content">
+    <div class="container pd-x-0 pd-lg-x-10 pd-xl-x-0">
+      <div class="row">
+          <div class="col-lg-12 mb-5">
+            <table class="table table-condensed table-striped dataTable" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Región</th>
+                        <th>Codigo DANE Departamento</th>
+                        <th>Departamento</th>
+                        <th>Codigo DANE Municipio</th>
+                        <th>Municipio</th>
+                        <th>Barrio</th>
+                        <th>Dirección</th>
+                        <th>Descripción Material</th>
+                        <th>Fabricante</th>
+                        <th>Modelo</th>
+                        <th>Serial o MAC</th>
+                        <th>Unidad de Medida</th>
+                        <th>Cantidad</th>
+                        <th>Coordenadas GPS</th>
+                        <th>Estado</th>
+                        <th>Fuente de Financiación</th>
                     </tr>
                 </thead>
                 <tbody>

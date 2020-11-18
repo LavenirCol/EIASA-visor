@@ -45,6 +45,26 @@ class ReportsController extends \yii\web\Controller
         return $this->render('pqrs', array('pqrs' => $pqrs));
     }
     
+    public function actionInstalaciondash()
+    {
+        $connection = Yii::$app->getDb();
+        $sql = "SELECT h.* FROM avances_metas_instalacion h";        
+        $insts = $connection->createCommand($sql)->queryAll();
+
+        return $this->render('instalaciondash', array('insts' => $insts));
+    }
+    
+    public function actionInstalaciondetails()
+    {
+        $request = Yii::$app->request;
+        $dane = $request->get('dane');
+        $connection = Yii::$app->getDb();
+        $sql = "SELECT h.* FROM sabana_accesos_instalacion h WHERE Dane_Municipio = '$dane' ";        
+        $insts = $connection->createCommand($sql)->queryAll();
+
+        return $this->render('instalaciondetails', array('insts' => $insts));
+    }
+    
     /// Server side
     
     public function actionInventariosserver() {
