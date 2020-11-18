@@ -74,28 +74,25 @@ class ReportsController extends \yii\web\Controller
         $columns = array(
             0 => 'id',
             1 => 'pid',
-            2 => 'name',
-            3 => 'sku',
-            4 => 'health_reg',
-            5 => 'location',
-            6 => 'city',
-            7 => 'district',
-            8 => 'code',
-            9 => 'lat',
-            10 => 'lng'
+            2 => 'uuid',
+            3 => 'name',
+            4 => 'factory',
+            5 => 'model',
+            6 => 'datecreate',
+            7 => 'sku',
+            8 => 'health_reg',
+            9 => 'quantity',
+            10 => 'measure',
+            11 => 'location',
+            12 => 'city',
+            13 => 'city_code',
+            14 => 'district',
+            15 => 'district_code',
+            16 => 'lat',
+            17 => 'lng'
         );
         
-        $sql = "SELECT `hsstock`.`id`,
-                    `hsstock`.`pid`,
-                    `hsstock`.`name`,
-                    `hsstock`.`sku`,
-                    `hsstock`.`health_reg`,
-                    `hsstock`.`location`,
-                    `hsstock`.`city`,
-                    `hsstock`.`district`,
-                    `hsstock`.`code`,
-                    `hsstock`.`lat`,
-                    `hsstock`.`lng`
+        $sql = "SELECT *
                 FROM `hsstock` where 1=1 ";        
 
         $data = Yii::$app->db->createCommand($sql)->queryAll();
@@ -124,17 +121,21 @@ class ReportsController extends \yii\web\Controller
         foreach ($result as $key => $row)
         {          
             $nestedData = array();
-            $nestedData[] = $row["id"];
-            $nestedData[] = $row["pid"];
-            $nestedData[] = $row["name"];
-            $nestedData[] = $row["sku"];
-            $nestedData[] = $row["health_reg"];
-            $nestedData[] = $row["location"];
-            $nestedData[] = $row["city"];
+            $nestedData[] = 'Noroccidente'; //$row["id"];
+            $nestedData[] = $row["city_code"] == '' ? '-' : substr($row["city_code"],0,2);
+            $nestedData[] = $row["city"] == '' ? '-' : $row["city"];
+            $nestedData[] = $row["district_code"];
             $nestedData[] = $row["district"];
-            $nestedData[] = $row["code"];
-            $nestedData[] = $row["lat"];
-            $nestedData[] = $row["lng"];
+            $nestedData[] = $row["location"];
+            $nestedData[] = $row["name"];
+            $nestedData[] = $row["factory"];
+            $nestedData[] = $row["model"];
+            $nestedData[] = $row["sku"];
+            $nestedData[] = $row["measure"];
+            $nestedData[] = $row["quantity"];
+            $nestedData[] = $row["lat"] .','. $row["lng"];
+            $nestedData[] = $row["city_code"] == '' ? '-' : 'Instalado';
+            $nestedData[] = 'Recursos de Fomento';
             $data[] = $nestedData;
         }
         

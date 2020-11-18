@@ -730,13 +730,20 @@ class CronController extends Controller {
                 $newinv = new Hsstock();
                 $newinv->id = $inv['id'];
                 $newinv->pid = $inv['pid'];
+                $newinv->uuid = $inv['uuid'];
                 $newinv->name = $inv['name'];
+                $newinv->factory = $inv['factory'];
+                $newinv->model = $inv['model'];
+                $newinv->datecreate = $inv['datecreate'];
                 $newinv->sku = $inv['sku'];
                 $newinv->health_reg = $inv['health_reg'];
+                $newinv->quantity = $inv['quantity'];
+                $newinv->measure = $inv['measure'];
                 $newinv->location = $inv['location'];
                 $newinv->city = $inv['city'];
+                $newinv->city_code = $inv['city_code'];
                 $newinv->district = $inv['district'];
-                $newinv->code = $inv['code'];
+                $newinv->district_code = $inv['district_code'];
                 $newinv->lat = $inv['lat'];
                 $newinv->lng = $inv['lng'];
 
