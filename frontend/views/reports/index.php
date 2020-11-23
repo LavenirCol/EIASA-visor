@@ -45,7 +45,7 @@ use \yii\helpers\Url;
                                     </div>
                                     <div class="col-md-6 text-center">
                                         <?php if (Yii::$app->user->identity->attributes['idProfile'] < 3) { ?>
-                                        <a href="<?php echo Url::toRoute('accesosinstalacion/upload'); ?>" class="btn btn-primary btn-sm pull-right">Actualizar</a>
+                                            <a href="<?php echo Url::toRoute('accesosinstalacion/upload'); ?>" class="btn btn-primary btn-sm pull-right">Actualizar</a>
                                         <?php } ?>
                                     </div>
                                 </div>
@@ -57,7 +57,18 @@ use \yii\helpers\Url;
                             <h5 class="card-title">Módulo de Operación</h5>
                             <h6 class="card-subtitle mb-2 text-muted">Formato módulo operación</h6>
                             <p class="card-text">En este módulo se visualiza la información cargada en el formato de operación</p>
-                            <a href="<?php echo Url::toRoute('reports/operacion'); ?>" class="btn btn-primary btn-sm">Consultar</a>
+                            <div class="card-footer">
+                                <div class="row">
+                                    <div class="col-md-6 text-center">
+                                        <a href="<?php echo Url::toRoute('reports/operaciondash'); ?>" class="btn btn-primary btn-sm pull-right">Consultar</a>
+                                    </div>
+                                    <div class="col-md-6 text-center">
+                                        <?php if (Yii::$app->user->identity->attributes['idProfile'] < 3) { ?>
+                                            <a href="<?php echo Url::toRoute('accesosoperacion/upload'); ?>" class="btn btn-primary btn-sm pull-right">Actualizar</a>
+                                        <?php } ?>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="card">

@@ -29,6 +29,30 @@ AppAsset::register($this);
         .filemgr-content-body > div:first-child{
             max-width: 100% !Important;
         }
+        
+        table.dataTable > tbody > tr.child ul.dtr-details > li {
+            float: left;
+            min-width: 33.3%;
+            font-size: 0.85rem;
+            min-height: 70px;
+        }
+
+        .dataTable .dtr-title {
+            width:100%;    
+        }
+        .dataTable .dtr-data {
+            display: inline-block;
+            width: 100%;
+            float: left;
+        }
+
+        .dataTable thead tr {
+            background: #d7d5d5;
+        }
+
+        .table-condensed > tbody > tr > td, .table-condensed > tbody > tr > th, .table-condensed > tfoot > tr > td, .table-condensed > tfoot > tr > th, .table-condensed > thead > tr > td, .table-condensed > thead > tr > th {
+            padding: 5px;
+        }
     </style>
     <script>
         var baseurl = '<?= Url::base(true);  ?>'; 

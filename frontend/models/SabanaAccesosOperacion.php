@@ -70,7 +70,7 @@ class SabanaAccesosOperacion extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['Operador', 'Documento_Cliente_Acceso', 'Dane_Mun_ID_Punto', 'Estado_Actual', 'Region', 'Dane_Departamento', 'Departamento', 'Dane_Municipio', 'Municipio', 'Barrio', 'Dirección', 'Estrato', 'Dificultad_de_acceso_al_municipio', 'Coordenadas_Grados-decimales', 'Nombre_Cliente_Completo', 'Telefono', 'Celular', 'Correo_Electronico', 'VIP', 'Codigo_Proyecto_VIP', 'Nombre_Proyecto_VIP', 'Velocidad_Contratada_MB', 'Meta', 'Fecha_de_cumplimiento_de_meta', 'Tipo_Solucion_UM_Operatividad', 'Operador_Prestante', 'IP', 'Olt', 'PuertoOlt', 'Serial_ONT', 'Port_ONT', 'Nodo_Cobre', 'Armario', 'Red_Primaria', 'Red_Secundaria', 'Nodo_HFC', 'Amplificador', 'Tap-Boca', 'Mac_Cpe', 'Fecha_Instalado', 'Fecha_Activo', 'Fecha_inicio_operacion', 'Fecha_Solicitud_Traslado_PQR', 'Fecha_Inactivo', 'Fecha_Desinstalado'], 'string', 'max' => 255],
+            [['Operador', 'Documento_Cliente_Acceso', 'Dane_Mun_ID_Punto', 'Estado_Actual', 'Region', 'Dane_Departamento', 'Departamento', 'Dane_Municipio', 'Municipio', 'Barrio', 'Dirección', 'Estrato', 'Dificultad_de_acceso_al_municipio', 'Coordenadas_Grados_decimales', 'Nombre_Cliente_Completo', 'Telefono', 'Celular', 'Correo_Electronico', 'VIP', 'Codigo_Proyecto_VIP', 'Nombre_Proyecto_VIP', 'Velocidad_Contratada_MB', 'Meta', 'Fecha_de_cumplimiento_de_meta', 'Tipo_Solucion_UM_Operatividad', 'Operador_Prestante', 'IP', 'Olt', 'PuertoOlt', 'Serial_ONT', 'Port_ONT', 'Nodo_Cobre', 'Armario', 'Red_Primaria', 'Red_Secundaria', 'Nodo_HFC', 'Amplificador', 'Tap_Boca', 'Mac_Cpe', 'Fecha_Instalado', 'Fecha_Activo', 'Fecha_inicio_operacion', 'Fecha_Solicitud_Traslado_PQR', 'Fecha_Inactivo', 'Fecha_Desinstalado'], 'string', 'max' => 255],
         ];
     }
 
@@ -94,7 +94,7 @@ class SabanaAccesosOperacion extends \yii\db\ActiveRecord
             'Dirección' => Yii::t('app', 'Dirección'),
             'Estrato' => Yii::t('app', 'Estrato'),
             'Dificultad_de_acceso_al_municipio' => Yii::t('app', 'Dificultad De Acceso Al Municipio'),
-            'Coordenadas_Grados-decimales' => Yii::t('app', 'Coordenadas Grados Decimales'),
+            'Coordenadas_Grados_decimales' => Yii::t('app', 'Coordenadas Grados Decimales'),
             'Nombre_Cliente_Completo' => Yii::t('app', 'Nombre Cliente Completo'),
             'Telefono' => Yii::t('app', 'Telefono'),
             'Celular' => Yii::t('app', 'Celular'),
@@ -118,7 +118,7 @@ class SabanaAccesosOperacion extends \yii\db\ActiveRecord
             'Red_Secundaria' => Yii::t('app', 'Red Secundaria'),
             'Nodo_HFC' => Yii::t('app', 'Nodo Hfc'),
             'Amplificador' => Yii::t('app', 'Amplificador'),
-            'Tap-Boca' => Yii::t('app', 'Tap Boca'),
+            'Tap_Boca' => Yii::t('app', 'Tap Boca'),
             'Mac_Cpe' => Yii::t('app', 'Mac Cpe'),
             'Fecha_Instalado' => Yii::t('app', 'Fecha Instalado'),
             'Fecha_Activo' => Yii::t('app', 'Fecha Activo'),

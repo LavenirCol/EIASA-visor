@@ -10,6 +10,10 @@ $(document).ready(function(){
         "searching": true,
         "ordering": true,
         "pageLength": 10,
+        lengthMenu: [
+            [ 10, 25, 50, 100, -1 ],
+            [ '10 filas', '25 filas', '50 filas', '100 filas', 'Todo' ]
+        ],
         "autoWidth": true,
         "language": {
             "sProcessing": "Procesando...",
@@ -43,6 +47,17 @@ $(document).ready(function(){
         'ordering': true,
         'info': true,
         'autoWidth': true,
+        'dom': 'Bfrtip',
+        'buttons': [{
+                extend: 'excel',
+                title: (typeof title === 'undefined' ?'Datos Exportados': title)
+            },
+            {
+                extend: 'pdf',
+                title: (typeof title === 'undefined' ?'Datos Exportados': title),
+                orientation: 'landscape',
+                pageSize: 'TABLOID'
+            }],        
         responsive: {
             details: {
                 type: 'column',
@@ -54,19 +69,6 @@ $(document).ready(function(){
             orderable: false,
             targets:   -1
         } ],
-        lengthMenu: [
-            [ 10, 25, 50, -1 ],
-            [ '10', '25', '50', 'Todo' ]
-        ],
-        'dom': 'Bfrtip',
-        'buttons': [
-            'pageLength','copy', 'excel', 'print',
-            {
-                extend: 'pdf',
-                orientation: 'landscape',
-                pageSize: 'LEGAL'
-            }
-        ]
     });
     
     
@@ -77,6 +79,17 @@ $(document).ready(function(){
         "order": [[ 3, "desc" ]],
         'info': true,
         'autoWidth': true,
+        'dom': 'Bfrtip',
+        'buttons': [{
+                extend: 'excel',
+                title: (typeof title === 'undefined' ?'Datos Exportados': title)
+            },
+            {
+                extend: 'pdf',
+                title: (typeof title === 'undefined' ?'Datos Exportados': title),
+                orientation: 'landscape',
+                pageSize: 'TABLOID'
+            }],        
         responsive: {
             details: {
                 type: 'column',
@@ -87,56 +100,70 @@ $(document).ready(function(){
             className: 'control',
             orderable: false,
             targets:   -1
-        } ],
-        'dom': 'Bfrtip',
-        'buttons': [
-            'copy', 'excel', 'print',
-            {
-                extend: 'pdf',
-                orientation: 'landscape',
-                pageSize: 'LEGAL'
-            }
-        ]
+        } ]
     });
     
     // Serever side
     
     function makeserverprocessing(datatable, ajaxcall){
         $(datatable).DataTable({
-            "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
             'paging': true,
             'searching': true,
             'ordering': true,
             'info': true,
             'autoWidth': true,
-            responsive: true,
-//            responsive: {
-//                details: {
-//                    type: 'column',
-//                    target: -1
-//                }
-//            },
-//            columnDefs: [ {
-//                className: 'control',
-//                orderable: false,
-//                targets:   -1
-//            } ],
+            'responsive': true,
+            'processing': true,
+            'serverSide': true,
             'dom': 'Bfrtip',
             'buttons': [
-                'copy', 'excel', 'print'
+                {
+                    text: 'Excel',
+                    action: function ( e, dt, node, config ) {
+                        var url = baseurl + ajaxcall;
+                        url = url + '?dptos='+$('#dptos').val();
+                        url = url + '&mpios='+$('#mpios').val();
+                        url = url + '&materials='+$('#materials').val();
+                        url = url + '&factories='+$('#factories').val();
+                        url = url + '&models='+$('#models').val();
+                        url = url + '&export=csv';
+                        window.open(url);
+                    }
+                },
+                {
+                    text: 'PDF',
+                    action: function ( e, dt, node, config ) {
+                        var url = baseurl + ajaxcall;
+                        url = url + '?dptos='+$('#dptos').val();
+                        url = url + '&mpios='+$('#mpios').val();
+                        url = url + '&materials='+$('#materials').val();
+                        url = url + '&factories='+$('#factories').val();
+                        url = url + '&models='+$('#models').val();
+                        url = url + '&export=pdf';
+                        window.open(url);
+                    }
+                }                
             ],
-            "processing": true,
-            "serverSide": true,
-
             "ajax": {
                 url: baseurl + ajaxcall,
                 type: "post",
-                error: function()
+                error: function(e)
                 {
-                   alert('error');
+                   alert('error¨: ' + e);
+                },
+                data: function(d){
+                    d.dptos = $('#dptos').val();
+                    d.mpios = $('#mpios').val();
+                    d.materials = $('#materials').val();
+                    d.factories = $('#factories').val();
+                    d.models = $('#models').val();
                 }
-
             }
+        });
+        
+        // search
+        $("#btnsearch").click(function(e){
+            $(datatable).DataTable().ajax.reload();
         });
     }
     

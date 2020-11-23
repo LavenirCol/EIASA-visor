@@ -2,7 +2,7 @@
 /* @var $this yii\web\View */
 ?>
 <script>
-var title = 'Instalaciones por Municipio';
+    var title = 'Operación por Municipio';
 </script>
 <div class="content content-fixed bd-b pb-3">
     <div class="container pd-x-0 pd-lg-x-10 pd-xl-x-0">
@@ -12,24 +12,24 @@ var title = 'Instalaciones por Municipio';
                     <ol class="breadcrumb breadcrumb-style1 mg-b-10">
                         <li class="breadcrumb-item" aria-current="page">Inicio</li>
                         <li class="breadcrumb-item" aria-current="page">Reportes</li>
-                        <li class="breadcrumb-item active" aria-current="page">Instalaciones por Municipio</li>
+                        <li class="breadcrumb-item active" aria-current="page">Operación por Municipio</li>
                     </ol>
                 </nav>
-                <h4 class="mg-b-0">Instalaciones por Municipio</h4>
+                <h4 class="mg-b-0">Operación por Municipio</h4>
             </div>
         </div>
     </div><!-- container -->
 </div><!-- content -->
 
 <div class="content">
-   <form method="post">
+    <form method="post">
         <div class="container bd bd-2 p-3 rounded-10">
             <div class="row">
                 <div class="col-lg-2">
                     <label class="label-form" label-for="deptos">Departamento</label>
                     <select class="custom-select" id="dptos" name="deptos">
                         <option value="-1">--Seleccione--</option>
-                        <?php foreach ($deptos as $depto){ ?>
+                        <?php foreach ($deptos as $depto) { ?>
                             <option value="<?php echo $depto['city']; ?>"><?php echo $depto['city']; ?></option>
                         <?php } ?>
                     </select>
@@ -38,7 +38,7 @@ var title = 'Instalaciones por Municipio';
                     <label class="label-form" label-for="mpios">Municipio</label>
                     <select class="custom-select" id="mpios" name="mpios">
                         <option value="-1">--Seleccione--</option>
-                        <?php foreach ($mpios as $mpio){ ?>
+                        <?php foreach ($mpios as $mpio) { ?>
                             <option value="<?php echo $mpio['district']; ?>"><?php echo $mpio['district']; ?></option>
                         <?php } ?>
                     </select>
@@ -65,7 +65,7 @@ var title = 'Instalaciones por Municipio';
                 <p>&nbsp;</p>
                 <h4 class="mg-b-0"><?php echo $municipio; ?></h4>
                 <p>&nbsp;</p>
-                <table class="table table-condensed table-striped dataTable" id="dataTableInstalaciondetails" style="width:100%">
+                <table class="table table-condensed table-striped dataTable" id="dataTableOperaciondetails" style="width:100%">
                     <thead>
                         <tr>
                             <th>Operador</th>
@@ -92,9 +92,6 @@ var title = 'Instalaciones por Municipio';
                             <th>Velocidad_Contratada_Downstream</th>
                             <th>Meta</th>
                             <th>Fecha_max_de_cumplimiento_de_meta</th>
-                            <th>Dias_pendientes_de_la_fecha_de_cumplimiento</th>
-                            <th>FECHA_APROBACION_INTERVENTORIA</th>
-                            <th>FECHA_APROBACION_META_SUPERVISION</th>
                             <th>Tipo_Solucion_UM_Operatividad</th>
                             <th>Operador_Prestante</th>
                             <th>IP</th>
@@ -110,16 +107,16 @@ var title = 'Instalaciones por Municipio';
                             <th>Amplificador</th>
                             <th>Tap_Boca</th>
                             <th>Mac_Cpe</th>
-                            <th>Fecha_Asignado_o_Presupuestado</th>
-                            <th>Fecha_En_proceso_de_Instalacion</th>
-                            <th>Fecha_Anulado</th>
                             <th>Fecha_Instalado</th>
                             <th>Fecha_Activo</th>
-                            <th>Fecha_aprobacion_de_meta</th>
+                            <th>Fecha_inicio_operación</th>
+                            <th>Fecha_Solicitud_Traslado_PQR</th>
+                            <th>Fecha_Inactivo</th>
+                            <th>Fecha_Desinstalado</th>
                             <th>Sexo</th>
                             <th>Genero</th>
                             <th>Orientacion_Sexual</th>
-                            <th>Educacion</th>
+                            <th>Educacion_</th>
                             <th>Etnias</th>
                             <th>Discapacidad</th>
                             <th>Estratos</th>
@@ -155,9 +152,6 @@ var title = 'Instalaciones por Municipio';
                                 <td><?php echo $inst['Velocidad_Contratada_Downstream'] ?></td>
                                 <td><?php echo $inst['Meta'] ?></td>
                                 <td><?php echo $inst['Fecha_max_de_cumplimiento_de_meta'] ?></td>
-                                <td><?php echo $inst['Dias_pendientes_de_la_fecha_de_cumplimiento'] ?></td>
-                                <td><?php echo $inst['FECHA_APROBACION_INTERVENTORIA'] ?></td>
-                                <td><?php echo $inst['FECHA_APROBACION_META_SUPERVISION'] ?></td>
                                 <td><?php echo $inst['Tipo_Solucion_UM_Operatividad'] ?></td>
                                 <td><?php echo $inst['Operador_Prestante'] ?></td>
                                 <td><?php echo $inst['IP'] ?></td>
@@ -173,22 +167,21 @@ var title = 'Instalaciones por Municipio';
                                 <td><?php echo $inst['Amplificador'] ?></td>
                                 <td><?php echo $inst['Tap_Boca'] ?></td>
                                 <td><?php echo $inst['Mac_Cpe'] ?></td>
-                                <td><?php echo $inst['Fecha_Asignado_o_Presupuestado'] ?></td>
-                                <td><?php echo $inst['Fecha_En_proceso_de_Instalacion'] ?></td>
-                                <td><?php echo $inst['Fecha_Anulado'] ?></td>
                                 <td><?php echo $inst['Fecha_Instalado'] ?></td>
                                 <td><?php echo $inst['Fecha_Activo'] ?></td>
-                                <td><?php echo $inst['Fecha_aprobacion_de_meta'] ?></td>
+                                <td><?php echo $inst['Fecha_inicio_operación'] ?></td>
+                                <td><?php echo $inst['Fecha_Solicitud_Traslado_PQR'] ?></td>
+                                <td><?php echo $inst['Fecha_Inactivo'] ?></td>
+                                <td><?php echo $inst['Fecha_Desinstalado'] ?></td>
                                 <td><?php echo $inst['Sexo'] ?></td>
                                 <td><?php echo $inst['Genero'] ?></td>
                                 <td><?php echo $inst['Orientacion_Sexual'] ?></td>
-                                <td><?php echo $inst['Educacion'] ?></td>
+                                <td><?php echo $inst['Educacion_'] ?></td>
                                 <td><?php echo $inst['Etnias'] ?></td>
                                 <td><?php echo $inst['Discapacidad'] ?></td>
                                 <td><?php echo $inst['Estratos'] ?></td>
                                 <td><?php echo $inst['Beneficiario_Ley_1699_de_2013'] ?></td>
                                 <td><?php echo $inst['SISBEN_IV'] ?></td>
-
                                 <td></td>
                             </tr>
                         <?php } ?>      
