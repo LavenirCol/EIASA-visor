@@ -104,7 +104,8 @@ class VisorController extends \yii\web\Controller {
             if((int)$idcliente > 0 && (int)$idmodule === 1 ) //suscriptores
             {
                 $sql = $sql . " and (d.idfolder in ( select idFolder from contract co where co.fk_soc = '$idcliente' )";
-                $sql = $sql . " or d.idfolder in ( select idFolder from proposal pr where pr.socid = '$idcliente' ))";
+                $sql = $sql . " or d.idfolder in ( select idFolder from proposal pr where pr.socid = '$idcliente' )";
+                $sql = $sql . " or d.idfolder in ( select idFolder from hstask pr where pr.socid = '$idcliente' ))";
             }
             
             if((int)$idcliente > 0 && (int)$idmodule === 2 ) // facturacion

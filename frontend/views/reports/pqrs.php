@@ -26,14 +26,15 @@
             <table class="table table-condensed table-striped dataTable" style="width:100%">
                 <thead>
                     <tr>
-                        <th>Departamento</th>
-                        <th>Municipio</th>
-                        <th>Código Acceso</th>
-                        <th>Cliente</th>
-                        <th>Ref Ticket</th>
-                        <th>Tipo</th>
-                        <th>Asunto</th>
-                        <th>Detalle</th>
+                        <th data-priority="1" width="10%">Departamento</th>
+                        <th data-priority="2" width="10%">Municipio</th>
+                        <th data-priority="3" width="10%">Código Acceso</th>
+                        <th data-priority="4" width="10%">Cliente</th>
+                        <th data-priority="5" width="10%">Ref Ticket</th>
+                        <th data-priority="6" width="15%">Tipo</th>
+                        <th data-priority="7" width="15%">Asunto</th>
+                        <th data-priority="7" width="20%">Detalle</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -46,7 +47,22 @@
                         <td><?php echo $pqr['ref'] ?></td>
                         <td><?php echo $pqr['type_label'] ?><br><small><?php echo $pqr['category_label'] ?> - <?php echo $pqr['severity_label'] ?></small></td>
                         <td><?php echo $pqr['subject'] ?></td>
-                        <td><?php echo $pqr['message'] ?></td>
+                        <td><?php echo $pqr['message'] ?><br><br>
+                        
+                            <p>
+                                <b>Mensajes:</b>
+                            </p>
+                            
+                            <ul style="padding:0px; font-size:10px"><?php
+                                $msg = '';
+                                $jsond = json_decode($pqr['messages']);
+                                foreach((array)$jsond as $key => $mesa){
+                                    $msg = $msg.'<li>'.date("Y-m-d H:i:s",$mesa->datec).' - '.$mesa->message.'</li>';
+                                }
+                                echo $msg;
+                            ?></ul>
+                        </td>
+                        <td></td>
                     </tr>
                     <?php } ?>                   
                 </tbody>

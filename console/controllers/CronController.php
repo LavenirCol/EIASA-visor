@@ -169,6 +169,16 @@ class CronController extends Controller {
      */
 
     public function actionSyncdata() {
+        
+        // TODO: Borrar todo antes de iniciar
+//        DELETE FROM `eiasavisor`.`document` where fileUploadedUserId is null;
+//        DELETE FROM `eiasavisor`.`contract`;
+//        DELETE FROM `eiasavisor`.`proposal`;
+//        DELETE FROM `eiasavisor`.`invoices`;
+//        DELETE FROM `eiasavisor`.`tickets`;
+//        DELETE FROM `eiasavisor`.`folder` WHERE folderdefault > 0;
+//        DELETE FROM `eiasavisor`.`client`;
+
         echo "Inicio cron job \n"; // your logic for deleting old post goes here
         //verifica directorio raiz
         $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
@@ -191,6 +201,7 @@ class CronController extends Controller {
         // sincroniza archivos
         echo "Sincronizando Archivos...\n"; // your logic for deleting old post goes here
         $this->syncFiles();
+
         exit();
     }
 
@@ -209,8 +220,13 @@ class CronController extends Controller {
         $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
 
         // sincroniza archivos
-        echo "Sincronizando Archivos...\n"; // your logic for deleting old post goes here
-        $this->syncFiles();
+        //echo "Sincronizando Archivos...\n"; // your logic for deleting old post goes here        
+        //$this->syncFiles();
+
+        // sincroniza archivos instalacion
+        echo "Sincronizando Archivos Instalacion...\n"; // your logic for deleting old post goes here        
+        $this->syncInstalationfiles();
+        
         exit();
     }
     
@@ -544,9 +560,37 @@ class CronController extends Controller {
                 $newticket->datec = $ticket['datec'];
                 $newticket->date_read = $ticket['date_read'];
                 $newticket->date_close = $ticket['date_close'];
+                $newticket->messages = '';
 
-                $newticket->save(false);            
+                $newticket->save(false);
+                
+                $this->processticketdetail($ticket['id']);
             }
+        }
+    }
+    
+    
+    /*
+     * Process ticket detail
+     */
+    
+    public function processticketdetail($ticket_id){        
+        // consulta tickets
+        echo "consultando tickets ticket_id (". $ticket_id .")\n";
+        $ticket = json_decode($this->CallAPI("GET", "tickets/".$ticket_id, array("id" => $ticket_id)), true);
+
+        if (isset($ticket["error"]) && $ticket["error"]["code"] >= 300) {
+            echo "procesando tickets (0)\n";
+            return;
+        }
+        if(isset( $ticket['ref'])){
+            // crea ticket
+            $currentticket = Tickets::find()->where(['id' => $ticket_id])->one();
+            if(isset($ticket['messages']))
+            {
+                $currentticket->messages = json_encode($ticket['messages']);
+                $currentticket->save(false);
+            }              
         }
     }
     
@@ -672,8 +716,14 @@ class CronController extends Controller {
         Yii::$app->db->createCommand()->truncateTable('hsstock')->execute();
         Yii::$app->db->createCommand()->truncateTable('hstask')->execute();
         
+        shell_exec ( 'sudo rm -r /eiasadocs/Suscriptores/TS*');
+        
         $this->syncInventory();
-        $this->syncTasks();
+        $this->syncTasks();        
+        
+        // sincroniza archivos instalacion
+        echo "Sincronizando Archivos Instalacion...\n"; // your logic for deleting old post goes here        
+        $this->syncInstalationfiles();
         
         exit();
     }
@@ -815,12 +865,85 @@ class CronController extends Controller {
                 $newtask->code = $task['code'];
                 $newtask->status = $task['status'];
                 $newtask->pdf = $task['pdf'];
-
+                $newtask->account = $task['account'];
+                $newtask->account_id = $task['account_id'];
                 $newtask->save(false);    
             }
             
         }
 
         echo "Fin synctasks ".date("Y-m-d H:i:s"). "\n";
+    }
+    
+    /*
+     * Sincroniza archivos instalacion
+     */
+    
+    public function syncInstalationfiles() {
+        echo "----------------------------------------\n";
+        echo "Inicio syncdocinstalacion ".date("Y-m-d H:i:s"). "\n";
+        
+        Yii::$app->db->createCommand('UPDATE hstask
+                                        INNER JOIN client ON client.idprof1= hstask.account_id 
+                                        SET hstask.socid = client.ref')->execute();
+        
+        $hstasks = Hstask::find()->andWhere(['IS NOT', 'socid', new \yii\db\Expression('null')])->all();
+        //$hstasks = Hstask::find()->where(['in', 'uuid', ['5FAB9C-AF832','5FAB9C-AF85B']])->all();
+
+        echo "procesando docinstalacions (". sizeof($hstasks) .")\n";
+        foreach ($hstasks as $hstask){
+            //consulta documento
+            // crea folder de cliente en modulo suscriptores                        
+            $suscfolder = $this->Createfolder($this->idmodulesusc, 0, 'TS'.$hstask['uuid']);
+
+            if ($suscfolder['error'] == "") {
+                //crear disco path
+                $fpath = $this->root_path . '/' . $this->modulosusc->moduleName . '/' . $suscfolder['data']->folderName;
+                $vpath = $this->root_vpath . '/' . $this->modulosusc->moduleName. '/' . $suscfolder['data']->folderName . '/';
+
+                // actualiza task 
+                $hstask->idFolder = $suscfolder['data']->idfolder;
+                $hstask->save(false);
+
+                // descarga documento
+                // Initialize the cURL session 
+                $ch = curl_init($hstask['pdf']); 
+
+                // Save file into file location 
+                $save_file_loc = $fpath . '/' . $hstask['uuid']. '.pdf'; 
+
+                // Open file  
+                $fp = fopen($save_file_loc, 'wb'); 
+
+                // It set an option for a cURL transfer 
+                curl_setopt($ch, CURLOPT_FILE, $fp); 
+                curl_setopt($ch, CURLOPT_HEADER, 0); 
+
+                // Perform a cURL session 
+                curl_exec($ch); 
+
+                // Closes a cURL session and frees all resources 
+                curl_close($ch); 
+
+                // Close file 
+                fclose($fp); 
+                 
+                // crea documentos intalacion
+                $newdocument = new Document(); 
+                $newdocument->name = $hstask['uuid']. '.pdf';
+                $newdocument->path = $fpath;
+                $newdocument->level1name = $hstask['uuid'];
+                $newdocument->relativename = $vpath . $hstask['uuid']. '.pdf'; 
+                $newdocument->fullname = $save_file_loc;
+                $newdocument->date = date("Y-m-d H:i:s");                
+                $newdocument->size = filesize ($save_file_loc) ;                
+                $newdocument->type = 'application/pdf';                
+                $newdocument->iddocumentType = 5; // documento instalacion
+                $newdocument->idFolder = $suscfolder['data']->idfolder;
+                
+                $newdocument->save(false);
+            }
+        }
+        echo "Fin syncdocinstalacion ".date("Y-m-d H:i:s"). "\n";
     }
 }

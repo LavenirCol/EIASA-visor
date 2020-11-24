@@ -179,6 +179,8 @@ function getFolders(idcliente) {
                         foldername = "CONTRATO " + item.folderName;
                     }else if(item.folderName.indexOf('PR') == 0){
                         foldername = "DOCUMENTOS SOPORTE " + item.folderName;
+                    }else if(item.folderName.indexOf('TS') == 0){
+                        foldername = "FORMATO INSTALACIÓN " + item.folderName;
                     }else{
                         foldername = item.folderName;
                     }
