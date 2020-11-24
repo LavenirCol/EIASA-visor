@@ -715,7 +715,9 @@ class CronController extends Controller {
         
         Yii::$app->db->createCommand()->truncateTable('hsstock')->execute();
         Yii::$app->db->createCommand()->truncateTable('hstask')->execute();
-        
+        Yii::$app->db->createCommand("DELETE FROM document where fileUploadedUserId is null and name like 'TS%' ")->execute();
+        Yii::$app->db->createCommand("DELETE FROM folder where folderdefault > 0 and folderName like 'TS%' ")->execute();
+                        
         shell_exec ( 'sudo rm -r /eiasadocs/Suscriptores/TS*');
         
         $this->syncInventory();
@@ -885,7 +887,7 @@ class CronController extends Controller {
         
         Yii::$app->db->createCommand('UPDATE hstask
                                         INNER JOIN client ON client.idprof1= hstask.account_id 
-                                        SET hstask.socid = client.ref')->execute();
+                                        SET hstask.socid = client.ref')->execute();       
         
         $hstasks = Hstask::find()->andWhere(['IS NOT', 'socid', new \yii\db\Expression('null')])->all();
         //$hstasks = Hstask::find()->where(['in', 'uuid', ['5FAB9C-AF832','5FAB9C-AF85B']])->all();
