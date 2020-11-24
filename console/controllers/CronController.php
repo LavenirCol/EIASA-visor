@@ -195,7 +195,7 @@ class CronController extends Controller {
         echo "Consultando Clientes...\n"; // your logic for deleting old post goes here
         
         $limit = 100;
-        for ($i = 1; $i <= 65; $i++) {
+        for ($i = 1; $i <= 120; $i++) {
             $this->syncClients($limit, $i);
         }
         // sincroniza archivos
@@ -720,6 +720,18 @@ class CronController extends Controller {
                         
         shell_exec ( 'sudo rm -r /eiasadocs/Suscriptores/TS*');
         
+		//verifica directorio raiz
+        $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+        $this->root_path = $keyfolderraiz->value;
+        //varifica urlbase raiz
+        $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
+        $this->root_vpath = $keyurlbase->value;        // modulo suscriptores
+
+        //modulo suscriptores
+        $this->modulosusc = Module::find()->where(['idmodule' => $this->idmodulesusc])->one();
+        // modulo facturacion
+        $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
+		
         $this->syncInventory();
         $this->syncTasks();        
         
