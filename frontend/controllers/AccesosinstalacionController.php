@@ -53,6 +53,7 @@ class AccesosinstalacionController extends Controller {
     }
 
     public function actionUpload() {
+        ini_set('memory_limit', '2048M');
         $request = Yii::$app->request;
         if ($request->isGet) {
             $returndata = ['data' => '', 'error' => ''];
@@ -104,7 +105,7 @@ class AccesosinstalacionController extends Controller {
                         $newrec = new SabanaReporteInstalacion();
                         $newrec->Operador = $rowData[0][0];
                         $newrec->Documento_cliente_acceso = $rowData[0][1];
-                        $newrec->Dane_Mun_ID_Punto = $rowData[0][2];
+                        $newrec->Dane_Mun_ID_Punto = isset($rowData[0][2])?$rowData[0][2]: '';
                         $newrec->Estado_actual = $rowData[0][3];
                         $newrec->Region = $rowData[0][4];
                         $newrec->Dane_Departamento = $rowData[0][5];
@@ -192,7 +193,7 @@ class AccesosinstalacionController extends Controller {
                         $newrec->Avance = 0;
                         if ($cantidad > 0) {
                             $result = (float) ($cantidad / $meta);
-                            $newrec->Avance = number_format($result, 2);
+                            $newrec->Avance = round($result*100,2);
                         }
                         $newrec->save(false);
                     };
