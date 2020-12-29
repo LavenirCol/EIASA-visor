@@ -194,8 +194,10 @@ class CronController extends Controller {
         
         echo "Consultando Clientes...\n"; // your logic for deleting old post goes here
         
+        //ciclos
         $limit = 100;
-        for ($i = 1; $i <= 120; $i++) {
+        $cycles = 120;
+        for ($i = 1; $i <= $cycles; $i++) {
             $this->syncClients($limit, $i);
         }
         // sincroniza archivos
@@ -498,11 +500,9 @@ class CronController extends Controller {
                             //var_dump($document);      
                             if(isset($document['name'])){
                                 $name = $document['name'];
-                                $names = explode('.', $name );
-                                $ext = end($names);
-                                if($ext === 'odt' || $ext === 'json'){
-                                    //no inserta tipo odt, json
-                                }else{
+                                
+                                if($name === 'response.json')
+                                {
                                     $newdocument = new Document();
                                     $newdocument->attributes = $document;
                                     $newdocument->date = isset($document['date']) ? gmdate("Y-m-d H:i:s", $document['date']) : "";
@@ -510,9 +510,18 @@ class CronController extends Controller {
                                     $newdocument->idFolder = $suscfolder['data']->idfolder;
                                     $newdocument->type = 'pending';
                                     $newdocument->path = $fpath;
-                                    $newdocument->relativename = $vpath . $document['name'];
+                                    $newdocument->name = $document['level1name'] . '.pdf';
+                                    $newdocument->relativename = $vpath . $document['level1name'] . '.pdf'; // $document['name'];
                                     $newdocument->save(false);
                                 }
+                                
+//                                $names = explode('.', $name );
+//                                $ext = end($names);
+//                                if($ext === 'odt' || $ext === 'json'){
+//                                    //no inserta tipo odt, json
+//                                }else{
+//
+//                                }
                             }
                         }  
                     }
@@ -606,33 +615,77 @@ class CronController extends Controller {
         foreach ($documents as $document){
             //consulta documento
             $modulepart = "";
-            if($document['iddocumentType']===2){ // contract
-                $modulepart = "contract";
-            }
-            if($document['iddocumentType']===3){ // proposal
-                $modulepart = "propale";
-            }
+
             if($document['iddocumentType']===4){ // invoice
                 $modulepart = "facture";
-            }
-            
-            // consulta documento download
-            $download = json_decode($this->CallAPI("GET", "documents/download", array(
-                    "modulepart" => $modulepart,
-                    "original_file" => $document['level1name'] . "/". $document['name'])
-                ), true);
-            
-            if (isset($download["error"]) && $download["error"]["code"] >= "300") {
-                echo "Error download " . $document['level1name'] . "/" . $document['name'] . " - " . $download["error"]["message"] . "\n";
-            }else{
-                //actualiza document
-                $document->type = $download["content-type"];
-                //$document->fileUploadedUserId = -1;
-                $document->save();
                 
-                //guarda bas64
-                $this->base64ToFile($download["content"], $document['path'] . "/" . $document['name'] );
+                // consulta documento download
+                $download = json_decode($this->CallAPI("GET", "documents/download", array(
+                        "modulepart" => $modulepart,
+                        "original_file" => $document['level1name'] . "/". 'response.json')
+                    ), true);
+
+                if (isset($download["error"]) && $download["error"]["code"] >= "300") {
+                    echo "Error download " . $document['level1name'] . "/" . 'response.json' . " - " . $download["error"]["message"] . "\n";
+                }else{
+                    
+                    $content = json_decode(base64_decode($download["content"]),true);
+                    if(isset($content["resultado"]["url_representacion_grafica"]))
+                    {
+                        //actualiza document
+                        $document->type = 'application/pdf';
+                        //$document->fileUploadedUserId = -1;
+                        $document->save();
+                    
+                        $url  = $content["resultado"]["url_representacion_grafica"];
+                        $path = $document['path'] . "/" . $document['name'];
+
+                        $ch = curl_init($url);
+                        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+                        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                        curl_setopt($ch, CURLOPT_REFERER, 'https://www.sedi.ca/sedi/SVTReportsAccessController?menukey=15.03.00&locale=en_CA');
+
+                        $data = curl_exec($ch);
+
+                        $result = file_put_contents($path, $data);
+
+                        if (!$result) {
+                            echo "Error download " . $document['level1name'] . "/" . $document['name'] . " - " . curl_error($ch) . "\n";
+                        } 
+                        
+                        curl_close($ch);
+                    }
+                    
+                }
+
+                
+            }else{
+                if($document['iddocumentType']===2){ // contract
+                    $modulepart = "contract";
+                }
+                if($document['iddocumentType']===3){ // proposal
+                    $modulepart = "propale";
+                }
+                // consulta documento download
+                $download = json_decode($this->CallAPI("GET", "documents/download", array(
+                        "modulepart" => $modulepart,
+                        "original_file" => $document['level1name'] . "/". $document['name'])
+                    ), true);
+
+                if (isset($download["error"]) && $download["error"]["code"] >= "300") {
+                    echo "Error download " . $document['level1name'] . "/" . $document['name'] . " - " . $download["error"]["message"] . "\n";
+                }else{
+                    //actualiza document
+                    $document->type = $download["content-type"];
+                    //$document->fileUploadedUserId = -1;
+                    $document->save();
+
+                    //guarda bas64
+                    $this->base64ToFile($download["content"], $document['path'] . "/" . $document['name'] );
+                }
             }
+
         }
         echo "Fin syncdodumentos ".date("Y-m-d H:i:s"). "\n";
     }
@@ -715,10 +768,10 @@ class CronController extends Controller {
         
         Yii::$app->db->createCommand()->truncateTable('hsstock')->execute();
         Yii::$app->db->createCommand()->truncateTable('hstask')->execute();
-        Yii::$app->db->createCommand("DELETE FROM document where fileUploadedUserId is null and name like 'TS%' ")->execute();
+        Yii::$app->db->createCommand("DELETE FROM document where fileUploadedUserId is null and path like '/eiasadocs/Suscriptores/TS%' ")->execute();
         Yii::$app->db->createCommand("DELETE FROM folder where folderdefault > 0 and folderName like 'TS%' ")->execute();
                         
-        shell_exec ( 'sudo rm -r /eiasadocs/Suscriptores/TS*');
+        shell_exec ( 'sudo find /eiasadocs/Suscriptores/. -maxdepth 1 -name "TS*" -exec rm -r {} \;');
         
 		//verifica directorio raiz
         $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();

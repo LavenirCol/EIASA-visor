@@ -384,13 +384,15 @@ class VisorController extends \yii\web\Controller {
             echo "error"; 
     }
     
-    public function actionGetfile($id, $d = false, $t = false){
+    public function actionGetfile($id, $d = false, $t = false){  
         //$id= 20;
         $file=  Document::find()->where(['iddocument' => $id])->one();
         if ($file === null) {
              throw new NotFoundHttpException(Yii::t('app', 'El archivo no existe'));
         }
-      
+        ob_start();
+        ob_start('ob_gzhandler');
+        
         header('Content-Description: EIASA Visor File Transfer');
         header('Content-Type: '. $file->type);
         header('Expires: 0');
@@ -403,11 +405,15 @@ class VisorController extends \yii\web\Controller {
         {
             header('Content-Disposition: attachment; filename="'.$file->name.'"');
         }
+        
+        ob_end_flush();
+        
         if($t == 'true'){
-            return readfile($file->path . '/' . $file->name);
-
+            return Yii::$app->response->sendFile($file->path . '/' . $file->name);
+            //return readfile($file->path . '/' . $file->name);
         }else{
-            return readfile($file->path . '/' . $file->name);
+            return Yii::$app->response->sendFile($file->path . '/' . $file->name);
+            //return readfile($file->path . '/' . $file->name);
         }        
     }
     
