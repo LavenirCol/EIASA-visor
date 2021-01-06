@@ -133,14 +133,19 @@ $(document).ready(function(){
                 {
                     text: 'PDF',
                     action: function ( e, dt, node, config ) {
-                        var url = baseurl + ajaxcall;
-                        url = url + '?dptos='+$('#dptos').val();
-                        url = url + '&mpios='+$('#mpios').val();
-                        url = url + '&materials='+$('#materials').val();
-                        url = url + '&factories='+$('#factories').val();
-                        url = url + '&models='+$('#models').val();
-                        url = url + '&export=pdf';
-                        window.open(url);
+                        
+                        if(datatable === "#dataTableOperaciondetails" || datatable === "#dataTableInstalaciondetails"){
+                            window.alert("Funcion no soportada en sabana de datos")
+                        }else{
+                            var url = baseurl + ajaxcall;
+                            url = url + '?dptos='+$('#dptos').val();
+                            url = url + '&mpios='+$('#mpios').val();
+                            url = url + '&materials='+$('#materials').val();
+                            url = url + '&factories='+$('#factories').val();
+                            url = url + '&models='+$('#models').val();
+                            url = url + '&export=pdf';
+                            window.open(url);
+                        }
                     }
                 }                
             ],
@@ -172,4 +177,10 @@ $(document).ready(function(){
     
     //instalacion
     makeserverprocessing('#dataTableInstalacion','/reports/instalacionserver');
+    
+    //operaciondetails
+    makeserverprocessing('#dataTableOperaciondetails','/reports/operaciondetailsserver');
+    
+    //instlaciondetails
+    makeserverprocessing('#dataTableInstalaciondetails','/reports/instalaciondetailsserver');
 });

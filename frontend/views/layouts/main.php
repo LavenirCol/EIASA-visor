@@ -80,6 +80,7 @@ AppAsset::register($this);
         <li class="nav-item"><a href="<?php echo Url::toRoute('visor/filemanager'); ?>" class="nav-link"><i data-feather="file-text"></i> File Manager</a></li>
             <?php if(Yii::$app->user->identity->attributes['idProfile']  == 1){ ?>
             <li class="nav-item"><a href="<?php echo Url::toRoute('user/index'); ?>" class="nav-link"><i data-feather="users"></i> Usuarios</a></li>
+            <li class="nav-item"><a href="<?php echo Url::toRoute('module/index'); ?>" class="nav-link"><i data-feather="folder"></i> Módulos</a></li>
             <?php } ?>
         <?php
           }

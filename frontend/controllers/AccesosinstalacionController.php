@@ -13,6 +13,8 @@ use app\models\AvancesMetasInstalacion;
 use yii\base\Exception;
 use PHPExcel;
 use PHPExcel_IOFactory;
+use Vtiful\Kernel\Excel;
+use Fpdf\Fpdf;
 
 /**
  * SabanaAccesosInstalacionController implements the CRUD actions for SabanaAccesosInstalacion model.
@@ -85,10 +87,6 @@ class AccesosinstalacionController extends Controller {
                 move_uploaded_file($tempFile, $targetFile);
 
                 set_time_limit(600);
-                
-                $inputFileType = \PHPExcel_IOFactory::identify($targetFile);
-                $objReader = \PHPExcel_IOFactory::createReader($inputFileType);
-                $objPHPExcel = $objReader->load($targetFile);
 
                 $input = Yii::$app->request->post();
                 $filetype = $input['filetype'];
@@ -96,80 +94,95 @@ class AccesosinstalacionController extends Controller {
                 if ($filetype == "1") { // archivo sabanas
                     Yii::$app->db->createCommand()->truncateTable('sabana_reporte_instalacion')->execute();
 
-                    $sheet = $objPHPExcel->getSheet(0);
-                    $highestRow = $sheet->getHighestRow();
-                    $highestColunm = $sheet->getHighestColumn();
+                    $config = ['path' => $fpath];
+                    $excel = new Excel($config);
 
-                    for ($row = 3; $row <= $highestRow; $row++) {
-                        $rowData = $sheet->rangeToArray('A' . $row . ':' . $highestColunm . $row, NULL, TRUE, FALSE);
-                        $newrec = new SabanaReporteInstalacion();
-                        $newrec->Operador = $rowData[0][0];
-                        $newrec->Documento_cliente_acceso = $rowData[0][1];
-                        $newrec->Dane_Mun_ID_Punto = isset($rowData[0][2])?$rowData[0][2]: '';
-                        $newrec->Estado_actual = $rowData[0][3];
-                        $newrec->Region = $rowData[0][4];
-                        $newrec->Dane_Departamento = $rowData[0][5];
-                        $newrec->Departamento = $rowData[0][6];
-                        $newrec->Dane_Municipio = $rowData[0][7];
-                        $newrec->Municipio = $rowData[0][8];
-                        $newrec->Barrio = $rowData[0][9];
-                        $newrec->Direccion = $rowData[0][10];
-                        $newrec->Estrato = $rowData[0][11];
-                        $newrec->Dificultad__de_acceso_al_municipio = $rowData[0][12];
-                        $newrec->Coordenadas_Grados_decimales = $rowData[0][13];
-                        $newrec->Nombre_Cliente = $rowData[0][14];
-                        $newrec->Telefono = $rowData[0][15];
-                        $newrec->Celular = $rowData[0][16];
-                        $newrec->Correo_Electronico = $rowData[0][17];
-                        $newrec->VIP = $rowData[0][18];
-                        $newrec->Codigo_Proyecto_VIP = $rowData[0][19];
-                        $newrec->Nombre_Proyecto_VIP = $rowData[0][20];
-                        $newrec->Velocidad_Contratada_Downstream = $rowData[0][21];
-                        $newrec->Meta = $rowData[0][22];
-                        $newrec->Fecha_max_de_cumplimiento_de_meta = $rowData[0][23];
-                        $newrec->Dias_pendientes_de_la_fecha_de_cumplimiento = $rowData[0][24];
-                        $newrec->FECHA_APROBACION_INTERVENTORIA = $rowData[0][25];
-                        $newrec->FECHA_APROBACION_META_SUPERVISION = $rowData[0][26];
-                        $newrec->Tipo_Solucion_UM_Operatividad = $rowData[0][27];
-                        $newrec->Operador_Prestante = $rowData[0][28];
-                        $newrec->IP = $rowData[0][29];
-                        $newrec->Olt = $rowData[0][30];
-                        $newrec->PuertoOlt = $rowData[0][31];
-                        $newrec->Serial_ONT = $rowData[0][32];
-                        $newrec->Port_ONT = $rowData[0][33];
-                        $newrec->Nodo = $rowData[0][34];
-                        $newrec->Armario = $rowData[0][35];
-                        $newrec->Red_Primaria = $rowData[0][36];
-                        $newrec->Red_Secundaria = $rowData[0][37];
-                        $newrec->Nodo2 = $rowData[0][38];
-                        $newrec->Amplificador = $rowData[0][39];
-                        $newrec->Tap_Boca = $rowData[0][40];
-                        $newrec->Mac_Cpe = $rowData[0][41];
-                        $newrec->Fecha_Asignado_o_Presupuestado = $rowData[0][42];
-                        $newrec->Fecha_En_proceso_de_Instalacion = $rowData[0][43];
-                        $newrec->Fecha_Anulado = $rowData[0][44];
-                        $newrec->Fecha_Instalado = $rowData[0][45];
-                        $newrec->Fecha_Activo = $rowData[0][46];
-                        $newrec->Fecha_aprobacion_de_meta = $rowData[0][47];
-                        $newrec->Sexo = $rowData[0][48];
-                        $newrec->Genero = $rowData[0][49];
-                        $newrec->Orientacion_Sexual = $rowData[0][50];
-                        $newrec->Educacion = $rowData[0][51];
-                        $newrec->Etnias = $rowData[0][52];
-                        $newrec->Discapacidad = $rowData[0][53];
-                        $newrec->Estratos = $rowData[0][54];
-                        $newrec->Beneficiario_Ley_1699_de_2013 = $rowData[0][55];
-                        $newrec->SISBEN_IV = $rowData[0][56];
+                    $data = $excel->openFile($_FILES['file']['name'])
+                            ->openSheet()
+                            ->getSheetData();
 
-                        $newrec->save(false);
+//                    var_dump($data);                    
+                    $i = 0;
+                    foreach ($data as $rowData) {
+                        if ($i > 0) {
+                            $newrec = new SabanaReporteInstalacion();
+                            $newrec->Operador = $rowData[0];
+                            $newrec->Documento_cliente_acceso = $rowData[1];
+                            $newrec->Dane_Mun_ID_Punto = isset($rowData[2]) ? $rowData[2] : '';
+                            $newrec->Estado_actual = $rowData[3];
+                            $newrec->Region = $rowData[4];
+                            $newrec->Dane_Departamento = $rowData[5];
+                            $newrec->Departamento = $rowData[6];
+                            $newrec->Dane_Municipio = $rowData[7];
+                            $newrec->Municipio = $rowData[8];
+                            $newrec->Barrio = $rowData[9];
+                            $newrec->Direccion = $rowData[10];
+                            $newrec->Estrato = $rowData[11];
+                            $newrec->Dificultad__de_acceso_al_municipio = $rowData[12];
+                            $newrec->Coordenadas_Grados_decimales = $rowData[13];
+                            $newrec->Nombre_Cliente = $rowData[14];
+                            $newrec->Telefono = $rowData[15];
+                            $newrec->Celular = $rowData[16];
+                            $newrec->Correo_Electronico = $rowData[17];
+                            $newrec->VIP = $rowData[18];
+                            $newrec->Codigo_Proyecto_VIP = $rowData[19];
+                            $newrec->Nombre_Proyecto_VIP = $rowData[20];
+                            $newrec->Velocidad_Contratada_Downstream = $rowData[21];
+                            $newrec->Meta = $rowData[22];
+
+                            //calcula dias pendinetes
+                            $fechamax = is_numeric($rowData[23]) ? gmdate("d/m/Y", intval(($rowData[23] - 25569) * 86400)) : '';
+                            $diaspend = 0;
+                            $newrec->Fecha_max_de_cumplimiento_de_meta = $fechamax;
+                            $newrec->Dias_pendientes_de_la_fecha_de_cumplimiento = $diaspend;
+
+                            $newrec->FECHA_APROBACION_INTERVENTORIA = is_numeric($rowData[25]) ? gmdate("d/m/Y", intval(($rowData[25] - 25569) * 86400)) : '';
+                            $newrec->FECHA_APROBACION_META_SUPERVISION = is_numeric($rowData[26]) ? gmdate("d/m/Y", intval(($rowData[26] - 25569) * 86400)) : '';
+                            $newrec->Tipo_Solucion_UM_Operatividad = $rowData[27];
+                            $newrec->Operador_Prestante = $rowData[28];
+                            $newrec->IP = $rowData[29];
+                            $newrec->Olt = $rowData[30];
+                            $newrec->PuertoOlt = $rowData[31];
+                            $newrec->Serial_ONT = $rowData[32];
+                            $newrec->Port_ONT = $rowData[33];
+                            $newrec->Nodo = $rowData[34];
+                            $newrec->Armario = $rowData[35];
+                            $newrec->Red_Primaria = $rowData[36];
+                            $newrec->Red_Secundaria = $rowData[37];
+                            $newrec->Nodo2 = $rowData[38];
+                            $newrec->Amplificador = $rowData[39];
+                            $newrec->Tap_Boca = $rowData[40];
+                            $newrec->Mac_Cpe = $rowData[41];
+                            $newrec->Fecha_Asignado_o_Presupuestado = is_numeric($rowData[42]) ? gmdate("d/m/Y", intval(($rowData[42] - 25569) * 86400)) : '';
+                            $newrec->Fecha_En_proceso_de_Instalacion = is_numeric($rowData[43]) ? gmdate("d/m/Y", intval(($rowData[43] - 25569) * 86400)) : '';
+                            $newrec->Fecha_Anulado = is_numeric($rowData[44]) ? gmdate("d/m/Y", intval(($rowData[44] - 25569) * 86400)) : '';
+                            $newrec->Fecha_Instalado = is_numeric($rowData[45]) ? gmdate("d/m/Y", intval(($rowData[45] - 25569) * 86400)) : '';
+                            $newrec->Fecha_Activo = is_numeric($rowData[46]) ? gmdate("d/m/Y", intval(($rowData[46] - 25569) * 86400)) : '';
+                            $newrec->Fecha_aprobacion_de_meta = is_numeric($rowData[47]) ? gmdate("d/m/Y", intval(($rowData[47] - 25569) * 86400)) : '';
+                            $newrec->Sexo = $rowData[48];
+                            $newrec->Genero = $rowData[49];
+                            $newrec->Orientacion_Sexual = $rowData[50];
+                            $newrec->Educacion = $rowData[51];
+                            $newrec->Etnias = $rowData[52];
+                            $newrec->Discapacidad = $rowData[53];
+                            $newrec->Estratos = $rowData[54];
+                            $newrec->Beneficiario_Ley_1699_de_2013 = $rowData[55];
+                            $newrec->SISBEN_IV = $rowData[56];
+
+                            $newrec->save(false);
+                        }
+                        $i = $i + 1;
                     };
 
-                    $returndata = ['data' => 'ok', 'error' => $targetFile . ' - (' . ($highestRow - 2) . ') Registros Procesados. '];
+                    $returndata = ['data' => 'ok', 'error' => $targetFile . ' - (' . $i . ') Registros Procesados. '];
                     return $this->render('upload', $returndata);
                 }
                 if ($filetype == "2") { // archivo metas
                     Yii::$app->db->createCommand()->truncateTable('avances_metas_instalacion')->execute();
 
+                    $inputFileType = \PHPExcel_IOFactory::identify($targetFile);
+                    $objReader = \PHPExcel_IOFactory::createReader($inputFileType);
+                    $objPHPExcel = $objReader->load($targetFile);
                     $sheet = $objPHPExcel->getSheet(0);
                     $highestRow = $sheet->getHighestRow();
                     $highestColunm = $sheet->getHighestColumn();
@@ -193,7 +206,7 @@ class AccesosinstalacionController extends Controller {
                         $newrec->Avance = 0;
                         if ($cantidad > 0) {
                             $result = (float) ($cantidad / $meta);
-                            $newrec->Avance = round($result*100,2);
+                            $newrec->Avance = round(($result * 100), 2);
                         }
                         $newrec->save(false);
                     };

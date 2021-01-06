@@ -35,13 +35,24 @@ class ModuleController extends Controller
      */
     public function actionIndex()
     {
-        $searchModel = new ModuleSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+//        $searchModel = new ModuleSearch();
+//        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+//
+//        return $this->render('index', [
+//            'searchModel' => $searchModel,
+//            'dataProvider' => $dataProvider,
+//        ]);
 
-        return $this->render('index', [
-            'searchModel' => $searchModel,
-            'dataProvider' => $dataProvider,
-        ]);
+            $connection = Yii::$app->getDb();
+            
+            $sql = "SELECT *
+                FROM `module` inner join `user` on   `user`.`id` =   `module`.`moduleCreationUserId`";
+
+            $command = $connection->createCommand($sql);
+            $modules = $command->queryAll();
+        
+        return $this->render('index', ['modules' => $modules]);
+        
     }
 
     /**

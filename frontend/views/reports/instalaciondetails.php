@@ -1,5 +1,6 @@
 <?php
 /* @var $this yii\web\View */
+use yii\helpers\Url;
 ?>
 <script>
 var title = 'Instalaciones por Municipio';
@@ -28,18 +29,18 @@ var title = 'Instalaciones por Municipio';
                 <div class="col-lg-2">
                     <label class="label-form" label-for="deptos">Departamento</label>
                     <select class="custom-select" id="dptos" name="deptos">
-                        <option value="-1">--Seleccione--</option>
+<!--                        <option value="-1">--Seleccione--</option>-->
                         <?php foreach ($deptos as $depto){ ?>
-                            <option value="<?php echo $depto['city']; ?>"><?php echo $depto['city']; ?></option>
+                            <option value="<?php echo $depto['city']; ?>" selected="selected"><?php echo $depto['city']; ?></option>
                         <?php } ?>
                     </select>
                 </div>
                 <div class="col-lg-2">
                     <label class="label-form" label-for="mpios">Municipio</label>
                     <select class="custom-select" id="mpios" name="mpios">
-                        <option value="-1">--Seleccione--</option>
+<!--                        <option value="-1">--Seleccione--</option>-->
                         <?php foreach ($mpios as $mpio){ ?>
-                            <option value="<?php echo $mpio['district']; ?>"><?php echo $mpio['district']; ?></option>
+                            <option value="<?php echo $mpio['district']; ?>" selected="selected"><?php echo $mpio['district']; ?></option>
                         <?php } ?>
                     </select>
                 </div>
@@ -65,7 +66,7 @@ var title = 'Instalaciones por Municipio';
                 <p>&nbsp;</p>
                 <h4 class="mg-b-0"><?php echo $municipio; ?></h4>
                 <p>&nbsp;</p>
-                <table class="table table-condensed table-striped dataTable" id="dataTableInstalaciondetails" style="width:100%">
+                <table class="table table-condensed table-striped" id="dataTableInstalaciondetails" style="width:100%">
                     <thead>
                         <tr>
                             <th>Operador</th>
@@ -125,73 +126,10 @@ var title = 'Instalaciones por Municipio';
                             <th>Estratos</th>
                             <th>Beneficiario_Ley_1699_de_2013</th>
                             <th>SISBEN_IV</th>
-                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ((array) $insts as $inst) { ?>
-                            <tr>
-                                <td><?php echo $inst['Operador'] ?></td>
-                                <td><?php echo $inst['Documento_cliente_acceso'] ?></td>
-                                <td><?php echo $inst['Dane_Mun_ID_Punto'] ?></td>
-                                <td><?php echo $inst['Estado_actual'] ?></td>
-                                <td><?php echo $inst['Region'] ?></td>
-                                <td><?php echo $inst['Dane_Departamento'] ?></td>
-                                <td><?php echo $inst['Departamento'] ?></td>
-                                <td><?php echo $inst['Dane_Municipio'] ?></td>
-                                <td><?php echo $inst['Municipio'] ?></td>
-                                <td><?php echo $inst['Barrio'] ?></td>
-                                <td><?php echo $inst['Direccion'] ?></td>
-                                <td><?php echo $inst['Estrato'] ?></td>
-                                <td><?php echo $inst['Dificultad__de_acceso_al_municipio'] ?></td>
-                                <td><?php echo $inst['Coordenadas_Grados_decimales'] ?></td>
-                                <td><?php echo $inst['Nombre_Cliente'] ?></td>
-                                <td><?php echo $inst['Telefono'] ?></td>
-                                <td><?php echo $inst['Celular'] ?></td>
-                                <td><?php echo $inst['Correo_Electronico'] ?></td>
-                                <td><?php echo $inst['VIP'] ?></td>
-                                <td><?php echo $inst['Codigo_Proyecto_VIP'] ?></td>
-                                <td><?php echo $inst['Nombre_Proyecto_VIP'] ?></td>
-                                <td><?php echo $inst['Velocidad_Contratada_Downstream'] ?></td>
-                                <td><?php echo $inst['Meta'] ?></td>
-                                <td><?php echo $inst['Fecha_max_de_cumplimiento_de_meta'] ?></td>
-                                <td><?php echo $inst['Dias_pendientes_de_la_fecha_de_cumplimiento'] ?></td>
-                                <td><?php echo $inst['FECHA_APROBACION_INTERVENTORIA'] ?></td>
-                                <td><?php echo $inst['FECHA_APROBACION_META_SUPERVISION'] ?></td>
-                                <td><?php echo $inst['Tipo_Solucion_UM_Operatividad'] ?></td>
-                                <td><?php echo $inst['Operador_Prestante'] ?></td>
-                                <td><?php echo $inst['IP'] ?></td>
-                                <td><?php echo $inst['Olt'] ?></td>
-                                <td><?php echo $inst['PuertoOlt'] ?></td>
-                                <td><?php echo $inst['Serial_ONT'] ?></td>
-                                <td><?php echo $inst['Port_ONT'] ?></td>
-                                <td><?php echo $inst['Nodo'] ?></td>
-                                <td><?php echo $inst['Armario'] ?></td>
-                                <td><?php echo $inst['Red_Primaria'] ?></td>
-                                <td><?php echo $inst['Red_Secundaria'] ?></td>
-                                <td><?php echo $inst['Nodo2'] ?></td>
-                                <td><?php echo $inst['Amplificador'] ?></td>
-                                <td><?php echo $inst['Tap_Boca'] ?></td>
-                                <td><?php echo $inst['Mac_Cpe'] ?></td>
-                                <td><?php echo $inst['Fecha_Asignado_o_Presupuestado'] ?></td>
-                                <td><?php echo $inst['Fecha_En_proceso_de_Instalacion'] ?></td>
-                                <td><?php echo $inst['Fecha_Anulado'] ?></td>
-                                <td><?php echo $inst['Fecha_Instalado'] ?></td>
-                                <td><?php echo $inst['Fecha_Activo'] ?></td>
-                                <td><?php echo $inst['Fecha_aprobacion_de_meta'] ?></td>
-                                <td><?php echo $inst['Sexo'] ?></td>
-                                <td><?php echo $inst['Genero'] ?></td>
-                                <td><?php echo $inst['Orientacion_Sexual'] ?></td>
-                                <td><?php echo $inst['Educacion'] ?></td>
-                                <td><?php echo $inst['Etnias'] ?></td>
-                                <td><?php echo $inst['Discapacidad'] ?></td>
-                                <td><?php echo $inst['Estratos'] ?></td>
-                                <td><?php echo $inst['Beneficiario_Ley_1699_de_2013'] ?></td>
-                                <td><?php echo $inst['SISBEN_IV'] ?></td>
-
-                                <td></td>
-                            </tr>
-                        <?php } ?>      
+                          
                     </tbody>
                 </table>
             </div>

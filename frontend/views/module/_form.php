@@ -14,7 +14,7 @@ use yii\widgets\ActiveForm;
 
     <?= $form->field($model, 'moduleName')->textInput(['maxlength' => true]) ?>
 
-    <?= $form->field($model, 'moduleReadOnly')->textInput() ?>
+    <?= $form->field($model, 'moduleReadOnly')->checkbox() ?>
 
     <?= $form->field($model, 'moduleCreationDate')->textInput() ?>
 

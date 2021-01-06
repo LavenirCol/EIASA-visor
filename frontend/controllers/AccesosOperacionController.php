@@ -13,6 +13,8 @@ use app\models\AvancesMetaOperacion;
 use yii\base\Exception;
 use PHPExcel;
 use PHPExcel_IOFactory;
+use Vtiful\Kernel\Excel;
+use Fpdf\Fpdf;
 
 /**
  * SabanaAccesosOperacionController implements the CRUD actions for SabanaAccesosOperacion model.
@@ -39,7 +41,7 @@ class AccesosoperacionController extends Controller {
     }
 
     public function actionUpload() {
-        ini_set('memory_limit', '2048M');
+        ini_set('memory_limit', '-1');
         $request = Yii::$app->request;
         if ($request->isGet) {
             $returndata = ['data' => '', 'error' => ''];
@@ -72,86 +74,92 @@ class AccesosoperacionController extends Controller {
 
                 set_time_limit(600);
 
-                $inputFileType = \PHPExcel_IOFactory::identify($targetFile);
-                $objReader = \PHPExcel_IOFactory::createReader($inputFileType);
-                $objPHPExcel = $objReader->load($targetFile);
-
                 $input = Yii::$app->request->post();
                 $filetype = $input['filetype'];
 
                 if ($filetype == "1") { // archivo sabanas
                     Yii::$app->db->createCommand()->truncateTable('sabana_reporte_operacion')->execute();
 
-                    $sheet = $objPHPExcel->getSheet(0);
-                    $highestRow = $sheet->getHighestRow();
-                    $highestColunm = $sheet->getHighestColumn();
+                    $config = ['path' => $fpath];
+                    $excel = new Excel($config);
 
-                    for ($row = 3; $row <= $highestRow; $row++) {
-                        $rowData = $sheet->rangeToArray('A' . $row . ':' . $highestColunm . $row, NULL, TRUE, FALSE);
-                        $newrec = new SabanaReporteOperacion();
-                        $newrec->Operador = $rowData[0][0];
-                        $newrec->Documento_cliente_acceso = $rowData[0][1];
-                        $newrec->Dane_Mun_ID_Punto = isset($rowData[0][2])?$rowData[0][2]: '';
-                        $newrec->Estado_actual = $rowData[0][3];
-                        $newrec->Region = $rowData[0][4];
-                        $newrec->Dane_Departamento = $rowData[0][5];
-                        $newrec->Departamento = $rowData[0][6];
-                        $newrec->Dane_Municipio = $rowData[0][7];
-                        $newrec->Municipio = $rowData[0][8];
-                        $newrec->Barrio = $rowData[0][9];
-                        $newrec->Direccion = $rowData[0][10];
-                        $newrec->Estrato = $rowData[0][11];
-                        $newrec->Dificultad__de_acceso_al_municipio = $rowData[0][12];
-                        $newrec->Coordenadas_Grados_decimales = $rowData[0][13];
-                        $newrec->Nombre_Cliente = $rowData[0][14];
-                        $newrec->Telefono = $rowData[0][15];
-                        $newrec->Celular = $rowData[0][16];
-                        $newrec->Correo_Electronico = $rowData[0][17];
-                        $newrec->VIP = $rowData[0][18];
-                        $newrec->Codigo_Proyecto_VIP = $rowData[0][19];
-                        $newrec->Nombre_Proyecto_VIP = $rowData[0][20];
-                        $newrec->Velocidad_Contratada_Downstream = $rowData[0][21];
-                        $newrec->Meta = $rowData[0][22];
-                        $newrec->Fecha_max_de_cumplimiento_de_meta = $rowData[0][23];
-                        $newrec->Tipo_Solucion_UM_Operatividad = $rowData[0][24];
-                        $newrec->Operador_Prestante = $rowData[0][25];
-                        $newrec->IP = $rowData[0][26];
-                        $newrec->Olt = $rowData[0][27];
-                        $newrec->PuertoOlt = $rowData[0][28];
-                        $newrec->Serial_ONT = $rowData[0][29];
-                        $newrec->Port_ONT = $rowData[0][30];
-                        $newrec->Nodo = $rowData[0][31];
-                        $newrec->Armario = $rowData[0][32];
-                        $newrec->Red_Primaria = $rowData[0][33];
-                        $newrec->Red_Secundaria = $rowData[0][34];
-                        $newrec->Nodo2 = $rowData[0][35];
-                        $newrec->Amplificador = $rowData[0][36];
-                        $newrec->Tap_Boca = $rowData[0][37];
-                        $newrec->Mac_Cpe = $rowData[0][38];
-                        $newrec->Fecha_Instalado = $rowData[0][39];
-                        $newrec->Fecha_Activo = $rowData[0][40];
-                        $newrec->Fecha_inicio_operación = $rowData[0][41];
-                        $newrec->Fecha_Solicitud_Traslado_PQR = $rowData[0][42];
-                        $newrec->Fecha_Inactivo = $rowData[0][43];
-                        $newrec->Fecha_Desinstalado = $rowData[0][44];
-                        $newrec->Sexo = $rowData[0][45];
-                        $newrec->Genero = $rowData[0][46];
-                        $newrec->Orientacion_Sexual = $rowData[0][47];
-                        $newrec->Educacion_ = $rowData[0][48];
-                        $newrec->Etnias = $rowData[0][49];
-                        $newrec->Discapacidad = $rowData[0][50];
-                        $newrec->Estratos = $rowData[0][51];
-                        $newrec->Beneficiario_Ley_1699_de_2013 = $rowData[0][52];
-                        $newrec->SISBEN_IV = $rowData[0][53];
-                        $newrec->save(false);
+                    $data = $excel->openFile($_FILES['file']['name'])
+                            ->openSheet()
+                            ->getSheetData();
+
+//                    var_dump($data);                    
+                    $i = 0;
+                    foreach ($data as $rowData) {
+                        if ($i > 0) {
+                            $newrec = new SabanaReporteOperacion();
+                            $newrec->Operador = $rowData[0];
+                            $newrec->Documento_cliente_acceso = $rowData[1];
+                            $newrec->Dane_Mun_ID_Punto = isset($rowData[2]) ? $rowData[2] : '';
+                            $newrec->Estado_actual = $rowData[3];
+                            $newrec->Region = $rowData[4];
+                            $newrec->Dane_Departamento = str_pad(strval($rowData[5]), 2, "0", STR_PAD_LEFT);
+                            $newrec->Departamento = $rowData[6];
+                            $newrec->Dane_Municipio = str_pad(strval($rowData[7]), 3, "0", STR_PAD_LEFT);
+                            $newrec->Municipio = $rowData[8];
+                            $newrec->Barrio = $rowData[9];
+                            $newrec->Direccion = $rowData[10];
+                            $newrec->Estrato = $rowData[11];
+                            $newrec->Dificultad__de_acceso_al_municipio = $rowData[12];
+                            $newrec->Coordenadas_Grados_decimales = $rowData[13];
+                            $newrec->Nombre_Cliente = $rowData[14];
+                            $newrec->Telefono = $rowData[15];
+                            $newrec->Celular = $rowData[16];
+                            $newrec->Correo_Electronico = $rowData[17];
+                            $newrec->VIP = $rowData[18];
+                            $newrec->Codigo_Proyecto_VIP = $rowData[19];
+                            $newrec->Nombre_Proyecto_VIP = $rowData[20];
+                            $newrec->Velocidad_Contratada_Downstream = $rowData[21];
+                            $newrec->Meta = $rowData[22];
+                            $newrec->Fecha_max_de_cumplimiento_de_meta = $rowData[23];
+                            $newrec->Tipo_Solucion_UM_Operatividad = $rowData[24];
+                            $newrec->Operador_Prestante = $rowData[25];
+                            $newrec->IP = $rowData[26];
+                            $newrec->Olt = $rowData[27];
+                            $newrec->PuertoOlt = $rowData[28];
+                            $newrec->Serial_ONT = $rowData[29];
+                            $newrec->Port_ONT = $rowData[30];
+                            $newrec->Nodo = $rowData[31];
+                            $newrec->Armario = $rowData[32];
+                            $newrec->Red_Primaria = $rowData[33];
+                            $newrec->Red_Secundaria = $rowData[34];
+                            $newrec->Nodo2 = $rowData[35];
+                            $newrec->Amplificador = $rowData[36];
+                            $newrec->Tap_Boca = $rowData[37];
+                            $newrec->Mac_Cpe = $rowData[38];
+                            $newrec->Fecha_Instalado = is_numeric($rowData[39]) ? gmdate("d/m/Y", intval(($rowData[39] - 25569) * 86400)) : '';
+                            $newrec->Fecha_Activo = is_numeric($rowData[40]) ? gmdate("d/m/Y", intval(($rowData[40] - 25569) * 86400)) : '';
+                            $newrec->Fecha_inicio_operación = is_numeric($rowData[41]) ? gmdate("d/m/Y", intval(($rowData[41] - 25569) * 86400)) : '';
+                            $newrec->Fecha_Solicitud_Traslado_PQR = is_numeric($rowData[42]) ? gmdate("d/m/Y", intval(($rowData[42] - 25569) * 86400)) : '';
+                            $newrec->Fecha_Inactivo = is_numeric($rowData[43]) ? gmdate("d/m/Y", intval(($rowData[43] - 25569) * 86400)) : '';
+                            $newrec->Fecha_Desinstalado = is_numeric($rowData[44]) ? gmdate("d/m/Y", intval(($rowData[44] - 25569) * 86400)) : '';
+                            $newrec->Sexo = $rowData[45];
+                            $newrec->Genero = $rowData[46];
+                            $newrec->Orientacion_Sexual = $rowData[47];
+                            $newrec->Educacion_ = $rowData[48];
+                            $newrec->Etnias = $rowData[49];
+                            $newrec->Discapacidad = $rowData[50];
+                            $newrec->Estratos = $rowData[51];
+                            $newrec->Beneficiario_Ley_1699_de_2013 = $rowData[52];
+                            $newrec->SISBEN_IV = $rowData[53];
+                            $newrec->save(false);
+                        }
+                        $i = $i + 1;
                     };
 
-                    $returndata = ['data' => 'ok', 'error' => $targetFile . ' - (' . ($highestRow - 2) . ') Registros Procesados. '];
+                    $returndata = ['data' => 'ok', 'error' => $targetFile . ' - (' . $i . ') Registros Procesados. '];
                     return $this->render('upload', $returndata);
                 }
                 if ($filetype == "2") { // archivo metas
                     Yii::$app->db->createCommand()->truncateTable('avances_meta_operacion')->execute();
-
+                    
+                    $inputFileType = \PHPExcel_IOFactory::identify($targetFile);
+                    $objReader = \PHPExcel_IOFactory::createReader($inputFileType);
+                    $objPHPExcel = $objReader->load($targetFile);
                     $sheet = $objPHPExcel->getSheet(0);
                     $highestRow = $sheet->getHighestRow();
                     $highestColunm = $sheet->getHighestColumn();
@@ -177,7 +185,7 @@ class AccesosoperacionController extends Controller {
                         $newrec->Avance = 0;
                         if ($cantidad > 0) {
                             $result = (float) ($cantidad / $meta);
-                            $newrec->Avance = round($result*100,2);
+                            $newrec->Avance = round(($result * 100), 2);
                         }
                         $newrec->save(false);
                     };
