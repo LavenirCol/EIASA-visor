@@ -20,15 +20,14 @@ use app\models\Hsstock;
 use app\models\Hstask;
 
 class CronController extends Controller {
-    
-    
+
     public $root_path = "";
     public $root_vpath = "";
     public $idmodulesusc = 1; //suscriptores
     public $idmodulefact = 2; //facturacion
     public $modulosusc;
     public $modulofact;
-    
+
     /*
      * ejecucion API dollibar
      */
@@ -36,7 +35,7 @@ class CronController extends Controller {
     function callAPI($method, $entity, $data = false) {
         //prod
         $apikey = 'gFmK1A57ZQolc0V33727Jo4ohxyAGIPh';
-        $url = 'https://megayacrm.lavenirapps.co/api/index.php/'.$entity;
+        $url = 'https://megayacrm.lavenirapps.co/api/index.php/' . $entity;
         //dev
         //$apikey = '1bo1dgm0B4Xd48nW3iNZXvaJh1AXCH36';
         //$url = 'https://eiasa-dev.lavenirapps.co/api/index.php/' . $entity;
@@ -169,7 +168,7 @@ class CronController extends Controller {
      */
 
     public function actionSyncdata() {
-        
+
         // TODO: Borrar todo antes de iniciar
 //        DELETE FROM `eiasavisor`.`document` where fileUploadedUserId is null;
 //        DELETE FROM `eiasavisor`.`contract`;
@@ -186,17 +185,15 @@ class CronController extends Controller {
         //varifica urlbase raiz
         $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
         $this->root_vpath = $keyurlbase->value;        // modulo suscriptores
-
         //modulo suscriptores
         $this->modulosusc = Module::find()->where(['idmodule' => $this->idmodulesusc])->one();
         // modulo facturacion
         $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
-        
+
         echo "Consultando Clientes...\n"; // your logic for deleting old post goes here
-        
         //ciclos
         $limit = 100;
-        $cycles = 120;
+        $cycles = 230; // 23000 clientes aprox
         for ($i = 1; $i <= $cycles; $i++) {
             $this->syncClients($limit, $i);
         }
@@ -215,7 +212,6 @@ class CronController extends Controller {
         //varifica urlbase raiz
         $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
         $this->root_vpath = $keyurlbase->value;        // modulo suscriptores
-
         //modulo suscriptores
         $this->modulosusc = Module::find()->where(['idmodule' => $this->idmodulesusc])->one();
         // modulo facturacion
@@ -224,19 +220,18 @@ class CronController extends Controller {
         // sincroniza archivos
         //echo "Sincronizando Archivos...\n"; // your logic for deleting old post goes here        
         //$this->syncFiles();
-
         // sincroniza archivos instalacion
         echo "Sincronizando Archivos Instalacion...\n"; // your logic for deleting old post goes here        
         $this->syncInstalationfiles();
-        
+
         exit();
     }
-    
+
     /*
      * Sincroniza clientes, contratos y crea folders sucriptores y facturacion
      */
 
-    public function syncClients($limit,$page) {        
+    public function syncClients($limit, $page) {
         // consulta lista de clientes
         $clientSearch = json_decode($this->CallAPI("GET", "thirdparties", array(
                     "sortfield" => "t.rowid",
@@ -252,34 +247,32 @@ class CronController extends Controller {
             echo "($page) Error Clientes " . $clientSearch["error"]["message"] . "\n";
         } else {
             echo "($page) Clientes Encontrados: " . sizeof($clientSearch) . "\n";
-            foreach ((array) $clientSearch as $client) {                
+            foreach ((array) $clientSearch as $client) {
                 echo "----------------------------------------\n";
-                echo "Inicio Cliente ".date("Y-m-d H:i:s"). "\n";
+                echo "Inicio Cliente " . date("Y-m-d H:i:s") . "\n";
                 echo "Procesando. " . $client['name'] . "\n";
                 $currentclient = Client::find()->where(['idClient' => $client['id']])->one();
                 if (!isset($currentclient)) {
                     //Cliente nuevo
-                    echo "Cliente Nuevo thirdparty_id(".$client['id'].") \n";
+                    echo "Cliente Nuevo thirdparty_id(" . $client['id'] . ") \n";
                     $newclient = new Client();
                     $newclient->attributes = $client;
                     $newclient->idClient = $client['id'];
                     $newclient->access_id = $client['idprof6'];
-                    $newclient->address = str_replace(array("\n", "\r"), ' ', $client['address']);
+                    $newclient->address = str_replace(array("\n", "\r", "\r\n", "\xE2\x80\x9010"), ' ', $client['address']);
                     $newclient->name = str_replace("\xC5\x84", 'ñ', $client['name']);
                     $newclient->save(false);
-                    
+
                     $this->processcontracts($client['id']);
                     $this->processproposals($client['id']);
                     $this->processinvoices($client['id']);
                     $this->processtickets($client['id']);
-                    
                 } else {
 
                     //TODO:CLiente existe
                 }
-            
-                echo "Fin Cliente ".date("Y-m-d H:i:s"). "\n";
 
+                echo "Fin Cliente " . date("Y-m-d H:i:s") . "\n";
             }
         }
     }
@@ -287,10 +280,10 @@ class CronController extends Controller {
     /*
      * Procesa contracts
      */
-    
-    public function processcontracts($thirdparty_id){        
+
+    public function processcontracts($thirdparty_id) {
         // consulta contratos
-        echo "consultando contracts thirdparty_id(". $thirdparty_id .")\n";
+        echo "consultando contracts thirdparty_id(" . $thirdparty_id . ")\n";
         $contracts = json_decode($this->CallAPI("GET", "contracts", array(
                     "sortfield" => "t.rowid",
                     "sortorder" => "ASC",
@@ -302,18 +295,18 @@ class CronController extends Controller {
             echo "procesando contracts (0)\n";
             return;
         }
-        
-        echo "procesando contracts (". sizeof($contracts) .")\n";
+
+        echo "procesando contracts (" . sizeof($contracts) . ")\n";
         foreach ((array) $contracts as $contract) {
 
             // crea folder de cliente en modulo suscriptores                        
-            if(isset($contract['ref'])){
+            if (isset($contract['ref'])) {
                 $suscfolder = $this->Createfolder($this->idmodulesusc, 0, $contract['ref']);
 
                 if ($suscfolder['error'] == "") {
                     //crear disco path
                     $fpath = $this->root_path . '/' . $this->modulosusc->moduleName . '/' . $suscfolder['data']->folderName;
-                    $vpath = $this->root_vpath . '/' . $this->modulosusc->moduleName. '/' . $suscfolder['data']->folderName . '/';
+                    $vpath = $this->root_vpath . '/' . $this->modulosusc->moduleName . '/' . $suscfolder['data']->folderName . '/';
 
                     // crea contract
                     $newcontracts = new Contract();
@@ -333,22 +326,21 @@ class CronController extends Controller {
                                 "id" => $contract['id']
                                     )
                             ), true);
-                    
+
                     if (isset($proposals["error"]) && $proposals["error"]["code"] >= 300) {
                         echo "procesando documents contract (0)\n";
-                        
-                    }else{
+                    } else {
 
-                        echo "procesando documents contract (". sizeof($documents) .")\n";
+                        echo "procesando documents contract (" . sizeof($documents) . ")\n";
                         foreach ((array) $documents as $document) {
                             //var_dump($document);
-                            if(isset($document['name'])){
+                            if (isset($document['name'])) {
                                 $name = $document['name'];
-                                $names = explode('.', $name );
+                                $names = explode('.', $name);
                                 $ext = end($names);
-                                if($ext === 'odt' || $ext === 'json'){
+                                if ($ext === 'odt' || $ext === 'json') {
                                     //no inserta tipo odt, json
-                                }else{
+                                } else {
                                     $newdocument = new Document();
                                     $newdocument->attributes = $document;
                                     $newdocument->date = isset($document['date']) ? gmdate("Y-m-d H:i:s", $document['date']) : "";
@@ -360,21 +352,20 @@ class CronController extends Controller {
                                     $newdocument->save(false);
                                 }
                             }
-                        }      
+                        }
                     }
                 }
             }
-            
         }
     }
 
     /*
      * Process proposals
      */
-    
-    public function processproposals($thirdparty_id){
+
+    public function processproposals($thirdparty_id) {
         // consulta proposal
-        echo "consultando proposals thirdparty_id(". $thirdparty_id .")\n";
+        echo "consultando proposals thirdparty_id(" . $thirdparty_id . ")\n";
         $proposals = json_decode($this->CallAPI("GET", "proposals", array(
                     "sortfield" => "t.rowid",
                     "sortorder" => "ASC",
@@ -387,17 +378,17 @@ class CronController extends Controller {
             return;
         }
 
-        echo "procesando proposals (". sizeof($proposals) .")\n";
+        echo "procesando proposals (" . sizeof($proposals) . ")\n";
         foreach ((array) $proposals as $proposal) {
 
-            if(isset($proposal['ref'])){
+            if (isset($proposal['ref'])) {
                 // crea folder de cliente en modulo suscriptores                        
                 $suscfolder = $this->Createfolder($this->idmodulesusc, 0, $proposal['ref']);
 
                 if ($suscfolder['error'] == "") {
                     //crear disco path
                     $fpath = $this->root_path . '/' . $this->modulosusc->moduleName . '/' . $suscfolder['data']->folderName;
-                    $vpath = $this->root_vpath . '/' . $this->modulosusc->moduleName. '/' . $suscfolder['data']->folderName . '/';
+                    $vpath = $this->root_vpath . '/' . $this->modulosusc->moduleName . '/' . $suscfolder['data']->folderName . '/';
 
                     // crea proposal
                     $newproposal = new Proposal();
@@ -419,12 +410,11 @@ class CronController extends Controller {
 
                     if (isset($proposals["error"]) && $proposals["error"]["code"] >= 300) {
                         echo "procesando documents contract (0)\n";
-                        
-                    }else{
-                        echo "procesando documents proposal (". sizeof($documents) .")\n";
+                    } else {
+                        echo "procesando documents proposal (" . sizeof($documents) . ")\n";
                         foreach ((array) $documents as $document) {
                             //var_dump($document);                 
-                            if(isset($document['name'])){
+                            if (isset($document['name'])) {
                                 $newdocument = new Document();
                                 $newdocument->attributes = $document;
                                 $newdocument->date = isset($document['date']) ? gmdate("Y-m-d H:i:s", $document['date']) : "";
@@ -435,7 +425,7 @@ class CronController extends Controller {
                                 $newdocument->relativename = $vpath . $document['name'];
                                 $newdocument->save(false);
                             }
-                        }   
+                        }
                     }
                 }
             }
@@ -445,10 +435,10 @@ class CronController extends Controller {
     /*
      * Process invoices
      */
-    
-    public function processinvoices($thirdparty_id){        
+
+    public function processinvoices($thirdparty_id) {
         // consulta invoices
-        echo "consultando invoices thirdparty_id(". $thirdparty_id .")\n";
+        echo "consultando invoices thirdparty_id(" . $thirdparty_id . ")\n";
         $invoices = json_decode($this->CallAPI("GET", "invoices", array(
                     "sortfield" => "t.rowid",
                     "sortorder" => "ASC",
@@ -460,18 +450,18 @@ class CronController extends Controller {
             echo "procesando invoices (0)\n";
             return;
         }
-        
-        echo "procesando invoices (". sizeof($invoices) .")\n";
+
+        echo "procesando invoices (" . sizeof($invoices) . ")\n";
         foreach ((array) $invoices as $invoice) {
 
-            if(isset( $invoice['ref'])){
+            if (isset($invoice['ref'])) {
                 // crea folder de cliente en modulo suscriptores                        
                 $suscfolder = $this->Createfolder($this->idmodulefact, 0, $invoice['ref']);
 
                 if ($suscfolder['error'] == "") {
                     //crear disco path
                     $fpath = $this->root_path . '/' . $this->modulofact->moduleName . '/' . $suscfolder['data']->folderName;
-                    $vpath = $this->root_vpath . '/' . $this->modulofact->moduleName. '/' . $suscfolder['data']->folderName . '/';
+                    $vpath = $this->root_vpath . '/' . $this->modulofact->moduleName . '/' . $suscfolder['data']->folderName . '/';
 
                     // crea invoice
                     $newinvoice = new Invoices();
@@ -490,19 +480,17 @@ class CronController extends Controller {
                                 "id" => $invoice['id']
                                     )
                             ), true);
-                    
+
                     if (isset($documents["error"]) && $documents["error"]["code"] >= 300) {
                         echo "procesando documents invoices (0)\n";
-                        
-                    }else{
-                        echo "procesando documents invoices (". sizeof($documents) .")\n";
+                    } else {
+                        echo "procesando documents invoices (" . sizeof($documents) . ")\n";
                         foreach ((array) $documents as $document) {
                             //var_dump($document);      
-                            if(isset($document['name'])){
+                            if (isset($document['name'])) {
                                 $name = $document['name'];
-                                
-                                if($name === 'response.json')
-                                {
+
+                                if ($name === 'response.json') {
                                     $newdocument = new Document();
                                     $newdocument->attributes = $document;
                                     $newdocument->date = isset($document['date']) ? gmdate("Y-m-d H:i:s", $document['date']) : "";
@@ -514,7 +502,7 @@ class CronController extends Controller {
                                     $newdocument->relativename = $vpath . $document['level1name'] . '.pdf'; // $document['name'];
                                     $newdocument->save(false);
                                 }
-                                
+
 //                                $names = explode('.', $name );
 //                                $ext = end($names);
 //                                if($ext === 'odt' || $ext === 'json'){
@@ -523,22 +511,20 @@ class CronController extends Controller {
 //
 //                                }
                             }
-                        }  
+                        }
                     }
                 }
-            
             }
         }
     }
-    
-    
-   /*
+
+    /*
      * Process tickets
      */
-    
-    public function processtickets($thirdparty_id){        
+
+    public function processtickets($thirdparty_id) {
         // consulta tickets
-        echo "consultando tickets thirdparty_id(". $thirdparty_id .")\n";
+        echo "consultando tickets thirdparty_id(" . $thirdparty_id . ")\n";
         $tickets = json_decode($this->CallAPI("GET", "tickets", array(
                     "sortfield" => "t.rowid",
                     "sortorder" => "ASC",
@@ -550,11 +536,11 @@ class CronController extends Controller {
             echo "procesando tickets (0)\n";
             return;
         }
-        
-        echo "procesando tickets (". sizeof($tickets) .")\n";
+
+        echo "procesando tickets (" . sizeof($tickets) . ")\n";
         foreach ((array) $tickets as $ticket) {
 
-            if(isset( $ticket['ref'])){
+            if (isset($ticket['ref'])) {
                 // crea ticket
                 $newticket = new Tickets();
                 $newticket->id = $ticket['id'];
@@ -572,72 +558,69 @@ class CronController extends Controller {
                 $newticket->messages = '';
 
                 $newticket->save(false);
-                
+
                 $this->processticketdetail($ticket['id']);
             }
         }
     }
-    
-    
+
     /*
      * Process ticket detail
      */
-    
-    public function processticketdetail($ticket_id){        
+
+    public function processticketdetail($ticket_id) {
         // consulta tickets
-        echo "consultando tickets ticket_id (". $ticket_id .")\n";
-        $ticket = json_decode($this->CallAPI("GET", "tickets/".$ticket_id, array("id" => $ticket_id)), true);
+        echo "consultando tickets ticket_id (" . $ticket_id . ")\n";
+        $ticket = json_decode($this->CallAPI("GET", "tickets/" . $ticket_id, array("id" => $ticket_id)), true);
 
         if (isset($ticket["error"]) && $ticket["error"]["code"] >= 300) {
             echo "procesando tickets (0)\n";
             return;
         }
-        if(isset( $ticket['ref'])){
+        if (isset($ticket['ref'])) {
             // crea ticket
             $currentticket = Tickets::find()->where(['id' => $ticket_id])->one();
-            if(isset($ticket['messages']))
-            {
+            if (isset($ticket['messages'])) {
                 $currentticket->messages = json_encode($ticket['messages']);
                 $currentticket->save(false);
-            }              
+            }
         }
     }
-    
+
     /*
      * Sincroniza archivos
      */
-    
+
     public function syncFiles() {
         echo "----------------------------------------\n";
-        echo "Inicio syncdodumentos ".date("Y-m-d H:i:s"). "\n";
-        $documents = Document::find()->where(['type'=>'pending'])->all();
-        echo "procesando documents (". sizeof($documents) .")\n";
-        foreach ($documents as $document){
+        echo "Inicio syncdodumentos " . date("Y-m-d H:i:s") . "\n";
+        $documents = Document::find()->where(['type' => 'pending'])->all();
+        echo "procesando documents (" . sizeof($documents) . ")\n";
+        foreach ($documents as $document) {
             //consulta documento
             $modulepart = "";
 
-            if($document['iddocumentType']===4){ // invoice
+            if ($document['iddocumentType'] === 4) { // invoice
                 $modulepart = "facture";
-                
+
                 // consulta documento download
                 $download = json_decode($this->CallAPI("GET", "documents/download", array(
-                        "modulepart" => $modulepart,
-                        "original_file" => $document['level1name'] . "/". 'response.json')
-                    ), true);
+                            "modulepart" => $modulepart,
+                            "original_file" => $document['level1name'] . "/" . 'response.json')
+                        ), true);
 
                 if (isset($download["error"]) && $download["error"]["code"] >= "300") {
                     echo "Error download " . $document['level1name'] . "/" . 'response.json' . " - " . $download["error"]["message"] . "\n";
-                }else{
-                    
-                    $content = json_decode(base64_decode($download["content"]),true);
-                    if(isset($content["resultado"]["url_representacion_grafica"]))
-                    {
+                } else {
+
+                    $content = json_decode(base64_decode($download["content"]), true);
+                    if (isset($content["resultado"]["url_representacion_grafica"])) {
                         //actualiza document
                         $document->type = 'application/pdf';
                         //$document->fileUploadedUserId = -1;
                         $document->save();
-                    
-                        $url  = $content["resultado"]["url_representacion_grafica"];
+
+                        $url = $content["resultado"]["url_representacion_grafica"];
                         $path = $document['path'] . "/" . $document['name'];
 
                         $ch = curl_init($url);
@@ -652,45 +635,40 @@ class CronController extends Controller {
 
                         if (!$result) {
                             echo "Error download " . $document['level1name'] . "/" . $document['name'] . " - " . curl_error($ch) . "\n";
-                        } 
-                        
+                        }
+
                         curl_close($ch);
                     }
-                    
                 }
-
-                
-            }else{
-                if($document['iddocumentType']===2){ // contract
+            } else {
+                if ($document['iddocumentType'] === 2) { // contract
                     $modulepart = "contract";
                 }
-                if($document['iddocumentType']===3){ // proposal
+                if ($document['iddocumentType'] === 3) { // proposal
                     $modulepart = "propale";
                 }
                 // consulta documento download
                 $download = json_decode($this->CallAPI("GET", "documents/download", array(
-                        "modulepart" => $modulepart,
-                        "original_file" => $document['level1name'] . "/". $document['name'])
-                    ), true);
+                            "modulepart" => $modulepart,
+                            "original_file" => $document['level1name'] . "/" . $document['name'])
+                        ), true);
 
                 if (isset($download["error"]) && $download["error"]["code"] >= "300") {
                     echo "Error download " . $document['level1name'] . "/" . $document['name'] . " - " . $download["error"]["message"] . "\n";
-                }else{
+                } else {
                     //actualiza document
                     $document->type = $download["content-type"];
                     //$document->fileUploadedUserId = -1;
                     $document->save();
 
                     //guarda bas64
-                    $this->base64ToFile($download["content"], $document['path'] . "/" . $document['name'] );
+                    $this->base64ToFile($download["content"], $document['path'] . "/" . $document['name']);
                 }
             }
-
         }
-        echo "Fin syncdodumentos ".date("Y-m-d H:i:s"). "\n";
+        echo "Fin syncdodumentos " . date("Y-m-d H:i:s") . "\n";
     }
 
-    
     function base64ToFile($base64_string, $output_file) {
         $file = fopen($output_file, "wb");
         fwrite($file, base64_decode($base64_string));
@@ -698,21 +676,21 @@ class CronController extends Controller {
 
         return $output_file;
     }
-    
-    /**********UMBRELLA **********/
-    
+
+    /*     * ********UMBRELLA ********* */
+
     /*
      * ejecucion API umbrella
      */
 
     function callAPIUmbrella($method, $entity, $data = false) {
         //prod
-        $url = 'https://megaya.lavenirapps.co/api/'.$entity;
+        $url = 'https://megaya.lavenirapps.co/api/' . $entity;
         //dev
         //$url = 'http://dev-umbrellav2.lavenirapps.co/web/api/' . $entity;
         $curl = curl_init();
         $httpheader = [];
-        
+
         switch ($method) {
             case "POST":
                 curl_setopt($curl, CURLOPT_POST, 1);
@@ -759,89 +737,86 @@ class CronController extends Controller {
 
         return $result;
     }
-    
-    
+
     public function actionSyncnetwork() {
         echo "Inicio cron job network \n"; // your logic for deleting old post goes here
-        
-        echo "Borrando datos locales \n"; 
-        
+
+        echo "Borrando datos locales \n";
+
         Yii::$app->db->createCommand()->truncateTable('hsstock')->execute();
         Yii::$app->db->createCommand()->truncateTable('hstask')->execute();
         Yii::$app->db->createCommand("DELETE FROM document where fileUploadedUserId is null and path like '/eiasadocs/Suscriptores/TS%' ")->execute();
         Yii::$app->db->createCommand("DELETE FROM folder where folderdefault > 0 and folderName like 'TS%' ")->execute();
-                        
-        shell_exec ( 'sudo find /eiasadocs/Suscriptores/. -maxdepth 1 -name "TS*" -exec rm -r {} \;');
-        
-		//verifica directorio raiz
+
+        shell_exec('sudo find /eiasadocs/Suscriptores/. -maxdepth 1 -name "TS*" -exec rm -r {} \;');
+
+        //verifica directorio raiz
         $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
         $this->root_path = $keyfolderraiz->value;
         //varifica urlbase raiz
         $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
         $this->root_vpath = $keyurlbase->value;        // modulo suscriptores
-
         //modulo suscriptores
         $this->modulosusc = Module::find()->where(['idmodule' => $this->idmodulesusc])->one();
         // modulo facturacion
         $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
-		
+
         $this->syncInventory();
-        $this->syncTasks();        
-        
+        $this->syncTasks();
+
         // sincroniza archivos instalacion
         echo "Sincronizando Archivos Instalacion...\n"; // your logic for deleting old post goes here        
         $this->syncInstalationfiles();
-        
+
         exit();
     }
-    
-    
+
     /*
      * Sincroniza inventario
      */
-    
+
     public function syncInventory() {
         echo "----------------------------------------\n";
-        echo "Inicio syncinventory ".date("Y-m-d H:i:s"). "\n";
+        echo "Inicio syncinventory " . date("Y-m-d H:i:s") . "\n";
         $inventories = json_decode($this->callAPIUmbrella("POST", "hsStock", json_encode(array(
                     //"datecreate" => "t.rowid",
                     "rows" => "1",
                     "page" => "0"
-                    )
+                                )
                 )), true);
 
         if ($inventories["code"] === '0') {
-            echo "procesando inventario error ".$inventories['error']. " \n";
+            echo "procesando inventario error " . $inventories['error'] . " \n";
             return;
         }
-        
+
         $filter = $inventories["filter"];
-        $rows = 1000;        
-        $total = (int)$filter["items"];
+        $rows = 1000;
+        $total = (int) $filter["items"];
         if ($total == 0) {
             echo "procesando total inventario (0)\n";
             return;
         }
-        
+
         $pages = ceil($total / $rows);
-        
-        echo "procesando total inventario (". $total .")\n";
-        echo "procesando paginas inventario (". $pages .")\n";
-        
-        for($i=0;$i<$pages;$i++){
+
+        echo "procesando total inventario (" . $total . ")\n";
+        echo "procesando paginas inventario (" . $pages . ")\n";
+
+        for ($i = 0; $i < $pages; $i++) {
             $inventories = json_decode($this->callAPIUmbrella("POST", "hsStock", json_encode(array(
-                //"datecreate" => "t.rowid",
-                "rows" => $rows,
-                "page" => $i
-                )
-            )), true);
+                        //"datecreate" => "t.rowid",
+                        "rows" => $rows,
+                        "page" => $i
+                                    )
+                    )), true);
 
             if ($inventories["code"] === '0') {
-                echo "procesando inventario pagina ($i) error ".$inventories['error']. " \n";
+                echo "procesando inventario pagina ($i) error " . $inventories['error'] . " \n";
                 continue;
             }
-            echo "procesando inventario pagina ($i) (". sizeof($inventories["data"]) .")\n";
-            
+            echo "procesando inventario pagina ($i) (" . sizeof($inventories["data"]) . ")\n";
+
             foreach ((array) $inventories["data"] as $inv) {
                 // crea inventario
                 $newinv = new Hsstock();
@@ -864,63 +839,62 @@ class CronController extends Controller {
                 $newinv->lat = $inv['lat'];
                 $newinv->lng = $inv['lng'];
 
-                $newinv->save(false);    
+                $newinv->save(false);
             }
-            
         }
 
-        echo "Fin syncinventory ".date("Y-m-d H:i:s"). "\n";
+        echo "Fin syncinventory " . date("Y-m-d H:i:s") . "\n";
     }
 
     /*
      * Sincroniza servicios
      */
-    
+
     public function syncTasks() {
         echo "----------------------------------------\n";
-        echo "Inicio synctasks ".date("Y-m-d H:i:s"). "\n";
+        echo "Inicio synctasks " . date("Y-m-d H:i:s") . "\n";
         $tasks = json_decode($this->callAPIUmbrella("POST", "hsTask", json_encode(array(
                     //"datecreate" => "t.rowid",
                     "rows" => "1",
                     "page" => "0"
-                    )
+                                )
                 )), true);
 
         if ($tasks["code"] === '0') {
-            echo "procesando tasks error ".$tasks['error']. " \n";
+            echo "procesando tasks error " . $tasks['error'] . " \n";
             return;
         }
-        
+
         $filter = $tasks["filter"];
-        $rows = 1000;        
-        $total = (int)$filter["items"];
+        $rows = 1000;
+        $total = (int) $filter["items"];
         if ($total == 0) {
             echo "procesando total tasks (0)\n";
             return;
         }
-        
+
         $pages = ceil($total / $rows);
-        
-        echo "procesando total tasks (". $total .")\n";
-        echo "procesando paginas tasks (". $pages .")\n";
-        
-        for($i=0;$i<$pages;$i++){
+
+        echo "procesando total tasks (" . $total . ")\n";
+        echo "procesando paginas tasks (" . $pages . ")\n";
+
+        for ($i = 0; $i < $pages; $i++) {
             $tasks = json_decode($this->callAPIUmbrella("POST", "hsTask", json_encode(array(
-                //"datecreate" => "t.rowid",
-                "rows" => $rows,
-                "page" => $i
-                )
-            )), true);
+                        //"datecreate" => "t.rowid",
+                        "rows" => $rows,
+                        "page" => $i
+                                    )
+                    )), true);
 
             if ($tasks["code"] === '0') {
-                echo "procesando tasks pagina ($i) error ".$tasks['error']. " \n";
+                echo "procesando tasks pagina ($i) error " . $tasks['error'] . " \n";
                 continue;
             }
-            echo "procesando tasks pagina ($i) (". sizeof($tasks["data"]) .")\n";
-            
+            echo "procesando tasks pagina ($i) (" . sizeof($tasks["data"]) . ")\n";
+
             foreach ((array) $tasks["data"] as $task) {
                 // crea task
-                $newtask= new Hstask();
+                $newtask = new Hstask();
                 $newtask->uuid = $task['uuid'];
                 $newtask->datecreate = $task['datecreate'];
                 $newtask->dateupdate = $task['dateupdate'];
@@ -934,83 +908,92 @@ class CronController extends Controller {
                 $newtask->pdf = $task['pdf'];
                 $newtask->account = $task['account'];
                 $newtask->account_id = $task['account_id'];
-                $newtask->save(false);    
+                $newtask->save(false);
             }
-            
         }
 
-        echo "Fin synctasks ".date("Y-m-d H:i:s"). "\n";
+        echo "Fin synctasks " . date("Y-m-d H:i:s") . "\n";
     }
-    
+
     /*
      * Sincroniza archivos instalacion
      */
-    
+
     public function syncInstalationfiles() {
         echo "----------------------------------------\n";
-        echo "Inicio syncdocinstalacion ".date("Y-m-d H:i:s"). "\n";
-        
+        echo "Inicio syncdocinstalacion " . date("Y-m-d H:i:s") . "\n";
+
         Yii::$app->db->createCommand('UPDATE hstask
-                                        INNER JOIN client ON client.idprof1= hstask.account_id 
-                                        SET hstask.socid = client.ref')->execute();       
-        
+                                        INNER JOIN client ON client.idprof1 = hstask.account_id 
+                                        SET hstask.socid = client.ref
+                                        WHERE hstask.socid is null')->execute();
+
         $hstasks = Hstask::find()->andWhere(['IS NOT', 'socid', new \yii\db\Expression('null')])->all();
         //$hstasks = Hstask::find()->where(['in', 'uuid', ['5FAB9C-AF832','5FAB9C-AF85B']])->all();
 
-        echo "procesando docinstalacions (". sizeof($hstasks) .")\n";
-        foreach ($hstasks as $hstask){
-            //consulta documento
-            // crea folder de cliente en modulo suscriptores                        
-            $suscfolder = $this->Createfolder($this->idmodulesusc, 0, 'TS'.$hstask['uuid']);
-
-            if ($suscfolder['error'] == "") {
-                //crear disco path
-                $fpath = $this->root_path . '/' . $this->modulosusc->moduleName . '/' . $suscfolder['data']->folderName;
-                $vpath = $this->root_vpath . '/' . $this->modulosusc->moduleName. '/' . $suscfolder['data']->folderName . '/';
-
-                // actualiza task 
-                $hstask->idFolder = $suscfolder['data']->idfolder;
-                $hstask->save(false);
-
-                // descarga documento
-                // Initialize the cURL session 
-                $ch = curl_init($hstask['pdf']); 
-
-                // Save file into file location 
-                $save_file_loc = $fpath . '/' . $hstask['uuid']. '.pdf'; 
-
-                // Open file  
-                $fp = fopen($save_file_loc, 'wb'); 
-
-                // It set an option for a cURL transfer 
-                curl_setopt($ch, CURLOPT_FILE, $fp); 
-                curl_setopt($ch, CURLOPT_HEADER, 0); 
-
-                // Perform a cURL session 
-                curl_exec($ch); 
-
-                // Closes a cURL session and frees all resources 
-                curl_close($ch); 
-
-                // Close file 
-                fclose($fp); 
-                 
-                // crea documentos intalacion
-                $newdocument = new Document(); 
-                $newdocument->name = $hstask['uuid']. '.pdf';
-                $newdocument->path = $fpath;
-                $newdocument->level1name = $hstask['uuid'];
-                $newdocument->relativename = $vpath . $hstask['uuid']. '.pdf'; 
-                $newdocument->fullname = $save_file_loc;
-                $newdocument->date = date("Y-m-d H:i:s");                
-                $newdocument->size = filesize ($save_file_loc) ;                
-                $newdocument->type = 'application/pdf';                
-                $newdocument->iddocumentType = 5; // documento instalacion
-                $newdocument->idFolder = $suscfolder['data']->idfolder;
+        echo "procesando docinstalacions (" . sizeof($hstasks) . ")\n";
+        $i = 0;
+        foreach ($hstasks as $hstask) {
+            $i = $i +1;
+            echo $i.": ". round(($i*100)/sizeof($hstasks),2). "% - $hstask->idFolder\n";
+            if (empty($hstask->idFolder)) {
+                echo "procesando docinstalacions (" . 'TS' . $hstask['uuid'] . ")\n";
+                //consulta documento
+                // crea folder de cliente en modulo suscriptores                        
+                $suscfolder = $this->Createfolder($this->idmodulesusc, 0, 'TS' . $hstask['uuid']);
                 
-                $newdocument->save(false);
+                if ($suscfolder['error'] == "") {
+                    //crear disco path
+                    $fpath = $this->root_path . '/' . $this->modulosusc->moduleName . '/' . $suscfolder['data']->folderName;
+                    $vpath = $this->root_vpath . '/' . $this->modulosusc->moduleName . '/' . $suscfolder['data']->folderName . '/';
+
+                    // actualiza task 
+                    $hstask->idFolder = $suscfolder['data']->idfolder;
+                    $hstask->save(false);
+
+                    // descarga documento
+                    // Initialize the cURL session 
+                    $ch = curl_init($hstask['pdf']);
+
+                    // Save file into file location 
+                    $save_file_loc = $fpath . '/' . $hstask['uuid'] . '.pdf';
+
+                    // Open file  
+                    $fp = fopen($save_file_loc, 'wb');
+
+                    // It set an option for a cURL transfer 
+                    curl_setopt($ch, CURLOPT_FILE, $fp);
+                    curl_setopt($ch, CURLOPT_HEADER, 0);
+
+                    // Perform a cURL session 
+                    curl_exec($ch);
+
+                    // Closes a cURL session and frees all resources 
+                    curl_close($ch);
+
+                    // Close file 
+                    fclose($fp);
+
+                    // crea documentos intalacion
+                    $newdocument = new Document();
+                    $newdocument->name = $hstask['uuid'] . '.pdf';
+                    $newdocument->path = $fpath;
+                    $newdocument->level1name = $hstask['uuid'];
+                    $newdocument->relativename = $vpath . $hstask['uuid'] . '.pdf';
+                    $newdocument->fullname = $save_file_loc;
+                    $newdocument->date = date("Y-m-d H:i:s");
+                    $newdocument->size = filesize($save_file_loc);
+                    $newdocument->type = 'application/pdf';
+                    $newdocument->iddocumentType = 5; // documento instalacion
+                    $newdocument->idFolder = $suscfolder['data']->idfolder;
+
+                    $newdocument->save(false);
+                }else{
+                    echo 'error: ('. $suscfolder['error']. ")\n";
+                }
             }
         }
-        echo "Fin syncdocinstalacion ".date("Y-m-d H:i:s"). "\n";
+        echo "Fin syncdocinstalacion " . date("Y-m-d H:i:s") . "\n";
     }
+
 }

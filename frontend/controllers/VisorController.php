@@ -1,5 +1,4 @@
 <?php
-
 namespace frontend\controllers;
 
 use app\models\Module;
@@ -38,6 +37,7 @@ class VisorController extends \yii\web\Controller {
     }
 
     public function actionFilemanager() {
+        ini_set('memory_limit', '8192M'); 
         $modulos = Module::find()->indexBy('idmodule')->all();
         //directorio raiz
         $keyassignedsize = Settings::find()->where(['key' => 'ASSIGNEDDISKSIZEGB'])->one();
