@@ -128,6 +128,21 @@ class ReportsController extends \yii\web\Controller {
                     'municipio' => $municipio));
     }
 
+    public function actionCambiosreemplazos() 
+    {       
+        $connection = Yii::$app->getDb();
+        $sql = "SELECT distinct Departamento_Old as city FROM sabana_reporte_cambios_reemplazos";
+        $deptos = $connection->createCommand($sql)->queryAll();
+        $sql = "SELECT distinct Municipio_Old as district FROM sabana_reporte_cambios_reemplazos";
+        $mpios = $connection->createCommand($sql)->queryAll();
+        $sql = "SELECT * FROM sabana_reporte_cambios_reemplazos";
+        $insts = $connection->createCommand($sql)->queryAll();
+
+        return $this->render('cambiosreemplazos', array(
+                    'deptos' => $deptos,
+                    'mpios' => $mpios,
+                    'insts' => $insts));
+    }
     /// Server side
 
     public function actionInventariosserver() {
@@ -618,6 +633,276 @@ class ReportsController extends \yii\web\Controller {
                     /* Closing line */
                     $pdf->Cell(array_sum($w), 0, '', 'T');
                     $pdf->Output('D', 'AccesosOperacionExport.pdf', true);
+                }
+            } else {
+                ob_start();
+                ob_start('ob_gzhandler');
+                $json_data = array(
+                    "draw" => intval($requestData['draw']),
+                    "recordsTotal" => intval($totalData),
+                    "recordsFiltered" => intval($totalFiltered),
+                    "data" => $data   // total data array
+                );
+
+                echo json_encode($json_data);
+                ob_end_flush();
+            }
+        } catch (\Exception $ex) {
+            $returndata = ['error' => $ex->getMessage()];
+            echo json_encode($returndata);
+        }
+    }
+
+    public function actionCambiosreemplazosserver() {
+
+        try {
+
+            $requestData = $_REQUEST;
+
+            $columns = array(
+                0 => 'sabana_reporte_cambios_reemplazos_id',
+                1 => 'Ejecutor',
+                2 => 'Documento_Cliente_Acceso_Old',
+                3 => 'Dane_Mun_ID_Punto_Old',
+                4 => 'Estado_Actual_Old',
+                5 => 'Region_Old',
+                6 => 'Dane_Departamento_Old',
+                7 => 'Departamento_Old',
+                8 => 'Dane_Municipio_Old',
+                9 => 'Municipio_Old',
+                10 => 'Barrio_Old',
+                11 => 'Direccion_Old',
+                12 => 'Estrato_Old',
+                13 => 'Coordenadas_Grados_decimales_Old',
+                14 => 'Nombre_Cliente_Completo_Old',
+                15 => 'Telefono_Old',
+                16 => 'Celular_Old',
+                17 => 'Correo_Electronico_Old',
+                18 => 'VIP_Old',
+                19 => 'Codigo_Proyecto_VIP_Old',
+                20 => 'Nombre_Proyecto_VIP_Old',
+                21 => 'Velocidad_Contratada_MB_Old',
+                22 => 'Meta_Old',
+                23 => 'Tipo_Solucion_UM_Operatividad_Old',
+                24 => 'Operador_Prestante_Old',
+                25 => 'IP_fibra_optica_Old',
+                26 => 'Olt_fibra_optica_Old',
+                27 => 'PuertoOlt_fibra_optica_Old',
+                28 => 'Mac_Onu_fibra_optica_Old',
+                29 => 'Port_Onu_fibra_optica_Old',
+                30 => 'Nodo_red_cobre_Old',
+                31 => 'Armario_red_cobre_Old',
+                32 => 'Red_Primaria_red_cobre_Old',
+                33 => 'Red_Secundaria_red_cobre_Old',
+                34 => 'Nodo_red_hfc_Old',
+                35 => 'Amplificador_red_hfc_Old',
+                36 => 'Tap_Boca_red_hfc_Old',
+                37 => 'Mac_Cpe_Old',
+                38 => 'Documento_Cliente_Acceso_New',
+                39 => 'Region_New',
+                40 => 'Dane_Departamento_New',
+                41 => 'Departamento_New',
+                42 => 'Dane_Municipio_New',
+                43 => 'Municipio_New',
+                44 => 'Barrio_New',
+                45 => 'Direccion_New',
+                46 => 'Estrato_New',
+                47 => 'Coordenadas_Grados_decimales_New',
+                48 => 'Nombre_Cliente_Completo_New',
+                49 => 'Telefono_New',
+                50 => 'Celular_New',
+                51 => 'Correo_Electronico_New',
+                52 => 'VIP_New',
+                53 => 'Codigo_Proyecto_VIP_New',
+                54 => 'Nombre_Proyecto_VIP_New',
+                55 => 'Velocidad_Contratada_MB_New',
+                56 => 'Meta_New',
+                57 => 'Tipo_Solucion_UM_Operatividad_New',
+                58 => 'Operador_Prestante_New',
+                59 => 'IP_fibra_optica_New',
+                60 => 'Olt_fibra_optica_New',
+                61 => 'PuertoOlt_fibra_optica_New',
+                62 => 'Mac_Onu_fibra_optica_New',
+                63 => 'Port_Onu_fibra_optica_New',
+                64 => 'Nodo_red_cobre_New',
+                65 => 'Armario_red_cobre_New',
+                66 => 'Red_Primaria_red_cobre_New',
+                67 => 'Red_Secundaria_red_cobre_New',
+                68 => 'Nodo_red_hfc_New',
+                69 => 'Amplificador_red_hfc_New',
+                70 => 'Tap_Boca_red_hfc_New',
+                71 => 'Mac_Cpe_New',
+
+            );
+
+
+            $totalData = Yii::$app->db->createCommand('SELECT COUNT(*) FROM sabana_reporte_cambios_reemplazos')->queryScalar();
+            $totalFiltered = $totalData;
+
+            $sql = "SELECT * FROM `sabana_reporte_cambios_reemplazos` where 1=1 ";
+
+            if (!empty($requestData['search']['value'])) {
+                $sql .= " AND ( Documento_Cliente_Acceso_Old LIKE '" . $requestData['search']['value'] . "%' ";
+                $sql .= " OR Documento_Cliente_Acceso_New LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR Dane_Municipio_Old LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR Departamento_Old LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR Municipio_Old LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR Nombre_Cliente_Completo_Old LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR Dane_Municipio_New LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR Departamento_New LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR Municipio_New LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR Nombre_Cliente_Completo_New LIKE '" . $requestData['search']['value'] . "%')";
+            }
+
+            $pdptos = empty($requestData['dptos']) ? '-1' : $requestData['dptos'];
+            $pmpios = empty($requestData['mpios']) ? '-1' : $requestData['mpios'];
+
+            if ($pdptos != '-1') {
+                $sql .= " AND Departamento_Old = '" . $pdptos . "'";
+            }
+            if ($pmpios != '-1') {
+                $sql .= " AND Municipio_Old = '" . $pmpios . "'";
+            }
+
+            if (empty($requestData['export']))
+            {
+                $sqlc = str_replace("*", "COUNT(*)", $sql);
+                $totalFiltered = Yii::$app->db->createCommand($sqlc)->queryScalar();
+
+                $sql .= " ORDER BY " . $columns[$requestData['order'][0]['column']] . "   " . $requestData['order'][0]['dir'] . "  LIMIT " . $requestData['start'] . " ," .
+                        $requestData['length'] . "   ";
+            }
+
+
+            $result = Yii::$app->db->createCommand($sql)->queryAll();
+
+            $data = array();
+            foreach ($result as $key => $row) {
+                $nestedData = array();
+                $nestedData[] = $row['Ejecutor'];
+                $nestedData[] = $row['Documento_Cliente_Acceso_Old'];
+                $nestedData[] = $row['Dane_Mun_ID_Punto_Old'];
+                $nestedData[] = $row['Estado_Actual_Old'];
+                $nestedData[] = $row['Region_Old'];
+                $nestedData[] = $row['Dane_Departamento_Old'];
+                $nestedData[] = $row['Departamento_Old'];
+                $nestedData[] = $row['Dane_Municipio_Old'];
+                $nestedData[] = $row['Municipio_Old'];
+                $nestedData[] = $row['Barrio_Old'];
+                $nestedData[] = $row['Direccion_Old'];
+                $nestedData[] = $row['Estrato_Old'];
+                $nestedData[] = $row['Coordenadas_Grados_decimales_Old'];
+                $nestedData[] = $row['Nombre_Cliente_Completo_Old'];
+                $nestedData[] = $row['Telefono_Old'];
+                $nestedData[] = $row['Celular_Old'];
+                $nestedData[] = $row['Correo_Electronico_Old'];
+                $nestedData[] = $row['VIP_Old'];
+                $nestedData[] = $row['Codigo_Proyecto_VIP_Old'];
+                $nestedData[] = $row['Nombre_Proyecto_VIP_Old'];
+                $nestedData[] = $row['Velocidad_Contratada_MB_Old'];
+                $nestedData[] = $row['Meta_Old'];
+                $nestedData[] = $row['Tipo_Solucion_UM_Operatividad_Old'];
+                $nestedData[] = $row['Operador_Prestante_Old'];
+                $nestedData[] = $row['IP_fibra_optica_Old'];
+                $nestedData[] = $row['Olt_fibra_optica_Old'];
+                $nestedData[] = $row['PuertoOlt_fibra_optica_Old'];
+                $nestedData[] = $row['Mac_Onu_fibra_optica_Old'];
+                $nestedData[] = $row['Port_Onu_fibra_optica_Old'];
+                $nestedData[] = $row['Nodo_red_cobre_Old'];
+                $nestedData[] = $row['Armario_red_cobre_Old'];
+                $nestedData[] = $row['Red_Primaria_red_cobre_Old'];
+                $nestedData[] = $row['Red_Secundaria_red_cobre_Old'];
+                $nestedData[] = $row['Nodo_red_hfc_Old'];
+                $nestedData[] = $row['Amplificador_red_hfc_Old'];
+                $nestedData[] = $row['Tap_Boca_red_hfc_Old'];
+                $nestedData[] = $row['Mac_Cpe_Old'];
+                $nestedData[] = $row['Documento_Cliente_Acceso_New'];
+                $nestedData[] = $row['Region_New'];
+                $nestedData[] = $row['Dane_Departamento_New'];
+                $nestedData[] = $row['Departamento_New'];
+                $nestedData[] = $row['Dane_Municipio_New'];
+                $nestedData[] = $row['Municipio_New'];
+                $nestedData[] = $row['Barrio_New'];
+                $nestedData[] = $row['Direccion_New'];
+                $nestedData[] = $row['Estrato_New'];
+                $nestedData[] = $row['Coordenadas_Grados_decimales_New'];
+                $nestedData[] = $row['Nombre_Cliente_Completo_New'];
+                $nestedData[] = $row['Telefono_New'];
+                $nestedData[] = $row['Celular_New'];
+                $nestedData[] = $row['Correo_Electronico_New'];
+                $nestedData[] = $row['VIP_New'];
+                $nestedData[] = $row['Codigo_Proyecto_VIP_New'];
+                $nestedData[] = $row['Nombre_Proyecto_VIP_New'];
+                $nestedData[] = $row['Velocidad_Contratada_MB_New'];
+                $nestedData[] = $row['Meta_New'];
+                $nestedData[] = $row['Tipo_Solucion_UM_Operatividad_New'];
+                $nestedData[] = $row['Operador_Prestante_New'];
+                $nestedData[] = $row['IP_fibra_optica_New'];
+                $nestedData[] = $row['Olt_fibra_optica_New'];
+                $nestedData[] = $row['PuertoOlt_fibra_optica_New'];
+                $nestedData[] = $row['Mac_Onu_fibra_optica_New'];
+                $nestedData[] = $row['Port_Onu_fibra_optica_New'];
+                $nestedData[] = $row['Nodo_red_cobre_New'];
+                $nestedData[] = $row['Armario_red_cobre_New'];
+                $nestedData[] = $row['Red_Primaria_red_cobre_New'];
+                $nestedData[] = $row['Red_Secundaria_red_cobre_New'];
+                $nestedData[] = $row['Nodo_red_hfc_New'];
+                $nestedData[] = $row['Amplificador_red_hfc_New'];
+                $nestedData[] = $row['Tap_Boca_red_hfc_New'];
+                $nestedData[] = $row['Mac_Cpe_New'];
+                $data[] = $nestedData;
+            }
+
+            if (!empty($requestData['export'])) {
+                if ($requestData['export'] == 'csv') {
+                    ob_start();
+                    ob_start('ob_gzhandler');
+                    header('Content-Type: text/csv; charset=windows-1251');
+                    header('Content-Disposition: attachment; filename=CambiosyReemplazosExport.csv');
+                    $output = fopen('php://output', 'w');
+                    fwrite($output, "\xEF\xBB\xBF");
+                    fputcsv($output, ['Ejecutor','Documento Cliente Acceso','Dane Mun - ID Punto','Estado Actual','Region','Dane Departamento','Departamento','Dane Municipio','Municipio','Barrio','Dirección','Estrato','Coordenadas Grados-decimales','Nombre Cliente Completo','Telefono','Celular','Correo Electronico','VIP (Si o No)','Codigo Proyecto VIP','Nombre Proyecto VIP','Velocidad Contratada MB','Meta','Tipo Solucion UM Operatividad','Operador Prestante','IP','Olt','PuertoOlt','Mac Onu','Port Onu','Nodo','Armario','Red Primaria','Red Secundaria','Nodo','Amplificador','Tap-Boca','Mac Cpe','Documento Cliente Acceso','Region','Dane Departamento','Departamento','Dane Municipio','Municipio','Barrio','Dirección','Estrato','Coordenadas Grados-decimales','Nombre Cliente Completo','Telefono','Celular','Correo Electronico','VIP (Si o No)','Codigo Proyecto VIP','Nombre Proyecto VIP','Velocidad Contratada MB','Meta','Tipo Solucion UM Operatividad','Operador Prestante','IP','Olt','PuertoOlt','Mac Onu','Port Onu','Nodo','Armario','Red Primaria','Red Secundaria','Nodo','Amplificador','Tap-Boca','Mac Cpe'], ';');
+                    foreach ($data as $key => $value) {
+                        fputcsv($output, $value, ';');
+                    }
+                    fclose($output);
+                    ob_end_flush();
+                }
+                if ($requestData['export'] == 'pdf') {
+                    $pdf = new Fpdf();
+                    /* Column headings */
+                    $header = array('Ejecutor','Documento Cliente Acceso','Dane Mun - ID Punto','Estado Actual','Region','Dane Departamento','Departamento','Dane Municipio','Municipio','Barrio','Dirección','Estrato','Coordenadas Grados-decimales','Nombre Cliente Completo','Telefono','Celular','Correo Electronico','VIP (Si o No)','Codigo Proyecto VIP','Nombre Proyecto VIP','Velocidad Contratada MB','Meta','Tipo Solucion UM Operatividad','Operador Prestante','IP','Olt','PuertoOlt','Mac Onu','Port Onu','Nodo','Armario','Red Primaria','Red Secundaria','Nodo','Amplificador','Tap-Boca','Mac Cpe','Documento Cliente Acceso','Region','Dane Departamento','Departamento','Dane Municipio','Municipio','Barrio','Dirección','Estrato','Coordenadas Grados-decimales','Nombre Cliente Completo','Telefono','Celular','Correo Electronico','VIP (Si o No)','Codigo Proyecto VIP','Nombre Proyecto VIP','Velocidad Contratada MB','Meta','Tipo Solucion UM Operatividad','Operador Prestante','IP','Olt','PuertoOlt','Mac Onu','Port Onu','Nodo','Armario','Red Primaria','Red Secundaria','Nodo','Amplificador','Tap-Boca','Mac Cpe');
+                    /* Data loading */
+                    $pdf->AddPage('L', 'Legal');
+                    $pdf->SetFont('Courier', '', 6);
+                    /* Column widths */
+                    $w = array(30, 27, 20, 8, 20, 10, 20, 95, 15, 15, 10, 10, 20, 15, 28);
+                    /* Header */
+                    for ($i = 0; $i < 15; $i++) {
+                        $pdf->Cell($w[$i], 7, utf8_decode($header[$i]), 1, 0, 'C');
+                    }
+                    $pdf->Ln();
+                    /* Data */
+                    foreach ($data as $row) {
+                        for ($i = 0; $i < 7; $i++) {
+                            $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
+                        }
+
+                        $barr = utf8_decode($row[7]);
+                        if (strlen($barr) > 70) {
+                            $barr = substr($barr, 0, 70) . '...';
+                        }
+
+                        $pdf->Cell($w[7], 6, $barr, 'LR');
+
+                        for ($i = 8; $i < 15; $i++) {
+                            $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
+                        }
+                        $pdf->Ln();
+                    }
+                    /* Closing line */
+                    $pdf->Cell(array_sum($w), 0, '', 'T');
+                    $pdf->Output('D', 'CambiosyReemplazosExport.pdf', true);
                 }
             } else {
                 ob_start();

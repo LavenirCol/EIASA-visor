@@ -183,4 +183,7 @@ $(document).ready(function(){
     
     //instlaciondetails
     makeserverprocessing('#dataTableInstalaciondetails','/reports/instalaciondetailsserver');
+
+    //CambiosyReemplazos
+    makeserverprocessing('#dataTableCambiosReemplazos','/reports/cambiosreemplazosserver');
 });

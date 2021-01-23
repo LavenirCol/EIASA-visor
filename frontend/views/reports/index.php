@@ -70,7 +70,32 @@ use \yii\helpers\Url;
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div>                                     
+                </div>                
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-8 mt-4">
+            <div class="card-deck">                    
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Módulo de Cambios y Reemplazos</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">Formato módulo Cambios y Reemplazos</h6>
+                            <p class="card-text">En este módulo se visualiza la información cargada en el formato de cambios y reemplazos</p>
+                            <div class="card-footer">
+                                <div class="row">
+                                    <div class="col-md-6 text-center">
+                                        <a href="<?php echo Url::toRoute('reports/cambiosreemplazos'); ?>" class="btn btn-primary btn-sm pull-right">Consultar</a>
+                                    </div>
+                                    <div class="col-md-6 text-center">
+                                        <?php if (Yii::$app->user->identity->attributes['idProfile'] < 3) { ?>
+                                            <a href="<?php echo Url::toRoute('sabana-reporte-cambios-reemplazos/upload'); ?>" class="btn btn-primary btn-sm pull-right">Actualizar</a>
+                                        <?php } ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>               
                     <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">Módulo PQR's y Mantenimiento</h5>
@@ -79,8 +104,8 @@ use \yii\helpers\Url;
                             <a href="<?php echo Url::toRoute('reports/pqrs'); ?>" class="btn btn-primary btn-sm">Consultar</a>
                         </div>
                     </div>                  
-                </div>
-            </div>
+                </div>   
+        </div>
         </div>
     </div>
 </div>

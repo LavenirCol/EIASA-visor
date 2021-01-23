@@ -41,3 +41,7 @@ phpunit.phar
 /backend/web/index.php
 /backend/web/index-test.php
 /backend/web/robots.txt
+
+#ignore Settings VS Code 
+/.vscode
+frontend/web/info.php
