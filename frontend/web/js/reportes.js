@@ -134,7 +134,7 @@ $(document).ready(function(){
                     text: 'PDF',
                     action: function ( e, dt, node, config ) {
                         
-                        if(datatable === "#dataTableOperaciondetails" || datatable === "#dataTableInstalaciondetails"){
+                        if(datatable === "#dataTableOperaciondetails" || datatable === "#dataTableInstalaciondetails"|| datatable === "#dataTableCambiosReemplazos"){
                             window.alert("Funcion no soportada en sabana de datos")
                         }else{
                             var url = baseurl + ajaxcall;
