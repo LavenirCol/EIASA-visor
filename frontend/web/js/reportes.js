@@ -5,7 +5,7 @@
  */
 
 $(document).ready(function(){
-    //table settings
+    //table settings 
     $.extend(true, $.fn.dataTable.defaults, {
         "searching": true,
         "ordering": true,
@@ -163,13 +163,30 @@ $(document).ready(function(){
                     d.factories = $('#factories').val();
                     d.models = $('#models').val();
                 }
-            }
+            },
+            "fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) 
+            { 
+                if(datatable === "#dataTableCambiosReemplazos")
+                {
+                    $(nRow).children().each(function(index, td)
+                    {                        
+                        if (index > 36)
+                        {                    
+                            aData[index] = '<span class="text-primary">' + aData[index] + '</span>';
+                        } 
+                    }); 
+                }
+                return nRow; 
+            }, 
         });
         
+       
         // search
-        $("#btnsearch").click(function(e){
+        $("#btnsearch").click(function(e){            
             $(datatable).DataTable().ajax.reload();
         });
+
+
     }
     
     //inventarios
