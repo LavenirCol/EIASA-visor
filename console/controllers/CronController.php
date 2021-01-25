@@ -261,6 +261,18 @@ class CronController extends Controller {
                     $newclient->access_id = $client['idprof6'];
                     $newclient->address = str_replace(array("\n", "\r", "\r\n", "\xE2\x80\x9010"), ' ', $client['address']);
                     $newclient->name = str_replace("\xC5\x84", 'ñ', $client['name']);
+                    
+                    $latlng = '';
+                    if(isset($client['array_options'])){
+                        if(isset($client['array_options']["options_lat"])){
+                            $latlng = $latlng . ' Lat: ' . $client['array_options']["options_lat"];
+                        }
+                        if(isset($client['array_options']["options_lon"])){
+                            $latlng = $latlng . ' Lon: ' . $client['array_options']["options_lon"];
+                        }
+                    }
+                    
+                    $newclient->latlng = $latlng;
                     $newclient->save(false);
 
                     $this->processcontracts($client['id']);
@@ -549,6 +561,7 @@ class CronController extends Controller {
                 $newticket->fk_soc = $ticket['fk_soc'];
                 $newticket->subject = $ticket['subject'];
                 $newticket->message = $ticket['message'];
+                $newticket->message = str_replace(array("\n", "\r", "\r\n", "\xE2\x80\x9010", "\xE2\x80\xAC"), ' ', $ticket['message']);                  
                 $newticket->type_label = $ticket['type_label'];
                 $newticket->category_label = $ticket['category_label'];
                 $newticket->severity_label = $ticket['severity_label'];

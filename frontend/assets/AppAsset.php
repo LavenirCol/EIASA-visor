@@ -37,6 +37,10 @@ class AppAsset extends AssetBundle
         'https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.21/b-1.6.3/b-colvis-1.6.3/b-flash-1.6.3/b-html5-1.6.3/b-print-1.6.3/r-2.2.5/sp-1.1.1/datatables.min.js',
         'https://cdn.jsdelivr.net/npm/sweetalert2@10',
         'https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js',
+        'https://code.highcharts.com/highcharts.js',
+        'https://code.highcharts.com/modules/data.js',
+        'https://code.highcharts.com/modules/exporting.js',
+        'https://code.highcharts.com/modules/accessibility.js',
         'js/mimetypes.js',
         'js/reportes.js',
         'js/filemanager.js'

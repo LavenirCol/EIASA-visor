@@ -101,7 +101,16 @@ use \yii\helpers\Url;
                             <h5 class="card-title">Módulo PQR's y Mantenimiento</h5>
                             <h6 class="card-subtitle mb-2 text-muted">Tickets asociados</h6>
                             <p class="card-text">En este módulo se visualiza la información de los tickets asociados a clientes</p>
-                            <a href="<?php echo Url::toRoute('reports/pqrs'); ?>" class="btn btn-primary btn-sm">Consultar</a>
+                            <div class="card-footer">
+                                <div class="row">
+                                    <div class="col-md-6 text-center">
+                                        <a href="<?php echo Url::toRoute('reports/pqrsdash'); ?>" class="btn btn-primary btn-sm pull-right">Estadísticas</a>
+                                    </div>
+                                    <div class="col-md-6 text-center">
+                                        <a href="<?php echo Url::toRoute('reports/pqrs'); ?>" class="btn btn-primary btn-sm pull-right">Consultar</a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>                  
                 </div>   

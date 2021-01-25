@@ -61,9 +61,65 @@ class ReportsController extends \yii\web\Controller {
         return $this->render('operacion');
     }
 
+    public function actionPqrsdash() {
+        $connection = Yii::$app->getDb();
+
+        $sql = "SELECT distinct c.state FROM tickets t inner join client c on t.fk_soc = c.idClient order by 1";
+        $deptos = $connection->createCommand($sql)->queryAll();
+
+        $sql = "SELECT distinct c.town FROM tickets t inner join client c on t.fk_soc = c.idClient order by 1";
+        $mpios = $connection->createCommand($sql)->queryAll();
+
+        $sql = "SELECT distinct t.category_label FROM tickets t inner join client c on t.fk_soc = c.idClient order by 1";
+        $categories = $connection->createCommand($sql)->queryAll();
+        
+        // tickets por estado
+        $sql = "SELECT distinct fecha FROM vwticketsbystate order by 1";
+        $periods = $connection->createCommand($sql)->queryAll();
+        
+        $sql = "select fecha, SUM(CASE WHEN (estado='registrado') THEN conteo ELSE 0 END) AS registrados, SUM(CASE WHEN (estado='open') THEN conteo ELSE 0 END) AS abiertos, SUM(CASE WHEN (estado='closed') THEN conteo ELSE 0 END) AS cerrados from vwticketsbystate group by fecha";
+        $tickets_estado = $connection->createCommand($sql)->queryAll();   
+                
+        //tickets por grupo
+        $sql = "select DATE_FORMAT(FROM_UNIXTIME(`t`.`datec`), '%Y-%m') as fecha, ";
+        foreach ($categories as $key => $row) {
+            $sql = $sql . " SUM(CASE WHEN (category_label='".$row["category_label"]."') THEN 1 ELSE 0 END) AS '".$row["category_label"]."',";
+        }
+        
+        $sql = $sql . "count(*) as total from tickets t ";
+        $sql = $sql . "group by  DATE_FORMAT(FROM_UNIXTIME(`t`.`datec`), '%Y-%m') ";
+        
+        $tickets_grupo = $connection->createCommand($sql)->queryAll();
+        
+        // detalle de tickets
+        $sql = "SELECT category_label, type_label, severity_label, count(*) as conteo FROM tickets t group by category_label, type_label, severity_label order by 1,2,3";
+        $tickets_severity = $connection->createCommand($sql)->queryAll();
+        
+        
+        //dias promedio abiertos
+        $sql = "SELECT ROUND(AVG(DATEDIFF(NOW(), DATE_FORMAT(FROM_UNIXTIME(`datec`), '%Y-%m-%d')) ),2) AS days FROM tickets t where t.date_close  = ''";
+        $daysopen = $connection->createCommand($sql)->queryOne();
+        
+        //dias promedio cierre
+        $sql = "SELECT ROUND(AVG(DATEDIFF(DATE_FORMAT(FROM_UNIXTIME(`date_close`), '%Y-%m-%d'), DATE_FORMAT(FROM_UNIXTIME(`datec`), '%Y-%m-%d')) ),2) AS days FROM tickets t where t.date_close  <> ''";
+        $daysclosed = $connection->createCommand($sql)->queryOne();       
+        
+        return $this->render('pqrsdash', [
+                    'deptos' => $deptos,
+                    'mpios' => $mpios,
+                    'categories' => $categories,
+                    'periods' => $periods,
+                    'tickets_estado' => $tickets_estado,
+                    'tickets_grupo' => $tickets_grupo,
+                    'tickets_severity' => $tickets_severity,
+                    'daysopen' => $daysopen,
+                    'daysclosed' => $daysclosed
+        ]);
+    }
+
     public function actionPqrs() {
         $connection = Yii::$app->getDb();
-        $sql = "SELECT t.*, c.access_id, c.name, c.town, c.state FROM tickets t inner join client c on t.fk_soc = c.idClient";
+        $sql = "SELECT t.*, c.* FROM tickets t inner join client c on t.fk_soc = c.idClient";
 
         $pqrs = $connection->createCommand($sql)->queryAll();
 

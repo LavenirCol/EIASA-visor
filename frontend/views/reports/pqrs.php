@@ -31,12 +31,19 @@
                         <th data-priority="3" width="10%">Código Acceso</th>
                         <th data-priority="4" width="15%">Cliente</th>
                         <th data-priority="5" width="10%">Ref Ticket</th>
+                        <th data-priority="6" width="10%">Grupo</th>
                         <th data-priority="6" width="10%">Tipo</th>
+                        <th data-priority="6" width="10%">Prioridad</th>
                         <th data-priority="7" width="15%">Asunto</th>
                         <th data-priority="5" width="10%">Fecha Creación</th>
                         <th data-priority="5" width="10%">Fecha Limite</th>
                         <th data-priority="5" width="10%">Fecha Cierre</th>
                         <th data-priority="5" width="10%">Origen de Reporte</th>
+                        <th data-priority="5" width="10%">Cédula</th>
+                        <th data-priority="5" width="10%">Teléfonos</th>
+                        <th data-priority="5" width="10%">Email</th>
+                        <th data-priority="5" width="10%">Dirección / Barrio</th>
+                        <th data-priority="5" width="10%">Coordenadas</th>
                         <th></th>
                         <th></th>
                     </tr>
@@ -49,7 +56,9 @@
                         <td><?php echo $pqr['access_id'] ?></td>
                         <td><?php echo $pqr['name'] ?></td>
                         <td><?php echo $pqr['ref'] ?></td>
-                        <td><?php echo $pqr['type_label'] ?><br><small><?php echo $pqr['category_label'] ?> - <?php echo $pqr['severity_label'] ?></small></td>
+                        <td><?php echo $pqr['category_label'] ?></td>
+                        <td><?php echo $pqr['type_label'] ?></td>
+                        <td><?php echo $pqr['severity_label'] ?></td>
                         <td><?php echo $pqr['subject'] ?></td>                        
                         <td><?php echo isset($pqr['datec']) ? date("d/m/Y",$pqr['datec']) : '' ?></td>                        
                         <td><?php 
@@ -63,6 +72,23 @@
                                 '2020-12-08',
                                 '2020-12-25',
                                 '2021-01-01',
+                                '2021-01-11',
+                                '2021-03-22',
+                                '2021-04-01',
+                                '2021-04-02',
+                                '2021-05-01',
+                                '2021-05-17',
+                                '2021-06-03',
+                                '2021-06-14',
+                                '2021-07-05',
+                                '2021-07-20',
+                                '2021-08-07',
+                                '2021-08-16',
+                                '2021-10-18',
+                                '2021-11-01',
+                                '2021-11-15',
+                                '2021-12-08',
+                                '2021-12-25',
                             );
 
                             $count5WD = 0;
@@ -93,6 +119,13 @@
                             ?>
                         </td>       
                         <td>Call Center</td>
+                        <!-- Datos cliente -->
+                        <td><?php echo $pqr['idprof1'] ?></td>
+                        <td><?php echo $pqr['phone'] ?></td>
+                        <td><?php echo $pqr['email'] ?></td>
+                        <td><?php echo $pqr['address'] ?></td>
+                        <td><?php echo $pqr['latlng'] ?></td>
+                        
                         <td><button class="btn btn-sm btn-primary btndetail" data-detail="
                             <?php echo htmlspecialchars($pqr['message']) ?><br><br>                        
                             <p><b>Mensajes:</b></p>                            
