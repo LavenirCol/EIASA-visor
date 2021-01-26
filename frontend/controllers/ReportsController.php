@@ -64,6 +64,7 @@ class ReportsController extends \yii\web\Controller {
     public function actionPqrsdash() {
         $connection = Yii::$app->getDb();
 
+        //filtros
         $sql = "SELECT distinct c.state FROM tickets t inner join client c on t.fk_soc = c.idClient order by 1";
         $deptos = $connection->createCommand($sql)->queryAll();
 

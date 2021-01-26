@@ -219,10 +219,10 @@ class CronController extends Controller {
 
         // sincroniza archivos
         //echo "Sincronizando Archivos...\n"; // your logic for deleting old post goes here        
-        //$this->syncFiles();
+        $this->syncFiles();
         // sincroniza archivos instalacion
-        echo "Sincronizando Archivos Instalacion...\n"; // your logic for deleting old post goes here        
-        $this->syncInstalationfiles();
+        //echo "Sincronizando Archivos Instalacion...\n"; // your logic for deleting old post goes here        
+        //$this->syncInstalationfiles();
 
         exit();
     }
@@ -628,10 +628,6 @@ class CronController extends Controller {
 
                     $content = json_decode(base64_decode($download["content"]), true);
                     if (isset($content["resultado"]["url_representacion_grafica"])) {
-                        //actualiza document
-                        $document->type = 'application/pdf';
-                        //$document->fileUploadedUserId = -1;
-                        $document->save();
 
                         $url = $content["resultado"]["url_representacion_grafica"];
                         $path = $document['path'] . "/" . $document['name'];
@@ -640,17 +636,25 @@ class CronController extends Controller {
                         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
                         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
                         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                        curl_setopt($ch, CURLOPT_REFERER, 'https://www.sedi.ca/sedi/SVTReportsAccessController?menukey=15.03.00&locale=en_CA');
+                        curl_setopt($ch, CURLOPT_REFERER, 'http://megayavisor.lavenirapps.co');
 
                         $data = curl_exec($ch);
 
                         $result = file_put_contents($path, $data);
 
-                        if (!$result) {
+                        echo $result.' - '. $path . '\n';
+                        
+                        if ($result == FALSE) {
                             echo "Error download " . $document['level1name'] . "/" . $document['name'] . " - " . curl_error($ch) . "\n";
                         }
+                        curl_close($ch);                        
+                        
+                        //actualiza document
+                        $document->type = 'application/pdf';
+                        $document->size = $result;
+                        //$document->fileUploadedUserId = -1;
+                        $document->save(false); 
 
-                        curl_close($ch);
                     }
                 }
             } else {
@@ -784,6 +788,16 @@ class CronController extends Controller {
         exit();
     }
 
+    public function actionSyncinventory() {
+        echo "Inicio cron job iventario \n"; // your logic for deleting old post goes here
+
+        echo "Borrando datos locales \n";
+        Yii::$app->db->createCommand()->truncateTable('hsstock')->execute();
+        $this->syncInventory();
+
+        exit();
+    }
+    
     /*
      * Sincroniza inventario
      */
