@@ -77,16 +77,15 @@ class AccesosoperacionController extends Controller {
                 $input = Yii::$app->request->post();
                 $filetype = $input['filetype'];
 
+                $config = ['path' => $fpath];
+                $excel = new Excel($config);
+
+                $data = $excel->openFile($_FILES['file']['name'])
+                        ->openSheet()
+                        ->getSheetData();
+
                 if ($filetype == "1") { // archivo sabanas
                     Yii::$app->db->createCommand()->truncateTable('sabana_reporte_operacion')->execute();
-
-                    $config = ['path' => $fpath];
-                    $excel = new Excel($config);
-
-                    $data = $excel->openFile($_FILES['file']['name'])
-                            ->openSheet()
-                            ->getSheetData();
-
 //                    var_dump($data);                    
                     $i = 0;
                     foreach ($data as $rowData) {
@@ -156,41 +155,36 @@ class AccesosoperacionController extends Controller {
                 }
                 if ($filetype == "2") { // archivo metas
                     Yii::$app->db->createCommand()->truncateTable('avances_meta_operacion')->execute();
-                    
-                    $inputFileType = \PHPExcel_IOFactory::identify($targetFile);
-                    $objReader = \PHPExcel_IOFactory::createReader($inputFileType);
-                    $objPHPExcel = $objReader->load($targetFile);
-                    $sheet = $objPHPExcel->getSheet(0);
-                    $highestRow = $sheet->getHighestRow();
-                    $highestColunm = $sheet->getHighestColumn();
-                    //$highestColunm = 'E'; //sin formulas
-                    for ($row = 2; $row <= $highestRow; $row++) {
-                        $rowData = $sheet->rangeToArray('A' . $row . ':' . $highestColunm . $row, NULL, TRUE, FALSE);
 
-                        $sql = "SELECT count(*) as cantidad
+                    $i = 0;
+                    foreach ($data as $rowData) {
+                        if ($i > 1) {
+                            $sql = "SELECT count(*) as cantidad
                                 FROM sabana_reporte_operacion s 
-                                WHERE CONCAT(Dane_Departamento,Dane_Municipio) = '" . $rowData[0][0] . "'";
+                                WHERE CONCAT(Dane_Departamento,Dane_Municipio) = '" . str_pad(strval($rowData[0]), 5, "0", STR_PAD_LEFT) . "'";
 
-                        $conteo = Yii::$app->db->createCommand($sql)->queryOne();
-                        $meta = (float) ($rowData[0][3]);
-                        $cantidad = (float) ($conteo['cantidad']);
-                        $newrec = new AvancesMetaOperacion();
-                        $newrec->DANE = $rowData[0][0];
-                        $newrec->Departamento = $rowData[0][1];
-                        $newrec->Municipio = $rowData[0][2];
-                        $newrec->Meta = $meta;
-                        $newrec->Beneficiarios_En_Operacion = $cantidad;
-                        $newrec->Meta_Tiempo_en_servicio = $rowData[0][5];
-                        $newrec->Tiempo_en_servicio = $rowData[0][6];
-                        $newrec->Avance = 0;
-                        if ($cantidad > 0) {
-                            $result = (float) ($cantidad / $meta);
-                            $newrec->Avance = round(($result * 100), 2);
+                            $conteo = Yii::$app->db->createCommand($sql)->queryOne();
+                            $meta = (float) ($rowData[3]);
+                            $cantidad = (float) ($conteo['cantidad']);
+                            $newrec = new AvancesMetaOperacion();
+                            $newrec->DANE = str_pad(strval($rowData[0]), 5, "0", STR_PAD_LEFT);
+                            $newrec->Departamento = $rowData[1];
+                            $newrec->Municipio = $rowData[2];
+                            $newrec->Meta = $meta;
+                            $newrec->Beneficiarios_En_Operacion = $cantidad;
+                            $newrec->Meta_Tiempo_en_servicio = $rowData[5];
+                            $newrec->Tiempo_en_servicio = $rowData[6];
+                            $newrec->Avance = 0;
+                            if ($cantidad > 0) {
+                                $result = (float) ($cantidad / $meta);
+                                $newrec->Avance = round(($result * 100), 2);
+                            }
+                            $newrec->save(false);
                         }
-                        $newrec->save(false);
+                        $i = $i + 1;
                     };
 
-                    $returndata = ['data' => 'ok', 'error' => $targetFile . ' - (' . ($highestRow - 1) . ') Registros Procesados. '];
+                    $returndata = ['data' => 'ok', 'error' => $targetFile . ' - (' . $i . ') Registros Procesados. '];
                     return $this->render('upload', $returndata);
                 }
             }

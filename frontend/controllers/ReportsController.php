@@ -293,7 +293,7 @@ class ReportsController extends \yii\web\Controller {
                 $nestedData[] = $row["measure"];
                 $nestedData[] = $row["quantity"];
                 $nestedData[] = $row["lat"] . ',' . $row["lng"];
-                $nestedData[] = $row["city_code"] == '' ? '-' : 'En Sitio';
+                $nestedData[] = $row["city_code"] == '' ? '-' : 'Operativo';
                 $nestedData[] = 'Recursos de Fomento';
                 $data[] = $nestedData;
             }
