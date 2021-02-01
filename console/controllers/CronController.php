@@ -194,7 +194,7 @@ class CronController extends Controller {
         //ciclos
         $limit = 100;
         $cycles = 230; // 23000 clientes aprox
-        for ($i = 1; $i <= $cycles; $i++) {
+        for ($i = 0; $i <= $cycles; $i++) {
             $this->syncClients($limit, $i);
         }
         // sincroniza archivos
@@ -219,10 +219,10 @@ class CronController extends Controller {
 
         // sincroniza archivos
         //echo "Sincronizando Archivos...\n"; // your logic for deleting old post goes here        
-        $this->syncFiles();
+        //$this->syncFiles();
         // sincroniza archivos instalacion
         //echo "Sincronizando Archivos Instalacion...\n"; // your logic for deleting old post goes here        
-        //$this->syncInstalationfiles();
+        $this->syncInstalationfiles();
 
         exit();
     }
@@ -236,7 +236,7 @@ class CronController extends Controller {
         $clientSearch = json_decode($this->CallAPI("GET", "thirdparties", array(
                     "sortfield" => "t.rowid",
                     "sortorder" => "ASC",
-                    "mode" => "1",
+                    "mode" => "0",
                     "limit" => $limit,
                     "page" => $page,
                     "sqlfilters" => "(t.idprof6 != '')"

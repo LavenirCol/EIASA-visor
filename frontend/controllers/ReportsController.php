@@ -73,38 +73,38 @@ class ReportsController extends \yii\web\Controller {
 
         $sql = "SELECT distinct t.category_label FROM tickets t inner join client c on t.fk_soc = c.idClient order by 1";
         $categories = $connection->createCommand($sql)->queryAll();
-        
+
         // tickets por estado
         $sql = "SELECT distinct fecha FROM vwticketsbystate order by 1";
         $periods = $connection->createCommand($sql)->queryAll();
-        
+
         $sql = "select fecha, SUM(CASE WHEN (estado='registrado') THEN conteo ELSE 0 END) AS registrados, SUM(CASE WHEN (estado='open') THEN conteo ELSE 0 END) AS abiertos, SUM(CASE WHEN (estado='closed') THEN conteo ELSE 0 END) AS cerrados from vwticketsbystate group by fecha";
-        $tickets_estado = $connection->createCommand($sql)->queryAll();   
-                
+        $tickets_estado = $connection->createCommand($sql)->queryAll();
+
         //tickets por grupo
         $sql = "select DATE_FORMAT(FROM_UNIXTIME(`t`.`datec`), '%Y-%m') as fecha, ";
         foreach ($categories as $key => $row) {
-            $sql = $sql . " SUM(CASE WHEN (category_label='".$row["category_label"]."') THEN 1 ELSE 0 END) AS '".$row["category_label"]."',";
+            $sql = $sql . " SUM(CASE WHEN (category_label='" . $row["category_label"] . "') THEN 1 ELSE 0 END) AS '" . $row["category_label"] . "',";
         }
-        
+
         $sql = $sql . "count(*) as total from tickets t ";
         $sql = $sql . "group by  DATE_FORMAT(FROM_UNIXTIME(`t`.`datec`), '%Y-%m') ";
-        
+
         $tickets_grupo = $connection->createCommand($sql)->queryAll();
-        
+
         // detalle de tickets
         $sql = "SELECT category_label, type_label, severity_label, count(*) as conteo FROM tickets t group by category_label, type_label, severity_label order by 1,2,3";
         $tickets_severity = $connection->createCommand($sql)->queryAll();
-        
-        
+
+
         //dias promedio abiertos
         $sql = "SELECT ROUND(AVG(DATEDIFF(NOW(), DATE_FORMAT(FROM_UNIXTIME(`datec`), '%Y-%m-%d')) ),2) AS days FROM tickets t where t.date_close  = ''";
         $daysopen = $connection->createCommand($sql)->queryOne();
-        
+
         //dias promedio cierre
         $sql = "SELECT ROUND(AVG(DATEDIFF(DATE_FORMAT(FROM_UNIXTIME(`date_close`), '%Y-%m-%d'), DATE_FORMAT(FROM_UNIXTIME(`datec`), '%Y-%m-%d')) ),2) AS days FROM tickets t where t.date_close  <> ''";
-        $daysclosed = $connection->createCommand($sql)->queryOne();       
-        
+        $daysclosed = $connection->createCommand($sql)->queryOne();
+
         return $this->render('pqrsdash', [
                     'deptos' => $deptos,
                     'mpios' => $mpios,
@@ -120,19 +120,31 @@ class ReportsController extends \yii\web\Controller {
 
     public function actionPqrs() {
         $connection = Yii::$app->getDb();
-        $sql = "SELECT t.*, c.* FROM tickets t inner join client c on t.fk_soc = c.idClient";
 
-        $pqrs = $connection->createCommand($sql)->queryAll();
+        $sql = "SELECT distinct c.state FROM tickets t inner join client c on t.fk_soc = c.idClient";
+        $deptos = $connection->createCommand($sql)->queryAll();
 
-        return $this->render('pqrs', array('pqrs' => $pqrs));
+        $sql = "SELECT distinct c.town FROM tickets t inner join client c on t.fk_soc = c.idClient";
+        $mpios = $connection->createCommand($sql)->queryAll();
+
+        return $this->render('pqrs', [
+                    'deptos' => $deptos,
+                    'mpios' => $mpios
+        ]);
     }
 
     public function actionInstalaciondash() {
         $connection = Yii::$app->getDb();
         $sql = "SELECT h.* FROM avances_metas_instalacion h";
         $insts = $connection->createCommand($sql)->queryAll();
+        
+        $sql = "SELECT distinct Departamento FROM sabana_reporte_instalacion";
+        $deptos = $connection->createCommand($sql)->queryAll();
 
-        return $this->render('instalaciondash', array('insts' => $insts));
+        return $this->render('instalaciondash', [
+                    'deptos' => $deptos,
+                    'insts' => $insts
+        ]);
     }
 
     public function actionInstalaciondetails() {
@@ -161,7 +173,13 @@ class ReportsController extends \yii\web\Controller {
         $sql = "SELECT h.* FROM avances_meta_operacion h";
         $insts = $connection->createCommand($sql)->queryAll();
 
-        return $this->render('operaciondash', array('insts' => $insts));
+        $sql = "SELECT distinct Departamento FROM sabana_reporte_operacion";
+        $deptos = $connection->createCommand($sql)->queryAll();
+
+        return $this->render('operaciondash', [
+                    'deptos' => $deptos,
+                    'insts' => $insts
+        ]);        
     }
 
     public function actionOperaciondetails() {
@@ -185,8 +203,7 @@ class ReportsController extends \yii\web\Controller {
                     'municipio' => $municipio));
     }
 
-    public function actionCambiosreemplazos() 
-    {       
+    public function actionCambiosreemplazos() {
         $connection = Yii::$app->getDb();
         $sql = "SELECT distinct Departamento_Old as city FROM sabana_reporte_cambios_reemplazos";
         $deptos = $connection->createCommand($sql)->queryAll();
@@ -200,6 +217,7 @@ class ReportsController extends \yii\web\Controller {
                     'mpios' => $mpios,
                     'insts' => $insts));
     }
+
     /// Server side
 
     public function actionInventariosserver() {
@@ -579,7 +597,7 @@ class ReportsController extends \yii\web\Controller {
                 $nestedData[] = $row['Nombre_Proyecto_VIP'];
                 $nestedData[] = $row['Velocidad_Contratada_Downstream'];
                 $nestedData[] = $row['Meta'];
-                $nestedData[] = $row['Fecha_max_de_cumplimiento_de_meta'];
+                $nestedData[] = $this->formatdate($row['Fecha_max_de_cumplimiento_de_meta']);
                 $nestedData[] = $row['Tipo_Solucion_UM_Operatividad'];
                 $nestedData[] = $row['Operador_Prestante'];
                 $nestedData[] = $row['IP'];
@@ -595,10 +613,10 @@ class ReportsController extends \yii\web\Controller {
                 $nestedData[] = $row['Amplificador'];
                 $nestedData[] = $row['Tap_Boca'];
                 $nestedData[] = $row['Mac_Cpe'];
-                $nestedData[] = $row['Fecha_Instalado'];
-                $nestedData[] = $row['Fecha_Activo'];
-                $nestedData[] = $row['Fecha_inicio_operación'];
-                $nestedData[] = $row['Fecha_Solicitud_Traslado_PQR'];
+                $nestedData[] = $this->formatdate($row['Fecha_Instalado']);
+                $nestedData[] = $this->formatdate($row['Fecha_Activo']);
+                $nestedData[] = $this->formatdate($row['Fecha_inicio_operación']);
+                $nestedData[] = $this->formatdate($row['Fecha_Solicitud_Traslado_PQR']);
                 $diasp = 0;
                 $semaforo = 'blanco';
                 // calcula dias
@@ -625,8 +643,8 @@ class ReportsController extends \yii\web\Controller {
                     $semaforo = 'verde';
                 }
                 $nestedData[] = $diasp . " días. <img src='" . Url::base(true) . "/img/bandera_" . $semaforo . ".png' alt='' width='16'/>";
-                $nestedData[] = $row['Fecha_Inactivo'];
-                $nestedData[] = $row['Fecha_Desinstalado'];
+                $nestedData[] = $this->formatdate($row['Fecha_Inactivo']);
+                $nestedData[] = $this->formatdate($row['Fecha_Desinstalado']);
                 $nestedData[] = $row['Sexo'];
                 $nestedData[] = $row['Genero'];
                 $nestedData[] = $row['Orientacion_Sexual'];
@@ -789,7 +807,6 @@ class ReportsController extends \yii\web\Controller {
                 69 => 'Amplificador_red_hfc_New',
                 70 => 'Tap_Boca_red_hfc_New',
                 71 => 'Mac_Cpe_New',
-
             );
 
 
@@ -821,8 +838,7 @@ class ReportsController extends \yii\web\Controller {
                 $sql .= " AND Municipio_Old = '" . $pmpios . "'";
             }
 
-            if (empty($requestData['export']))
-            {
+            if (empty($requestData['export'])) {
                 $sqlc = str_replace("*", "COUNT(*)", $sql);
                 $totalFiltered = Yii::$app->db->createCommand($sqlc)->queryScalar();
 
@@ -918,7 +934,7 @@ class ReportsController extends \yii\web\Controller {
                     header('Content-Disposition: attachment; filename=CambiosyReemplazosExport.csv');
                     $output = fopen('php://output', 'w');
                     fwrite($output, "\xEF\xBB\xBF");
-                    fputcsv($output, ['Ejecutor','Documento Cliente Acceso','Dane Mun - ID Punto','Estado Actual','Region','Dane Departamento','Departamento','Dane Municipio','Municipio','Barrio','Dirección','Estrato','Coordenadas Grados-decimales','Nombre Cliente Completo','Telefono','Celular','Correo Electronico','VIP (Si o No)','Codigo Proyecto VIP','Nombre Proyecto VIP','Velocidad Contratada MB','Meta','Tipo Solucion UM Operatividad','Operador Prestante','IP','Olt','PuertoOlt','Mac Onu','Port Onu','Nodo','Armario','Red Primaria','Red Secundaria','Nodo','Amplificador','Tap-Boca','Mac Cpe','Documento Cliente Acceso','Region','Dane Departamento','Departamento','Dane Municipio','Municipio','Barrio','Dirección','Estrato','Coordenadas Grados-decimales','Nombre Cliente Completo','Telefono','Celular','Correo Electronico','VIP (Si o No)','Codigo Proyecto VIP','Nombre Proyecto VIP','Velocidad Contratada MB','Meta','Tipo Solucion UM Operatividad','Operador Prestante','IP','Olt','PuertoOlt','Mac Onu','Port Onu','Nodo','Armario','Red Primaria','Red Secundaria','Nodo','Amplificador','Tap-Boca','Mac Cpe'], ';');
+                    fputcsv($output, ['Ejecutor', 'Documento Cliente Acceso', 'Dane Mun - ID Punto', 'Estado Actual', 'Region', 'Dane Departamento', 'Departamento', 'Dane Municipio', 'Municipio', 'Barrio', 'Dirección', 'Estrato', 'Coordenadas Grados-decimales', 'Nombre Cliente Completo', 'Telefono', 'Celular', 'Correo Electronico', 'VIP (Si o No)', 'Codigo Proyecto VIP', 'Nombre Proyecto VIP', 'Velocidad Contratada MB', 'Meta', 'Tipo Solucion UM Operatividad', 'Operador Prestante', 'IP', 'Olt', 'PuertoOlt', 'Mac Onu', 'Port Onu', 'Nodo', 'Armario', 'Red Primaria', 'Red Secundaria', 'Nodo', 'Amplificador', 'Tap-Boca', 'Mac Cpe', 'Documento Cliente Acceso', 'Region', 'Dane Departamento', 'Departamento', 'Dane Municipio', 'Municipio', 'Barrio', 'Dirección', 'Estrato', 'Coordenadas Grados-decimales', 'Nombre Cliente Completo', 'Telefono', 'Celular', 'Correo Electronico', 'VIP (Si o No)', 'Codigo Proyecto VIP', 'Nombre Proyecto VIP', 'Velocidad Contratada MB', 'Meta', 'Tipo Solucion UM Operatividad', 'Operador Prestante', 'IP', 'Olt', 'PuertoOlt', 'Mac Onu', 'Port Onu', 'Nodo', 'Armario', 'Red Primaria', 'Red Secundaria', 'Nodo', 'Amplificador', 'Tap-Boca', 'Mac Cpe'], ';');
                     foreach ($data as $key => $value) {
                         fputcsv($output, $value, ';');
                     }
@@ -928,7 +944,7 @@ class ReportsController extends \yii\web\Controller {
                 if ($requestData['export'] == 'pdf') {
                     $pdf = new Fpdf();
                     /* Column headings */
-                    $header = array('Ejecutor','Documento Cliente Acceso','Dane Mun - ID Punto','Estado Actual','Region','Dane Departamento','Departamento','Dane Municipio','Municipio','Barrio','Dirección','Estrato','Coordenadas Grados-decimales','Nombre Cliente Completo','Telefono','Celular','Correo Electronico','VIP (Si o No)','Codigo Proyecto VIP','Nombre Proyecto VIP','Velocidad Contratada MB','Meta','Tipo Solucion UM Operatividad','Operador Prestante','IP','Olt','PuertoOlt','Mac Onu','Port Onu','Nodo','Armario','Red Primaria','Red Secundaria','Nodo','Amplificador','Tap-Boca','Mac Cpe','Documento Cliente Acceso','Region','Dane Departamento','Departamento','Dane Municipio','Municipio','Barrio','Dirección','Estrato','Coordenadas Grados-decimales','Nombre Cliente Completo','Telefono','Celular','Correo Electronico','VIP (Si o No)','Codigo Proyecto VIP','Nombre Proyecto VIP','Velocidad Contratada MB','Meta','Tipo Solucion UM Operatividad','Operador Prestante','IP','Olt','PuertoOlt','Mac Onu','Port Onu','Nodo','Armario','Red Primaria','Red Secundaria','Nodo','Amplificador','Tap-Boca','Mac Cpe');
+                    $header = array('Ejecutor', 'Documento Cliente Acceso', 'Dane Mun - ID Punto', 'Estado Actual', 'Region', 'Dane Departamento', 'Departamento', 'Dane Municipio', 'Municipio', 'Barrio', 'Dirección', 'Estrato', 'Coordenadas Grados-decimales', 'Nombre Cliente Completo', 'Telefono', 'Celular', 'Correo Electronico', 'VIP (Si o No)', 'Codigo Proyecto VIP', 'Nombre Proyecto VIP', 'Velocidad Contratada MB', 'Meta', 'Tipo Solucion UM Operatividad', 'Operador Prestante', 'IP', 'Olt', 'PuertoOlt', 'Mac Onu', 'Port Onu', 'Nodo', 'Armario', 'Red Primaria', 'Red Secundaria', 'Nodo', 'Amplificador', 'Tap-Boca', 'Mac Cpe', 'Documento Cliente Acceso', 'Region', 'Dane Departamento', 'Departamento', 'Dane Municipio', 'Municipio', 'Barrio', 'Dirección', 'Estrato', 'Coordenadas Grados-decimales', 'Nombre Cliente Completo', 'Telefono', 'Celular', 'Correo Electronico', 'VIP (Si o No)', 'Codigo Proyecto VIP', 'Nombre Proyecto VIP', 'Velocidad Contratada MB', 'Meta', 'Tipo Solucion UM Operatividad', 'Operador Prestante', 'IP', 'Olt', 'PuertoOlt', 'Mac Onu', 'Port Onu', 'Nodo', 'Armario', 'Red Primaria', 'Red Secundaria', 'Nodo', 'Amplificador', 'Tap-Boca', 'Mac Cpe');
                     /* Data loading */
                     $pdf->AddPage('L', 'Legal');
                     $pdf->SetFont('Courier', '', 6);
@@ -1111,7 +1127,7 @@ class ReportsController extends \yii\web\Controller {
                 $nestedData[] = $row['Nombre_Proyecto_VIP'];
                 $nestedData[] = $row['Velocidad_Contratada_Downstream'];
                 $nestedData[] = $row['Meta'];
-                $nestedData[] = $row['Fecha_max_de_cumplimiento_de_meta'];
+                $nestedData[] = $this->formatdate($row['Fecha_max_de_cumplimiento_de_meta']);
                 $diasp = 0;
                 $semaforo = 'blanco';
                 // calcula dias
@@ -1137,8 +1153,8 @@ class ReportsController extends \yii\web\Controller {
                 }
                 $nestedData[] = $diasp . " días. <img src='" . Url::base(true) . "/img/bandera_" . $semaforo . ".png' alt='' width='16'/>";
                 //$nestedData[] = $row['Dias_pendientes_de_la_fecha_de_cumplimiento'];
-                $nestedData[] = $row['FECHA_APROBACION_INTERVENTORIA'];
-                $nestedData[] = $row['FECHA_APROBACION_META_SUPERVISION'];
+                $nestedData[] = $this->formatdate($row['FECHA_APROBACION_INTERVENTORIA']);
+                $nestedData[] = $this->formatdate($row['FECHA_APROBACION_META_SUPERVISION']);
                 $nestedData[] = $row['Tipo_Solucion_UM_Operatividad'];
                 $nestedData[] = $row['Operador_Prestante'];
                 $nestedData[] = $row['IP'];
@@ -1154,12 +1170,12 @@ class ReportsController extends \yii\web\Controller {
                 $nestedData[] = $row['Amplificador'];
                 $nestedData[] = $row['Tap_Boca'];
                 $nestedData[] = $row['Mac_Cpe'];
-                $nestedData[] = $row['Fecha_Asignado_o_Presupuestado'];
-                $nestedData[] = $row['Fecha_En_proceso_de_Instalacion'];
-                $nestedData[] = $row['Fecha_Anulado'];
-                $nestedData[] = $row['Fecha_Instalado'];
-                $nestedData[] = $row['Fecha_Activo'];
-                $nestedData[] = $row['Fecha_aprobacion_de_meta'];
+                $nestedData[] = $this->formatdate($row['Fecha_Asignado_o_Presupuestado']);
+                $nestedData[] = $this->formatdate($row['Fecha_En_proceso_de_Instalacion']);
+                $nestedData[] = $this->formatdate($row['Fecha_Anulado']);
+                $nestedData[] = $this->formatdate($row['Fecha_Instalado']);
+                $nestedData[] = $this->formatdate($row['Fecha_Activo']);
+                $nestedData[] = $this->formatdate($row['Fecha_aprobacion_de_meta']);
                 $nestedData[] = $row['Sexo'];
                 $nestedData[] = $row['Genero'];
                 $nestedData[] = $row['Orientacion_Sexual'];
@@ -1240,6 +1256,270 @@ class ReportsController extends \yii\web\Controller {
         } catch (\Exception $ex) {
             $returndata = ['error' => $ex->getMessage()];
             echo json_encode($returndata);
+        }
+    }
+
+    public function actionPqrsserver() {
+
+        try {
+            $requestData = $_REQUEST;
+
+            $columns = array(
+                0 => 'idTicket',
+                1 => 'id',
+                2 => 'socid',
+                3 => 'ref',
+                4 => 'fk_soc',
+                5 => 'subject',
+                6 => 'message',
+                7 => 'type_label',
+                8 => 'category_label',
+                9 => 'severity_label',
+                10 => 'datec',
+                11 => 'date_read',
+                12 => 'date_close',
+                13 => 'messages',
+                14 => 'idClient',
+                15 => 'entity',
+                16 => 'name',
+                17 => 'state_id',
+                18 => 'state_code',
+                19 => 'state',
+                20 => 'town',
+                21 => 'email',
+                22 => 'phone',
+                23 => 'idprof1',
+                24 => 'code_client',
+                25 => 'ref',
+                26 => 'country_id',
+                27 => 'country_code',
+                28 => 'country',
+                29 => 'access_id',
+                30 => 'address',
+                31 => 'latlng'
+            );
+
+
+            $totalData = Yii::$app->db->createCommand('SELECT COUNT(*) FROM tickets t inner join client c on t.fk_soc = c.idClient')->queryScalar();
+            $totalFiltered = $totalData;
+
+            $sql = "SELECT * FROM tickets t inner join client c on t.fk_soc = c.idClient where 1=1 ";
+
+            if (!empty($requestData['search']['value'])) {
+                $sql .= " AND ( ref LIKE '" . $requestData['search']['value'] . "%' ";
+                $sql .= " OR subject LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR type_label LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR category_label LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR severity_label LIKE '" . $requestData['search']['value'] . "%')";
+            }
+
+            $pdptos = empty($requestData['dptos']) ? '-1' : $requestData['dptos'];
+            $pmpios = empty($requestData['mpios']) ? '-1' : $requestData['mpios'];
+
+            if ($pdptos != '-1') {
+                $sql .= " AND state = '" . $pdptos . "'";
+            }
+            if ($pmpios != '-1') {
+                $sql .= " AND town = '" . $pmpios . "'";
+            }
+
+            if (!empty($requestData['export'])) {
+                
+            } else {
+                $sqlc = str_replace("*", "COUNT(*)", $sql);
+                $totalFiltered = Yii::$app->db->createCommand($sqlc)->queryScalar();
+
+                $sql .= " ORDER BY " . $columns[$requestData['order'][0]['column']] . "   " . $requestData['order'][0]['dir'] . "  LIMIT " . $requestData['start'] . " ," .
+                        $requestData['length'] . "   ";
+            }
+
+
+            $result = Yii::$app->db->createCommand($sql)->queryAll();
+
+            $data = array();
+            foreach ($result as $key => $row) {
+                $nestedData = array();
+                $nestedData[] = $row['state'];
+                $nestedData[] = $row['town'];
+                $nestedData[] = $row['access_id'];
+                $nestedData[] = $row['name'];
+                $nestedData[] = $row['ref'];
+                $nestedData[] = $row['category_label'];
+                $nestedData[] = $row['type_label'];
+                $nestedData[] = $row['severity_label'];
+                $nestedData[] = $row['subject'];
+                $nestedData[] = $this->formatdate($row['datec']);
+
+                //calculo fecha limite
+                $next5WD = "";
+                if (isset($pqr['datec'])) {
+                    $holidayDates = array(
+                        '2020-08-17',
+                        '2020-10-12',
+                        '2020-11-02',
+                        '2020-11-16',
+                        '2020-12-08',
+                        '2020-12-25',
+                        '2021-01-01',
+                        '2021-01-11',
+                        '2021-03-22',
+                        '2021-04-01',
+                        '2021-04-02',
+                        '2021-05-01',
+                        '2021-05-17',
+                        '2021-06-03',
+                        '2021-06-14',
+                        '2021-07-05',
+                        '2021-07-20',
+                        '2021-08-07',
+                        '2021-08-16',
+                        '2021-10-18',
+                        '2021-11-01',
+                        '2021-11-15',
+                        '2021-12-08',
+                        '2021-12-25',
+                    );
+
+                    $count5WD = 0;
+                    $d = date('Y-m-d', $pqr['datec']) . ' 00:00:00';
+                    //echo $d;
+                    $temp = strtotime($d); //example as today is 2016-03-25
+                    while ($count5WD < 15) {
+                        $next1WD = strtotime('+1 weekday', $temp);
+                        $next1WDDate = date('Y-m-d', $next1WD);
+                        if (!in_array($next1WDDate, $holidayDates)) {
+                            $count5WD++;
+                        }
+                        $temp = $next1WD;
+                    }
+
+                    $next5WD = date("d/m/Y", $temp);
+                }
+                $nestedData[] = $this->formatdate($next5WD);
+                $nestedData[] = $this->formatdate($row['date_close']);
+                $nestedData[] = 'Call Center';
+                // Datos Cliente
+                $nestedData[] = $row['idprof1'];
+                $nestedData[] = $row['phone'];
+                $nestedData[] = $row['email'];
+                $nestedData[] = $row['address'];
+                $nestedData[] = $row['latlng'];
+                $nestedData[] = $row['message'];
+
+                $autor ="";
+                $msg = "<ul>";
+                $jsond = json_decode($row['messages']);
+                foreach ((array) $jsond as $key => $mesa) {
+                    $msg = $msg . '<li>' . date("Y-m-d H:i:s", $mesa->datec) . ' - ' . $mesa->message . '</li>';
+                    if(stripos($mesa->message,'creado'))
+                    {
+                       $autor =  str_replace(array('Autor: ','Ticket'),'',$mesa->message);
+                       $s = explode(' ',$autor);
+                       if(sizeof($s)> 0){
+                           $autor = str_replace('Ticket','',$s[0]);
+                       }
+                    }
+                }
+                $msg = $msg . "</ul>";
+
+                $nestedData[] =  $msg;
+                $nestedData[] =  $autor;
+                
+//                $nestedData[] = $row['idTicket'];
+//                $nestedData[] = $row['id'];
+//                $nestedData[] = $row['socid'];
+//                $nestedData[] = $row['ref'];
+//                $nestedData[] = $row['fk_soc'];
+//                $nestedData[] = $row['date_read'];
+//                $nestedData[] = $row['messages'];
+//                $nestedData[] = $row['idClient'];
+//                $nestedData[] = $row['entity'];
+//                $nestedData[] = $row['state_id'];
+//                $nestedData[] = $row['state_code'];
+//                $nestedData[] = $row['code_client'];
+//                $nestedData[] = $row['country_id'];
+//                $nestedData[] = $row['country_code'];
+//                $nestedData[] = $row['country'];
+
+                        $data[] = $nestedData;
+            }
+
+            if (!empty($requestData['export'])) {
+                if ($requestData['export'] == 'csv') {
+                    ob_start();
+                    ob_start('ob_gzhandler');
+                    header('Content-Type: text/csv; charset=windows-1251');
+                    header('Content-Disposition: attachment; filename=PqrsExport.csv');
+                    $output = fopen('php://output', 'w');
+                    fwrite($output, "\xEF\xBB\xBF");
+                    fputcsv($output, ['Departamento','Municipio','Código Acceso','Cliente','Ref Ticket','Grupo','Tipo','Prioridad','Asunto','Fecha Creación','Fecha Limite','Fecha Cierre','Origen de Reporte','Cédula','Teléfonos','Email','Dirección / Barrio','Coordenadas','Detalle','Historial','Autor'], ';');
+                    foreach ($data as $key => $value) {
+                        fputcsv($output, $value, ';');
+                    }
+                    fclose($output);
+                    ob_end_flush();
+                }
+                if ($requestData['export'] == 'pdf') {
+                    $pdf = new Fpdf();
+                    /* Column headings */
+                    $header = array('Departamento','Municipio','Código Acceso','Cliente','Ref Ticket','Grupo','Tipo','Prioridad','Asunto','Fecha Creación','Fecha Limite','Fecha Cierre','Origen de Reporte','Cédula','Teléfonos','Email','Dirección / Barrio','Coordenadas','Detalle','Historial','Autor');
+                    /* Data loading */
+                    $pdf->AddPage('L', 'Legal');
+                    $pdf->SetFont('Courier', '', 6);
+                    /* Column widths */
+                    $w = array(30, 27, 20, 8, 20, 10, 20, 95, 15, 15, 10, 10, 20, 15, 28);
+                    /* Header */
+                    for ($i = 0; $i < count($header); $i++) {
+                        $pdf->Cell($w[$i], 7, utf8_decode($header[$i]), 1, 0, 'C');
+                    }
+                    $pdf->Ln();
+                    /* Data */
+                    foreach ($data as $row) {
+                        for ($i = 0; $i < 7; $i++) {
+                            $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
+                        }
+
+                        $barr = utf8_decode($row[7]);
+                        if (strlen($barr) > 70) {
+                            $barr = substr($barr, 0, 70) . '...';
+                        }
+
+                        $pdf->Cell($w[7], 6, $barr, 'LR');
+
+                        for ($i = 8; $i < 15; $i++) {
+                            $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
+                        }
+                        $pdf->Ln();
+                    }
+                    /* Closing line */
+                    $pdf->Cell(array_sum($w), 0, '', 'T');
+                    $pdf->Output('D', 'PqrsExport.pdf', true);
+                }
+            } else {
+
+                ob_start();
+                ob_start('ob_gzhandler');
+                $json_data = array(
+                    "draw" => intval($requestData['draw']),
+                    "recordsTotal" => intval($totalData),
+                    "recordsFiltered" => intval($totalFiltered),
+                    "data" => $data   // total data array
+                );
+
+                echo json_encode($json_data);
+                ob_end_flush();
+            }
+        } catch (\Exception $ex) {
+            $returndata = ['error' => $ex->getMessage()];
+            echo json_encode($returndata);
+        }
+    }
+
+    public function formatdate($date) {
+        if (isset($date) && strlen($date) > 0) {
+            return date("Y-m-d", strtotime(str_replace('/', '-', $date)));
+        } else {
+            return '';
         }
     }
 

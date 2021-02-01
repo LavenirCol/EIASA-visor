@@ -134,7 +134,7 @@ $(document).ready(function(){
                     text: 'PDF',
                     action: function ( e, dt, node, config ) {
                         
-                        if(datatable === "#dataTableOperaciondetails" || datatable === "#dataTableInstalaciondetails"|| datatable === "#dataTableCambiosReemplazos"){
+                        if(datatable === "#dataTableOperaciondetails" || datatable === "#dataTableInstalaciondetails" || datatable === "#dataTableCambiosReemplazos" || datatable === '#dataTablePqrs'){
                             window.alert("Funcion no soportada en sabana de datos")
                         }else{
                             var url = baseurl + ajaxcall;
@@ -203,4 +203,7 @@ $(document).ready(function(){
 
     //CambiosyReemplazos
     makeserverprocessing('#dataTableCambiosReemplazos','/reports/cambiosreemplazosserver');
+
+    //pqrs
+    makeserverprocessing('#dataTablePqrs','/reports/pqrsserver');
 });
