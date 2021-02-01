@@ -103,16 +103,16 @@ class AccesosinstalacionController extends Controller {
 //                    var_dump($data);                    
                     $i = 0;
                     foreach ($data as $rowData) {
-                        if ($i > 0) {
+                        if ($i > 1) {
                             $newrec = new SabanaReporteInstalacion();
                             $newrec->Operador = $rowData[0];
                             $newrec->Documento_cliente_acceso = $rowData[1];
                             $newrec->Dane_Mun_ID_Punto = isset($rowData[2]) ? $rowData[2] : '';
                             $newrec->Estado_actual = $rowData[3];
                             $newrec->Region = $rowData[4];
-                            $newrec->Dane_Departamento = $rowData[5];
+                            $newrec->Dane_Departamento = str_pad(strval($rowData[5]), 2, "0", STR_PAD_LEFT);
                             $newrec->Departamento = $rowData[6];
-                            $newrec->Dane_Municipio = $rowData[7];
+                            $newrec->Dane_Municipio = str_pad(strval($rowData[7]), 3, "0", STR_PAD_LEFT);
                             $newrec->Municipio = $rowData[8];
                             $newrec->Barrio = $rowData[9];
                             $newrec->Direccion = $rowData[10];
@@ -206,7 +206,7 @@ class AccesosinstalacionController extends Controller {
                         $i = $i + 1;
                     };
 
-                    $returndata = ['data' => 'ok', 'error' => $targetFile . ' - (' . ($highestRow - 1) . ') Registros Procesados. '];
+                    $returndata = ['data' => 'ok', 'error' => $targetFile . ' - (' . $i . ') Registros Procesados. '];
                     return $this->render('upload', $returndata);
                 }
             }
