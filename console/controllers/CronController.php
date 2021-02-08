@@ -193,7 +193,7 @@ class CronController extends Controller {
         echo "Consultando Clientes...\n"; // your logic for deleting old post goes here
         //ciclos
         $limit = 100;
-        $cycles = 230; // 23000 clientes aprox
+        $cycles = 280; // 28000 clientes aprox
         for ($i = 0; $i <= $cycles; $i++) {
             $this->syncClients($limit, $i);
         }
