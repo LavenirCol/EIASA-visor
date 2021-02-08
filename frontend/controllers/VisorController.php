@@ -70,7 +70,7 @@ class VisorController extends \yii\web\Controller {
             $requestData = $_REQUEST;
 
             $columns = array(
-                0 => 'code_client',
+                0 => 'access_id',
                 1 => 'idprof1',
                 2 => 'name',
                 3 => 'state',
@@ -109,7 +109,7 @@ class VisorController extends \yii\web\Controller {
             foreach ($result as $key => $row) {
                 $nestedData = array();
                 $nestedData[] = '<button class="btn btn-primary btn-sm selectsuscriptor" style="padding: 5px;font-size: 10px;margin-top: 5px;" data-idcliente="'. $row["idClient"].'" >Seleccionar</button>';
-                $nestedData[] = $row["code_client"];
+                $nestedData[] = $row["access_id"];
                 $nestedData[] = $row["idprof1"];
                 $nestedData[] = $row["name"];
                 $nestedData[] = $row["state"];
@@ -129,7 +129,7 @@ class VisorController extends \yii\web\Controller {
                     header('Content-Disposition: attachment; filename=ClientesExport.csv');
                     $output = fopen('php://output', 'w');
                     fwrite($output, "\xEF\xBB\xBF");
-                    fputcsv($output, ['', 'code_client', 'Cédula', 'Nombre', 'Departamento', 'Municipio', 'Barrio / Dirección', 'Teléfono', 'Email'], ';');
+                    fputcsv($output, ['', 'access_id', 'Cédula', 'Nombre', 'Departamento', 'Municipio', 'Barrio / Dirección', 'Teléfono', 'Email'], ';');
                     foreach ($data as $key => $value) {
                         fputcsv($output, $value, ';');
                     }
@@ -139,7 +139,7 @@ class VisorController extends \yii\web\Controller {
                 if ($requestData['export'] == 'pdf') {
                     $pdf = new Fpdf();
                     /* Column headings */
-                    $header = array('', 'code_client', 'Cédula', 'Nombre', 'Departamento', 'Municipio', 'Barrio / Dirección', 'Teléfono', 'Email');
+                    $header = array('', 'access_id', 'Cédula', 'Nombre', 'Departamento', 'Municipio', 'Barrio / Dirección', 'Teléfono', 'Email');
                     /* Data loading */
                     $pdf->AddPage('L', 'Legal');
                     $pdf->SetFont('Courier', '', 6);
