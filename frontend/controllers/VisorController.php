@@ -11,7 +11,7 @@ use yii\helpers\Url;
 use yii\base\Exception;
 //use Imagick;
 use tpmanc\imagick\Imagick;
-
+use Fpdf\Fpdf;
 /**
  * Clase visor manager
  *
@@ -56,15 +56,139 @@ class VisorController extends \yii\web\Controller {
 
         $sizes = $connection->createCommand($sql)->queryOne();
 
-        $clientes = Client::find()->indexBy('idClient')->all();
-
         return $this->render('filemanager', array('modulos' => $modulos,
                 'assignedsize' => $keyassignedsize->value,
                 'actualsize' => $sizes['actualsize'],
-                'sizeingb' => $sizes['sizeingb'],
-                'clientes'=> $clientes));
+                'sizeingb' => $sizes['sizeingb']));
     }
 
+    /// Server side
+
+    public function actionClientsserver() {
+
+        try {
+            $requestData = $_REQUEST;
+
+            $columns = array(
+                0 => 'code_client',
+                1 => 'idprof1',
+                2 => 'name',
+                3 => 'state',
+                4 => 'town',
+                5 => 'address',
+                6 => 'phone',
+                7 => 'email'
+            );
+
+            $totalData = Yii::$app->db->createCommand('SELECT COUNT(*) FROM client')->queryScalar();
+            $totalFiltered = $totalData;
+
+            $sql = "SELECT * FROM `client` where 1=1 ";
+
+            if (!empty($requestData['search']['value'])) {
+                $sql .= " AND ( name LIKE '" . $requestData['search']['value'] . "%' ";
+                $sql .= " OR idprof1 LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR code_client LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR town LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR state LIKE '" . $requestData['search']['value'] . "%')";
+            }
+            
+            if (!empty($requestData['export'])) {
+                
+            } else {
+                $sqlc = str_replace("*", "COUNT(*)", $sql);
+                $totalFiltered = Yii::$app->db->createCommand($sqlc)->queryScalar();
+
+                $sql .= " ORDER BY " . $columns[$requestData['order'][0]['column']] . "   " . $requestData['order'][0]['dir'] . "  LIMIT " . $requestData['start'] . " ," .
+                        $requestData['length'] . "   ";
+            }
+
+            $result = Yii::$app->db->createCommand($sql)->queryAll();
+
+            $data = array();
+            foreach ($result as $key => $row) {
+                $nestedData = array();
+                $nestedData[] = '<button class="btn btn-primary btn-sm selectsuscriptor" style="padding: 5px;font-size: 10px;margin-top: 5px;" data-idcliente="'. $row["idClient"].'" >Seleccionar</button>';
+                $nestedData[] = $row["code_client"];
+                $nestedData[] = $row["idprof1"];
+                $nestedData[] = $row["name"];
+                $nestedData[] = $row["state"];
+                $nestedData[] = $row["town"];
+                $nestedData[] = $row["address"];
+                $nestedData[] = $row["phone"];
+                $nestedData[] = $row["email"] == null ? '' : $row["email"];
+
+                $data[] = $nestedData;
+            }
+
+            if (!empty($requestData['export'])) {
+                if ($requestData['export'] == 'csv') {
+                    ob_start();
+                    ob_start('ob_gzhandler');
+                    header('Content-Type: text/csv; charset=windows-1251');
+                    header('Content-Disposition: attachment; filename=ClientesExport.csv');
+                    $output = fopen('php://output', 'w');
+                    fwrite($output, "\xEF\xBB\xBF");
+                    fputcsv($output, ['', 'code_client', 'Cédula', 'Nombre', 'Departamento', 'Municipio', 'Barrio / Dirección', 'Teléfono', 'Email'], ';');
+                    foreach ($data as $key => $value) {
+                        fputcsv($output, $value, ';');
+                    }
+                    fclose($output);
+                    ob_end_flush();
+                }
+                if ($requestData['export'] == 'pdf') {
+                    $pdf = new Fpdf();
+                    /* Column headings */
+                    $header = array('', 'code_client', 'Cédula', 'Nombre', 'Departamento', 'Municipio', 'Barrio / Dirección', 'Teléfono', 'Email');
+                    /* Data loading */
+                    $pdf->AddPage('L', 'Legal');
+                    $pdf->SetFont('Courier', '', 6);
+                    /* Column widths */
+                    $w = array(30, 27, 20, 8, 20, 10, 20, 95, 15);
+                    /* Header */
+                    for ($i = 0; $i < count($header); $i++) {
+                        $pdf->Cell($w[$i], 7, utf8_decode($header[$i]), 1, 0, 'C');
+                    }
+                    $pdf->Ln();
+                    /* Data */
+                    foreach ($data as $row) {
+                        for ($i = 0; $i < 7; $i++) {
+                            $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
+                        }
+
+                        $barr = utf8_decode($row[7]);
+                        if (strlen($barr) > 70) {
+                            $barr = substr($barr, 0, 70) . '...';
+                        }
+
+                        $pdf->Cell($w[7], 6, $barr, 'LR');
+
+                        for ($i = 8; $i < 9; $i++) {
+                            $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
+                        }
+                        $pdf->Ln();
+                    }
+                    /* Closing line */
+                    $pdf->Cell(array_sum($w), 0, '', 'T');
+                    $pdf->Output('D', 'ClientesExport.pdf', true);
+                }
+            } else {
+
+                $json_data = array(
+                    "draw" => intval($requestData['draw']),
+                    "recordsTotal" => intval($totalData),
+                    "recordsFiltered" => intval($totalFiltered),
+                    "data" => $data   // total data array
+                );
+
+                echo json_encode($json_data);
+            }
+        } catch (\Exception $ex) {
+            $returndata = ['error' => $ex->getMessage()];
+            echo json_encode($returndata);
+        }
+    }
+    
     public function actionGetfolders() {
         if (Yii::$app->request->isAjax) {
 

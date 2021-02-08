@@ -215,7 +215,7 @@ use \yii\helpers\Url;
                 </div>
 
                 <label class="d-block tx-medium tx-10 tx-uppercase tx-sans tx-spacing-1 tx-color-03 mg-b-15" id="lblbusqueda">Búsqueda</label>
-                <table class="table table-condensed table-striped dataTable" style="width:100%;">
+                <table class="table table-condensed table-striped" id="dataTableClientes" style="width:100%;">
                     <thead>
                         <tr>
 <!--                            <th>Código Cliente</th>-->
@@ -228,28 +228,9 @@ use \yii\helpers\Url;
                             <th>Dirección</th>
                             <th>Teléfono</th>
                             <th>Correo</th>
-                            <th></th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <?php foreach((array)$clientes as $cliente){ ?>
-                        <tr>
-<!--                            <td><?php echo $cliente['code_client'] ?></td>-->
-                            <td>
-                                <button class="btn btn-primary btn-sm selectsuscriptor" style="padding: 5px;font-size: 10px;margin-top: 5px;" data-idcliente="<?php echo $cliente['idClient'] ?>" >Seleccionar</button>
-                            </td>
-                            <td><?php echo $cliente['access_id'] ?>                                
-                            </td>
-                            <td><?php echo $cliente['idprof1'] ?></td>
-                            <td><?php echo $cliente['name'] ?></td>
-                            <td><?php echo $cliente['state'] ?></td>
-                            <td><?php echo $cliente['town'] ?></td>
-                            <td><?php echo $cliente['address'] ?></td>
-                            <td><?php echo $cliente['phone'] ?></td>
-                            <td><?php echo $cliente['email'] ?></td>
-                            <td></td>
-                        </tr>
-                        <?php } ?>
+                    <tbody>                        
                     </tbody>
                 </table>            
             </div>

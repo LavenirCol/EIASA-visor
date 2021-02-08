@@ -104,7 +104,7 @@ $(document).ready(function () {
             
             $('#divtablasuscriptores').off('click').on('click', 'button.selectsuscriptor', function () {
                 
-                var table = $(".dataTable").DataTable();
+                var table = $("#dataTableClientes").DataTable();
                 var row;
 //                if ($(this).closest('table').hasClass("collapsed")) {
 //                    var child = $(this).parents("tr.child");
@@ -122,7 +122,7 @@ $(document).ready(function () {
                 $("#cardclient").show();
                 $("#lblbusqueda").removeClass("d-block");
                 $("#lblbusqueda").hide();
-                $("#DataTables_Table_0_wrapper").hide();
+                $("#dataTableClientes_wrapper").hide();
                 
                 var idcliente = $(this).data("idcliente");
                 //get folders client
@@ -135,7 +135,7 @@ $(document).ready(function () {
                 $("#cardclient").hide();
                 $("#lblbusqueda").addClass("d-block");
                 $("#lblbusqueda").show();
-                $("#DataTables_Table_0_wrapper").show();
+                $("#dataTableClientes_wrapper").show();
                 
                 if(active_module === 1){
                     $("#navmodulos").find(".nav-link:nth-child(1)").trigger("click");

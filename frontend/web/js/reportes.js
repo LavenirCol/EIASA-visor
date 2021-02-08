@@ -206,4 +206,6 @@ $(document).ready(function(){
 
     //pqrs
     makeserverprocessing('#dataTablePqrs','/reports/pqrsserver');
+    //clientes
+    makeserverprocessing('#dataTableClientes','/visor/clientsserver');
 });
