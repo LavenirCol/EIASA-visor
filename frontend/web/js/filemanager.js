@@ -99,7 +99,7 @@ $(document).ready(function () {
             $("#cardclient").hide();
             $("#lblbusqueda").addClass("d-block");
             $("#lblbusqueda").show();
-            $("#DataTables_Table_0_wrapper").show();
+            $("#dataTableClientes_wrapper").show();
             $(window).trigger('resize');
             
             $('#divtablasuscriptores').off('click').on('click', 'button.selectsuscriptor', function () {
