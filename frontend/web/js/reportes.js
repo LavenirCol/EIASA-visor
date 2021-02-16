@@ -105,8 +105,10 @@ $(document).ready(function(){
     
     // Serever side
     
-    function makeserverprocessing(datatable, ajaxcall){
+    function makeserverprocessing(datatable, ajaxcall){   
+        console.log("prueba " + ajaxcall);     
         $(datatable).DataTable({
+            'retrieve': true,
             'paging': true,
             'searching': true,
             'ordering': true,
@@ -182,13 +184,15 @@ $(document).ready(function(){
         
        
         // search
+        //btnsearch
         $("#btnsearch").click(function(e){            
             $(datatable).DataTable().ajax.reload();
         });
 
 
     }
-    
+
+        
     //inventarios
     makeserverprocessing('#dataTableInventarios','/reports/inventariosserver');
     
@@ -208,4 +212,8 @@ $(document).ready(function(){
     makeserverprocessing('#dataTablePqrs','/reports/pqrsserver');
     //clientes
     makeserverprocessing('#dataTableClientes','/visor/clientsserver');
+
+    //pqrsDashboard
+    makeserverprocessing('#dataTableDetailsTickets','/reports/ticketsseverity');
+
 });

@@ -6,6 +6,8 @@ use Yii;
 use yii\base\Exception;
 use Fpdf\Fpdf;
 use yii\helpers\Url;
+use \yii\db;
+use yii\data\Pagination;
 
 class ReportsController extends \yii\web\Controller {
 
@@ -63,59 +65,143 @@ class ReportsController extends \yii\web\Controller {
 
     public function actionPqrsdash() {
         $connection = Yii::$app->getDb();
-
-        //filtros
         $sql = "SELECT distinct c.state FROM tickets t inner join client c on t.fk_soc = c.idClient order by 1";
         $deptos = $connection->createCommand($sql)->queryAll();
-
         $sql = "SELECT distinct c.town FROM tickets t inner join client c on t.fk_soc = c.idClient order by 1";
         $mpios = $connection->createCommand($sql)->queryAll();
+ 
+        return $this->render('pqrsdash', [
+                    'deptos' => $deptos,
+                    'mpios' => $mpios
+        ]);
+    }
 
+    public function actionTicketsseverity()
+    {
+        $connection = Yii::$app->getDb();
+        $requestData = $_REQUEST;
+        $pdptos = empty($requestData['dptos']) ? '-1' : $requestData['dptos'];
+        $pmpios = empty($requestData['mpios']) ? '-1' : $requestData['mpios'];
+        
+        $sql = "SELECT category_label, type_label, severity_label, count(*) as conteo FROM tickets t inner join  client c ON t.fk_soc = c.idClient WHERE 1 =1 ";
+        
+        if (!empty($requestData['search']['value'])) {
+            $sql .= " AND ( category_label LIKE '" . $requestData['search']['value'] . "%' ";
+            $sql .= " OR type_label LIKE '" . $requestData['search']['value'] . "%'";
+            $sql .= " OR severity_label LIKE '" . $requestData['search']['value'] . "%')";
+        }
+
+        if ($pdptos != '-1') {
+            $sql .= " AND state = '" . $pdptos . "'";
+        }
+        if ($pmpios != '-1') {
+            $sql .= " AND town = '" . $pmpios . "'";
+        }
+        $sql .= " group by category_label, type_label, severity_label order by 1,2,3";        
+        $tickets_severity = $connection->createCommand($sql)->queryAll();
+        $sql = "SELECT count(*) FROM tickets t inner join  client c ON t.fk_soc = c.idClient WHERE 1 =1";
+        $total = $connection->createCommand($sql)->queryScalar();
+        $data = array();
+        foreach ($tickets_severity as $key => $row) {
+            $nestedData = array();
+            $nestedData[] = $row["category_label"];
+            $nestedData[] = $row["type_label"];            
+            $nestedData[] = $row["severity_label"];            
+            $nestedData[] = $row["conteo"];
+            $data[] = $nestedData;
+        }
+    
+
+        ob_start();
+        ob_start('ob_gzhandler');
+        $json_data = array(
+            "draw" => intval($requestData['draw']),
+            "recordsTotal" => intval($total),
+            "recordsFiltered" => intval(count($tickets_severity)),
+            "data" => $data   // total data array
+        );
+
+        echo json_encode($json_data);
+        ob_end_flush();
+    }
+
+    public function actionTicketsdays()
+    {
+        $connection = Yii::$app->getDb();
+        $request = Yii::$app->request;
+        $pdptos = $request->post('dptos');
+        $pmpios = $request->post('mpios');
+        //dias promedio abiertos
+        $sql = "SELECT ROUND(AVG(DATEDIFF(NOW(), DATE_FORMAT(FROM_UNIXTIME(`datec`), '%Y-%m-%d')) ),2) AS days FROM tickets t  inner join  client c ON t.fk_soc = c.idClient  where t.date_close  = ''";
+        if ($pdptos != '-1') {
+            $sql .= " AND state = '" . $pdptos . "'";
+        }
+        if ($pmpios != '-1') {
+            $sql .= " AND town = '" . $pmpios . "'";
+        }
+         
+         $daysopen = $connection->createCommand($sql)->queryOne();
+ 
+         //dias promedio cierre
+         $sql = "SELECT ROUND(AVG(DATEDIFF(DATE_FORMAT(FROM_UNIXTIME(`date_close`), '%Y-%m-%d'), DATE_FORMAT(FROM_UNIXTIME(`datec`), '%Y-%m-%d')) ),2) AS days FROM tickets t  inner join  client c ON t.fk_soc = c.idClient  where t.date_close  <> ''";
+         if ($pdptos != '-1') {
+            $sql .= " AND state = '" . $pdptos . "'";
+        }
+        if ($pmpios != '-1') {
+            $sql .= " AND town = '" . $pmpios . "'";
+        }
+         $daysclosed = $connection->createCommand($sql)->queryOne();
+
+        echo json_encode([ 'daysopen' => $daysopen,
+                           'daysclosed' => $daysclosed ]);
+    }
+
+    public function actionTicketsprocess()
+    {
+        $request = Yii::$app->request;
+        $pdptos = $request->post('dptos');
+        $pmpios = $request->post('mpios');
+        $connection = Yii::$app->getDb();
+        $sql = "select fecha, SUM(CASE WHEN (estado='registrado') THEN conteo ELSE 0 END) AS registrados, SUM(CASE WHEN (estado='open') THEN conteo ELSE 0 END) AS abiertos, SUM(CASE WHEN (estado='closed') THEN conteo ELSE 0 END) AS cerrados from vwticketsbystate "; 
+        $sql .= " WHERE 1=1 ";
+        $sql .="group by fecha";
+
+        if ($pdptos != '-1') {
+            $sql .= " AND state = '" . $pdptos . "'";
+        }
+        if ($pmpios != '-1') {
+            $sql .= " AND town = '" . $pmpios . "'";
+        }
+        $tickets_estado = $connection->createCommand($sql)->queryAll();
+        echo json_encode($tickets_estado);
+    }
+
+    public function actionTicketsgroups()
+    {
+        $request = Yii::$app->request;
+        $pdptos = $request->post('dptos');
+        $pmpios = $request->post('mpios');
+
+        $connection = Yii::$app->getDb();
         $sql = "SELECT distinct t.category_label FROM tickets t inner join client c on t.fk_soc = c.idClient order by 1";
         $categories = $connection->createCommand($sql)->queryAll();
-
-        // tickets por estado
-        $sql = "SELECT distinct fecha FROM vwticketsbystate order by 1";
-        $periods = $connection->createCommand($sql)->queryAll();
-
-        $sql = "select fecha, SUM(CASE WHEN (estado='registrado') THEN conteo ELSE 0 END) AS registrados, SUM(CASE WHEN (estado='open') THEN conteo ELSE 0 END) AS abiertos, SUM(CASE WHEN (estado='closed') THEN conteo ELSE 0 END) AS cerrados from vwticketsbystate group by fecha";
-        $tickets_estado = $connection->createCommand($sql)->queryAll();
-
         //tickets por grupo
         $sql = "select DATE_FORMAT(FROM_UNIXTIME(`t`.`datec`), '%Y-%m') as fecha, ";
         foreach ($categories as $key => $row) {
             $sql = $sql . " SUM(CASE WHEN (category_label='" . $row["category_label"] . "') THEN 1 ELSE 0 END) AS '" . $row["category_label"] . "',";
         }
 
-        $sql = $sql . "count(*) as total from tickets t ";
-        $sql = $sql . "group by  DATE_FORMAT(FROM_UNIXTIME(`t`.`datec`), '%Y-%m') ";
-
+        $sql = $sql . "count(*) as total from tickets t inner join  client c ON t.fk_soc = c.idClient WHERE 1=1 ";
+       
+        if ($pdptos != '-1') {
+            $sql .= " AND state = '" . $pdptos . "'";
+        }
+        if ($pmpios != '-1') {
+            $sql .= " AND town = '" . $pmpios . "'";
+        }
+        $sql = $sql . " group by  DATE_FORMAT(FROM_UNIXTIME(`t`.`datec`), '%Y-%m') ";
         $tickets_grupo = $connection->createCommand($sql)->queryAll();
-
-        // detalle de tickets
-        $sql = "SELECT category_label, type_label, severity_label, count(*) as conteo FROM tickets t group by category_label, type_label, severity_label order by 1,2,3";
-        $tickets_severity = $connection->createCommand($sql)->queryAll();
-
-
-        //dias promedio abiertos
-        $sql = "SELECT ROUND(AVG(DATEDIFF(NOW(), DATE_FORMAT(FROM_UNIXTIME(`datec`), '%Y-%m-%d')) ),2) AS days FROM tickets t where t.date_close  = ''";
-        $daysopen = $connection->createCommand($sql)->queryOne();
-
-        //dias promedio cierre
-        $sql = "SELECT ROUND(AVG(DATEDIFF(DATE_FORMAT(FROM_UNIXTIME(`date_close`), '%Y-%m-%d'), DATE_FORMAT(FROM_UNIXTIME(`datec`), '%Y-%m-%d')) ),2) AS days FROM tickets t where t.date_close  <> ''";
-        $daysclosed = $connection->createCommand($sql)->queryOne();
-
-        return $this->render('pqrsdash', [
-                    'deptos' => $deptos,
-                    'mpios' => $mpios,
-                    'categories' => $categories,
-                    'periods' => $periods,
-                    'tickets_estado' => $tickets_estado,
-                    'tickets_grupo' => $tickets_grupo,
-                    'tickets_severity' => $tickets_severity,
-                    'daysopen' => $daysopen,
-                    'daysclosed' => $daysclosed
-        ]);
+        echo json_encode($tickets_grupo);
     }
 
     public function actionPqrs() {
@@ -1268,7 +1354,7 @@ class ReportsController extends \yii\web\Controller {
                 0 => 'idTicket',
                 1 => 'id',
                 2 => 'socid',
-                3 => 'ref',
+                3 => 'tickets.ref',
                 4 => 'fk_soc',
                 5 => 'subject',
                 6 => 'message',
@@ -1297,44 +1383,49 @@ class ReportsController extends \yii\web\Controller {
                 29 => 'access_id',
                 30 => 'address',
                 31 => 'latlng'
-            );
-
-
+            );                    
             $totalData = Yii::$app->db->createCommand('SELECT COUNT(*) FROM tickets t inner join client c on t.fk_soc = c.idClient')->queryScalar();
             $totalFiltered = $totalData;
 
+            $queryTickets = (new \yii\db\Query())
+            ->from('tickets')
+            ->innerJoin('client', 'tickets.fk_soc = client.idClient');
+            
+
             $sql = "SELECT * FROM tickets t inner join client c on t.fk_soc = c.idClient where 1=1 ";
 
-            if (!empty($requestData['search']['value'])) {
-                $sql .= " AND ( ref LIKE '" . $requestData['search']['value'] . "%' ";
-                $sql .= " OR subject LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR type_label LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR category_label LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR severity_label LIKE '" . $requestData['search']['value'] . "%')";
+            if (!empty($requestData['search']['value'])){
+
+                $queryTickets->Where(['LIKE', 'tickets.ref', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'subject', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'type_label', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'category_label', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'severity_label', $requestData['search']['value']."%", false]);
+               
             }
 
+           
             $pdptos = empty($requestData['dptos']) ? '-1' : $requestData['dptos'];
             $pmpios = empty($requestData['mpios']) ? '-1' : $requestData['mpios'];
 
-            if ($pdptos != '-1') {
-                $sql .= " AND state = '" . $pdptos . "'";
+            if ($pdptos != '-1') {                
+                $queryTickets->andWhere(['=', 'state', $pdptos]);
             }
-            if ($pmpios != '-1') {
-                $sql .= " AND town = '" . $pmpios . "'";
+            if ($pmpios != '-1') {                
+                $queryTickets->andWhere(['=', 'town', $pmpios]);
             }
 
             if (!empty($requestData['export'])) {
                 
-            } else {
-                $sqlc = str_replace("*", "COUNT(*)", $sql);
-                $totalFiltered = Yii::$app->db->createCommand($sqlc)->queryScalar();
-
-                $sql .= " ORDER BY " . $columns[$requestData['order'][0]['column']] . "   " . $requestData['order'][0]['dir'] . "  LIMIT " . $requestData['start'] . " ," .
-                        $requestData['length'] . "   ";
+            } else {                
+                $totalFiltered = $queryTickets->count();
+                $order =  ($requestData['order'][0]['dir'] == 'asc') ?  SORT_ASC : SORT_DESC;
+                $pagination = new Pagination(['totalCount' => $totalFiltered, 'pageSize' => $requestData['length'], 'page' => $requestData['start']]);
+                $queryTickets->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
+                $queryTickets->offset($pagination->offset);
+                $queryTickets->limit($pagination->limit);
             }
-
-
-            $result = Yii::$app->db->createCommand($sql)->queryAll();
+            $result = $queryTickets->all();
 
             $data = array();
             foreach ($result as $key => $row) {
@@ -1348,7 +1439,7 @@ class ReportsController extends \yii\web\Controller {
                 $nestedData[] = $row['type_label'];
                 $nestedData[] = $row['severity_label'];
                 $nestedData[] = $row['subject'];
-                $nestedData[] = $this->formatdate($row['datec']);
+                $nestedData[] = $this->formatdate($row['datec'], true);
 
                 //calculo fecha limite
                 $next5WD = "";
@@ -1396,7 +1487,7 @@ class ReportsController extends \yii\web\Controller {
                     $next5WD = date("d/m/Y", $temp);
                 }
                 $nestedData[] = $this->formatdate($next5WD);
-                $nestedData[] = $this->formatdate($row['date_close']);
+                $nestedData[] = $this->formatdate($row['date_close'], true);
                 $nestedData[] = 'Call Center';
                 // Datos Cliente
                 $nestedData[] = $row['idprof1'];
@@ -1515,9 +1606,10 @@ class ReportsController extends \yii\web\Controller {
         }
     }
 
-    public function formatdate($date) {
-        if (isset($date) && strlen($date) > 0) {
-            return date("Y-m-d", strtotime(str_replace('/', '-', $date)));
+    public function formatdate($date, $isTimestamp = false) {
+        if (isset($date) && strlen($date) > 0) 
+        {   $date = ($isTimestamp)?$date : strtotime(str_replace('/', '-', $date));
+            return date("Y-m-d", $date);
         } else {
             return '';
         }
