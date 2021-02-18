@@ -107,6 +107,10 @@ $(document).ready(function(){
     
     function makeserverprocessing(datatable, ajaxcall){
         if($(datatable).length === 0)
+        {
+            return;
+        }
+
         $(datatable).DataTable({
             //'retrieve': true,
             'paging': true,

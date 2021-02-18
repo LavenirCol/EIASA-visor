@@ -1389,14 +1389,7 @@ class ReportsController extends \yii\web\Controller {
 
             $sql = "SELECT * FROM tickets t inner join client c on t.fk_soc = c.idClient where 1=1 ";
 
-            if (!empty($requestData['search']['value'])){
-
-                $queryTickets->Where(['LIKE', 'tickets.ref', $requestData['search']['value']."%", false])
-                 ->orWhere(['LIKE', 'subject', $requestData['search']['value']."%", false])
-                 ->orWhere(['LIKE', 'type_label', $requestData['search']['value']."%", false])
-                 ->orWhere(['LIKE', 'category_label', $requestData['search']['value']."%", false])
-                 ->orWhere(['LIKE', 'severity_label', $requestData['search']['value']."%", false]);
-               
+            if (!empty($requestData['search']['value'])) {
                 $sql .= " AND ( t.ref LIKE '" . $requestData['search']['value'] . "%' ";
                 $sql .= " OR c.ref LIKE '" . $requestData['search']['value'] . "%'";
                 $sql .= " OR c.name LIKE '" . $requestData['search']['value'] . "%'";
@@ -1408,7 +1401,7 @@ class ReportsController extends \yii\web\Controller {
                 $sql .= " OR category_label LIKE '" . $requestData['search']['value'] . "%'";
                 $sql .= " OR severity_label LIKE '" . $requestData['search']['value'] . "%')";
             }
-           
+        
             $pdptos = empty($requestData['dptos']) ? '-1' : $requestData['dptos'];
             $pmpios = empty($requestData['mpios']) ? '-1' : $requestData['mpios'];
 
@@ -1423,6 +1416,7 @@ class ReportsController extends \yii\web\Controller {
                 
             } else {                
                 $sqlc = str_replace("*", "COUNT(*)", $sql);
+                $totalFiltered = Yii::$app->db->createCommand($sqlc)->queryScalar();
 
                 $sql .= " ORDER BY " . $columns[$requestData['order'][0]['column']] . "   " . $requestData['order'][0]['dir'] . "  LIMIT " . $requestData['start'] . " ," .
                         $requestData['length'] . "   ";
