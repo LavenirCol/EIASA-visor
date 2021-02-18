@@ -107,7 +107,12 @@ class CronController extends Controller {
                         'LOWER(folderName)' => $foldername])->exists();
 
             if ($existefolder) {
-                $returndata = ['data' => '', 'error' => 'Ya existe una carpeta con ese nombre'];
+                $currentfolder = Folder::find()->where(['idmodule' => $idmodule,
+                        'idParentFolder' => $idparentfolder,
+                        'LOWER(folderName)' => $foldername])->one();
+                
+                //$returndata = ['data' => '', 'error' => 'Ya existe una carpeta con ese nombre'];
+                $returndata = ['data' => $currentfolder, 'error' => ''];
                 return $returndata;
             }
 
@@ -311,8 +316,9 @@ class CronController extends Controller {
         echo "procesando contracts (" . sizeof($contracts) . ")\n";
         foreach ((array) $contracts as $contract) {
 
-            // crea folder de cliente en modulo suscriptores                        
-            if (isset($contract['ref'])) {
+            // crea folder de cliente en modulo suscriptores
+            // se adiciona la verificacion de estado en servicio
+            if (isset($contract['ref']) && (intval($contract['nbofservicesopened']) == 1 || intval($contract['nbofservicesexpired']) == 1)) {
                 $suscfolder = $this->Createfolder($this->idmodulesusc, 0, $contract['ref']);
 
                 if ($suscfolder['error'] == "") {

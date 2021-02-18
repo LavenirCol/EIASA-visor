@@ -1385,12 +1385,7 @@ class ReportsController extends \yii\web\Controller {
                 31 => 'latlng'
             );                    
             $totalData = Yii::$app->db->createCommand('SELECT COUNT(*) FROM tickets t inner join client c on t.fk_soc = c.idClient')->queryScalar();
-            $totalFiltered = $totalData;
-
-            $queryTickets = (new \yii\db\Query())
-            ->from('tickets')
-            ->innerJoin('client', 'tickets.fk_soc = client.idClient');
-            
+            $totalFiltered = $totalData;            
 
             $sql = "SELECT * FROM tickets t inner join client c on t.fk_soc = c.idClient where 1=1 ";
 
@@ -1402,30 +1397,38 @@ class ReportsController extends \yii\web\Controller {
                  ->orWhere(['LIKE', 'category_label', $requestData['search']['value']."%", false])
                  ->orWhere(['LIKE', 'severity_label', $requestData['search']['value']."%", false]);
                
+                $sql .= " AND ( t.ref LIKE '" . $requestData['search']['value'] . "%' ";
+                $sql .= " OR c.ref LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR c.name LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR c.state LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR c.town LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR c.code_client LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR subject LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR type_label LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR category_label LIKE '" . $requestData['search']['value'] . "%'";
+                $sql .= " OR severity_label LIKE '" . $requestData['search']['value'] . "%')";
             }
-
            
             $pdptos = empty($requestData['dptos']) ? '-1' : $requestData['dptos'];
             $pmpios = empty($requestData['mpios']) ? '-1' : $requestData['mpios'];
 
-            if ($pdptos != '-1') {                
-                $queryTickets->andWhere(['=', 'state', $pdptos]);
+            if ($pdptos != '-1') {
+                $sql .= " AND state = '" . $pdptos . "'";
             }
-            if ($pmpios != '-1') {                
-                $queryTickets->andWhere(['=', 'town', $pmpios]);
+            if ($pmpios != '-1') {
+                $sql .= " AND town = '" . $pmpios . "'";
             }
 
             if (!empty($requestData['export'])) {
                 
             } else {                
-                $totalFiltered = $queryTickets->count();
-                $order =  ($requestData['order'][0]['dir'] == 'asc') ?  SORT_ASC : SORT_DESC;
-                $pagination = new Pagination(['totalCount' => $totalFiltered, 'pageSize' => $requestData['length'], 'page' => $requestData['start']]);
-                $queryTickets->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
-                $queryTickets->offset($pagination->offset);
-                $queryTickets->limit($pagination->limit);
+                $sqlc = str_replace("*", "COUNT(*)", $sql);
+
+                $sql .= " ORDER BY " . $columns[$requestData['order'][0]['column']] . "   " . $requestData['order'][0]['dir'] . "  LIMIT " . $requestData['start'] . " ," .
+                        $requestData['length'] . "   ";
             }
-            $result = $queryTickets->all();
+            
+            $result = Yii::$app->db->createCommand($sql)->queryAll();
 
             $data = array();
             foreach ($result as $key => $row) {
@@ -1439,11 +1442,11 @@ class ReportsController extends \yii\web\Controller {
                 $nestedData[] = $row['type_label'];
                 $nestedData[] = $row['severity_label'];
                 $nestedData[] = $row['subject'];
-                $nestedData[] = $this->formatdate($row['datec'], true);
+                $nestedData[] = $this->formatdate(date('Y-m-d', $row['datec']) . ' 00:00:00');
 
                 //calculo fecha limite
                 $next5WD = "";
-                if (isset($pqr['datec'])) {
+                if (isset($row['datec'])) {
                     $holidayDates = array(
                         '2020-08-17',
                         '2020-10-12',
@@ -1472,7 +1475,7 @@ class ReportsController extends \yii\web\Controller {
                     );
 
                     $count5WD = 0;
-                    $d = date('Y-m-d', $pqr['datec']) . ' 00:00:00';
+                    $d = date('Y-m-d', $row['datec']) . ' 00:00:00';
                     //echo $d;
                     $temp = strtotime($d); //example as today is 2016-03-25
                     while ($count5WD < 15) {
@@ -1487,14 +1490,14 @@ class ReportsController extends \yii\web\Controller {
                     $next5WD = date("d/m/Y", $temp);
                 }
                 $nestedData[] = $this->formatdate($next5WD);
-                $nestedData[] = $this->formatdate($row['date_close'], true);
+                $nestedData[] = ($row['date_close'] !== '')?$this->formatdate(date('Y-m-d', $row['date_close']) . ' 00:00:00'):'';
                 $nestedData[] = 'Call Center';
                 // Datos Cliente
                 $nestedData[] = $row['idprof1'];
                 $nestedData[] = $row['phone'];
                 $nestedData[] = $row['email'];
                 $nestedData[] = $row['address'];
-                $nestedData[] = $row['latlng'];
+                $nestedData[] = str_replace(array('Lat: ','Lon: '),'',$row['latlng']);
                 $nestedData[] = $row['message'];
 
                 $autor ="";
@@ -1606,10 +1609,9 @@ class ReportsController extends \yii\web\Controller {
         }
     }
 
-    public function formatdate($date, $isTimestamp = false) {
-        if (isset($date) && strlen($date) > 0) 
-        {   $date = ($isTimestamp)?$date : strtotime(str_replace('/', '-', $date));
-            return date("Y-m-d", $date);
+    public function formatdate($date) {
+        if (isset($date) && strlen($date) > 0) {
+            return date("Y-m-d", strtotime(str_replace('/', '-', $date)));
         } else {
             return '';
         }

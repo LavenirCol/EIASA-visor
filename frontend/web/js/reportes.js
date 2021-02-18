@@ -105,10 +105,10 @@ $(document).ready(function(){
     
     // Serever side
     
-    function makeserverprocessing(datatable, ajaxcall){   
-        console.log("prueba " + ajaxcall);     
+    function makeserverprocessing(datatable, ajaxcall){
+        if($(datatable).length === 0)
         $(datatable).DataTable({
-            'retrieve': true,
+            //'retrieve': true,
             'paging': true,
             'searching': true,
             'ordering': true,
