@@ -108,9 +108,9 @@ class CronController extends Controller {
 
             if ($existefolder) {
                 $currentfolder = Folder::find()->where(['idmodule' => $idmodule,
-                        'idParentFolder' => $idparentfolder,
-                        'LOWER(folderName)' => $foldername])->one();
-                
+                            'idParentFolder' => $idparentfolder,
+                            'LOWER(folderName)' => $foldername])->one();
+
                 //$returndata = ['data' => '', 'error' => 'Ya existe una carpeta con ese nombre'];
                 $returndata = ['data' => $currentfolder, 'error' => ''];
                 return $returndata;
@@ -206,6 +206,10 @@ class CronController extends Controller {
         echo "Sincronizando Archivos...\n"; // your logic for deleting old post goes here
         $this->syncFiles();
 
+        // sincroniza facturas
+        echo "Sinncronizando Facturas...\n"; // your logic for deleting old post goes here
+        $this->syncDownloadInvoices();
+
         exit();
     }
 
@@ -226,9 +230,11 @@ class CronController extends Controller {
         //echo "Sincronizando Archivos...\n"; // your logic for deleting old post goes here        
         //$this->syncFiles();
         // sincroniza archivos instalacion
-        //echo "Sincronizando Archivos Instalacion...\n"; // your logic for deleting old post goes here        
-        $this->syncInstalationfiles();
+        echo "Sincronizando Archivos Instalacion...\n"; // your logic for deleting old post goes here        
+        $this->syncDownloadInstalationfiles();
 
+        echo "Sincronizando Archivos Facturas...\n"; // your logic for deleting old post goes here        
+        $this->syncDownloadInvoices();
         exit();
     }
 
@@ -266,17 +272,17 @@ class CronController extends Controller {
                     $newclient->access_id = $client['idprof6'];
                     $newclient->address = str_replace(array("\n", "\r", "\r\n", "\xE2\x80\x9010"), ' ', $client['address']);
                     $newclient->name = str_replace("\xC5\x84", 'ñ', $client['name']);
-                    
+
                     $latlng = '';
-                    if(isset($client['array_options'])){
-                        if(isset($client['array_options']["options_lat"])){
+                    if (isset($client['array_options'])) {
+                        if (isset($client['array_options']["options_lat"])) {
                             $latlng = $latlng . ' Lat: ' . $client['array_options']["options_lat"];
                         }
-                        if(isset($client['array_options']["options_lon"])){
+                        if (isset($client['array_options']["options_lon"])) {
                             $latlng = $latlng . ' Lon: ' . $client['array_options']["options_lon"];
                         }
                     }
-                    
+
                     $newclient->latlng = $latlng;
                     $newclient->save(false);
 
@@ -441,6 +447,7 @@ class CronController extends Controller {
                                 $newdocument->type = 'pending';
                                 $newdocument->path = $fpath;
                                 $newdocument->relativename = $vpath . $document['name'];
+                                $newdocument->name = str_replace(array("\n", "\r", "\r\n", "\xE2\x80\x9010", "\xE2\x80\xAC", "\xE2\x99\xA0"), '', $document['name']);
                                 $newdocument->save(false);
                             }
                         }
@@ -567,7 +574,7 @@ class CronController extends Controller {
                 $newticket->fk_soc = $ticket['fk_soc'];
                 $newticket->subject = $ticket['subject'];
                 $newticket->message = $ticket['message'];
-                $newticket->message = str_replace(array("\n", "\r", "\r\n", "\xE2\x80\x9010", "\xE2\x80\xAC"), ' ', $ticket['message']);                  
+                $newticket->message = str_replace(array("\n", "\r", "\r\n", "\xE2\x80\x9010", "\xE2\x80\xAC"), ' ', $ticket['message']);
                 $newticket->type_label = $ticket['type_label'];
                 $newticket->category_label = $ticket['category_label'];
                 $newticket->severity_label = $ticket['severity_label'];
@@ -613,13 +620,69 @@ class CronController extends Controller {
     public function syncFiles() {
         echo "----------------------------------------\n";
         echo "Inicio syncdodumentos " . date("Y-m-d H:i:s") . "\n";
-        $documents = Document::find()->where(['type' => 'pending'])->all();
+        $documents = Document::find()->where(['type' => 'pending'])->andWhere(['!=', 'iddocumentType', '4'])->andWhere(['!=', 'iddocumentType', '5'])->all();
         echo "procesando documents (" . sizeof($documents) . ")\n";
         foreach ($documents as $document) {
             //consulta documento
             $modulepart = "";
 
-            if ($document['iddocumentType'] === 4) { // invoice
+            if ($document['iddocumentType'] === 2) { // contract
+                $modulepart = "contract";
+            }
+            if ($document['iddocumentType'] === 3) { // proposal
+                $modulepart = "propale";
+            }
+            // consulta documento download
+            $download = json_decode($this->CallAPI("GET", "documents/download", array(
+                        "modulepart" => $modulepart,
+                        "original_file" => $document['level1name'] . "/" . $document['name'])
+                    ), true);
+
+            if (isset($download["error"]) && $download["error"]["code"] >= "300") {
+                echo "Error download " . $document['level1name'] . "/" . $document['name'] . " - " . $download["error"]["message"] . "\n";
+            } else {
+                //actualiza document
+                $document->type = $download["content-type"];
+                //$document->fileUploadedUserId = -1;
+                $document->save();
+
+                //guarda bas64
+                $this->base64ToFile($download["content"], $document['path'] . "/" . $document['name']);
+            }
+        }
+        echo "Fin syncdodumentos " . date("Y-m-d H:i:s") . "\n";
+    }
+
+    function base64ToFile($base64_string, $output_file) {
+        $file = fopen($output_file, "wb");
+        fwrite($file, base64_decode($base64_string));
+        fclose($file);
+
+        return $output_file;
+    }
+
+    public function syncDownloadInvoices() {
+        echo "----------------------------------------\n";
+        echo "Inicio syncfacturas " . date("Y-m-d H:i:s") . "\n";
+        //$documents = Document::find()->where(['type' => 'pending','iddocumentType'=> '4'])->all();
+        shell_exec('sudo find /eiasadocs/tmp/. -maxdepth 1 -name "MY*" -exec rm -r {} \;');
+
+        $limitrows = 250;
+        $itemcount = Document::find()->where(['type' => 'pending','iddocumentType'=> '4'])->count();
+
+        echo "procesando total facturas (" . $itemcount . ")\n";
+
+        $batches = ROUND($itemcount / $limitrows) + 1; // Number of while-loop calls
+        for ($i = 0; $i <= $batches; $i++) {
+            $offset = $i * $limitrows; // MySQL Limit offset number
+
+            $documents = Document::find()->where(['type' => 'pending','iddocumentType'=> '4'])->offset($offset)->limit($limitrows)->all();
+            echo "batch: " . $i . " - procesando facturas (" . sizeof($documents) . ")\n";
+
+            $urls = array();
+
+            foreach ($documents as $document) {
+                //consulta documento
                 $modulepart = "facture";
 
                 // consulta documento download
@@ -633,71 +696,56 @@ class CronController extends Controller {
                 } else {
 
                     $content = json_decode(base64_decode($download["content"]), true);
+
                     if (isset($content["resultado"]["url_representacion_grafica"])) {
 
                         $url = $content["resultado"]["url_representacion_grafica"];
-                        $path = $document['path'] . "/" . $document['name'];
 
-                        $ch = curl_init($url);
-                        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-                        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                        curl_setopt($ch, CURLOPT_REFERER, 'http://megayavisor.lavenirapps.co');
-
-                        $data = curl_exec($ch);
-
-                        $result = file_put_contents($path, $data);
-
-                        echo $result.' - '. $path . '\n';
-                        
-                        if ($result == FALSE) {
-                            echo "Error download " . $document['level1name'] . "/" . $document['name'] . " - " . curl_error($ch) . "\n";
-                        }
-                        curl_close($ch);                        
-                        
-                        //actualiza document
-                        $document->type = 'application/pdf';
-                        $document->size = $result;
-                        //$document->fileUploadedUserId = -1;
-                        $document->save(false); 
-
+                        $urlarr = [
+                            "url" =>  $url,
+                            "name" => $document['name'],
+                        ];
+                        echo "url " . $url . "\n";
+                        array_push($urls, $urlarr);
                     }
                 }
-            } else {
-                if ($document['iddocumentType'] === 2) { // contract
-                    $modulepart = "contract";
-                }
-                if ($document['iddocumentType'] === 3) { // proposal
-                    $modulepart = "propale";
-                }
-                // consulta documento download
-                $download = json_decode($this->CallAPI("GET", "documents/download", array(
-                            "modulepart" => $modulepart,
-                            "original_file" => $document['level1name'] . "/" . $document['name'])
-                        ), true);
+            }
+            echo "Inicio syncfacturas downloading " . date("Y-m-d H:i:s") . "\n";
+            echo "procesando facturas downloading (" . sizeof($urls) . ")\n";
 
-                if (isset($download["error"]) && $download["error"]["code"] >= "300") {
-                    echo "Error download " . $document['level1name'] . "/" . $document['name'] . " - " . $download["error"]["message"] . "\n";
-                } else {
-                    //actualiza document
-                    $document->type = $download["content-type"];
-                    //$document->fileUploadedUserId = -1;
-                    $document->save();
+            $this->multiple_download($urls, '/eiasadocs/tmp');
 
-                    //guarda bas64
-                    $this->base64ToFile($download["content"], $document['path'] . "/" . $document['name']);
-                }
+            echo "Fin syncfacturas downloading " . date("Y-m-d H:i:s") . "\n";
+
+            unset($urls);
+            unset($documents);
+        }
+
+        sleep(30);
+        
+        // actualiza documentos
+        $documents = Document::find()->where(['type' => 'pending','iddocumentType'=> '4'])->all();
+        echo "actualizando facturas (" . sizeof($documents) . ")\n";
+
+        // actualiza documentos
+        foreach ($documents as $document) {
+            $file = '/eiasadocs/tmp' . '/' . $document->name;
+            echo "moviendo archivo ".$file."\n";
+            if (is_file($file)) {
+                //actualiza document
+                $document->type = 'application/pdf';
+                $document->size = filesize($file);
+                //$document->fileUploadedUserId = -1;
+                $document->save(false);
+
+                // mueve el archivo
+                rename($file, $document->path.'/'.$document->name);
             }
         }
-        echo "Fin syncdodumentos " . date("Y-m-d H:i:s") . "\n";
-    }
 
-    function base64ToFile($base64_string, $output_file) {
-        $file = fopen($output_file, "wb");
-        fwrite($file, base64_decode($base64_string));
-        fclose($file);
-
-        return $output_file;
+        unset($documents);
+        
+        echo "Fin syncfacturas " . date("Y-m-d H:i:s") . "\n";
     }
 
     /*     * ********UMBRELLA ********* */
@@ -791,6 +839,10 @@ class CronController extends Controller {
         echo "Sincronizando Archivos Instalacion...\n"; // your logic for deleting old post goes here        
         $this->syncInstalationfiles();
 
+        // sincroniza archivos instalacion
+        echo "Descargando Archivos Instalacion...\n"; // your logic for deleting old post goes here        
+        $this->syncDownloadInstalationfiles();
+
         exit();
     }
 
@@ -803,7 +855,7 @@ class CronController extends Controller {
 
         exit();
     }
-    
+
     /*
      * Sincroniza inventario
      */
@@ -967,14 +1019,14 @@ class CronController extends Controller {
         echo "procesando docinstalacions (" . sizeof($hstasks) . ")\n";
         $i = 0;
         foreach ($hstasks as $hstask) {
-            $i = $i +1;
-            echo $i.": ". round(($i*100)/sizeof($hstasks),2). "% - $hstask->idFolder\n";
+            $i = $i + 1;
+            echo $i . ": " . round(($i * 100) / sizeof($hstasks), 2) . "% - $hstask->idFolder\n";
             if (empty($hstask->idFolder)) {
                 echo "procesando docinstalacions (" . 'TS' . $hstask['uuid'] . ")\n";
                 //consulta documento
                 // crea folder de cliente en modulo suscriptores                        
                 $suscfolder = $this->Createfolder($this->idmodulesusc, 0, 'TS' . $hstask['uuid']);
-                
+
                 if ($suscfolder['error'] == "") {
                     //crear disco path
                     $fpath = $this->root_path . '/' . $this->modulosusc->moduleName . '/' . $suscfolder['data']->folderName;
@@ -984,28 +1036,8 @@ class CronController extends Controller {
                     $hstask->idFolder = $suscfolder['data']->idfolder;
                     $hstask->save(false);
 
-                    // descarga documento
-                    // Initialize the cURL session 
-                    $ch = curl_init($hstask['pdf']);
-
                     // Save file into file location 
                     $save_file_loc = $fpath . '/' . $hstask['uuid'] . '.pdf';
-
-                    // Open file  
-                    $fp = fopen($save_file_loc, 'wb');
-
-                    // It set an option for a cURL transfer 
-                    curl_setopt($ch, CURLOPT_FILE, $fp);
-                    curl_setopt($ch, CURLOPT_HEADER, 0);
-
-                    // Perform a cURL session 
-                    curl_exec($ch);
-
-                    // Closes a cURL session and frees all resources 
-                    curl_close($ch);
-
-                    // Close file 
-                    fclose($fp);
 
                     // crea documentos intalacion
                     $newdocument = new Document();
@@ -1015,18 +1047,131 @@ class CronController extends Controller {
                     $newdocument->relativename = $vpath . $hstask['uuid'] . '.pdf';
                     $newdocument->fullname = $save_file_loc;
                     $newdocument->date = date("Y-m-d H:i:s");
-                    $newdocument->size = filesize($save_file_loc);
-                    $newdocument->type = 'application/pdf';
+                    $newdocument->size = '-1'; //filesize($save_file_loc);
+                    $newdocument->type = $hstask['pdf'];
                     $newdocument->iddocumentType = 5; // documento instalacion
                     $newdocument->idFolder = $suscfolder['data']->idfolder;
 
                     $newdocument->save(false);
-                }else{
-                    echo 'error: ('. $suscfolder['error']. ")\n";
+                } else {
+                    echo 'error: (' . $suscfolder['error'] . ")\n";
                 }
             }
         }
         echo "Fin syncdocinstalacion " . date("Y-m-d H:i:s") . "\n";
+    }
+
+    public function syncDownloadInstalationfiles() {
+        echo "----------------------------------------\n";
+        echo "Inicio download syncinstalationfiles " . date("Y-m-d H:i:s") . "\n";
+
+        shell_exec('sudo find /eiasadocs/tmp/. -maxdepth 1 -name "*.pdf" -exec rm -r {} \;');
+
+        $limitrows = 25;
+        $itemcount = Document::find()->where(['size' => '-1','iddocumentType'=> '5'])->count();
+
+        echo "procesando total archivos instalacion (" . $itemcount . ")\n";
+
+        $batches = ROUND($itemcount / $limitrows) + 1; // Number of while-loop calls
+        for ($i = 0; $i <= $batches; $i++) {
+            $offset = $i * $limitrows; // MySQL Limit offset number
+
+            $documents = Document::find()->where(['size' => '-1','iddocumentType'=> '5'])->offset($offset)->limit($limitrows)->all();
+            echo "batch: " . $i . " - procesando archivos instalacion (" . sizeof($documents) . ")\n";
+
+            $urls = array();
+
+            foreach ($documents as $document) {
+                //consulta documento
+                $urlarr = [
+                    "url" =>  $document['type'],
+                    "name" => $document['name'],
+                ];
+                echo "url " . $document['type'] . "\n";
+                array_push($urls, $urlarr);
+            }
+            echo "Inicio syncinstalationfiles downloading " . date("Y-m-d H:i:s") . "\n";
+            echo "procesando syncinstalationfiles downloading (" . sizeof($urls) . ")\n";
+
+            $this->multiple_download($urls, '/eiasadocs/tmp');
+
+            echo "Fin syncinstalationfiles downloading " . date("Y-m-d H:i:s") . "\n";
+                        
+            unset($urls);
+            unset($documents);
+        }
+
+        sleep(30);
+        
+        // actualiza documentos
+        $documents = Document::find()->where(['size' => '-1','iddocumentType'=> '5'])->all();
+        echo "actualizando archivos instalacion (" . sizeof($documents) . ")\n";
+
+        // actualiza documentos
+        foreach ($documents as $document) {
+            $file = '/eiasadocs/tmp' . '/' . $document->name;
+            echo "moviendo archivo ".$file."\n";
+            if (is_file($file)) {
+                if ( filesize($file) > 40000){
+                    //actualiza document
+                    $document->type = 'application/pdf';
+                    $document->size = filesize($file);
+                    //$document->fileUploadedUserId = -1;
+                    $document->save(false);
+
+                    // mueve el archivo
+                    rename($file, $document->path.'/'.$document->name);
+                }
+            }
+        }
+
+        unset($documents);
+        
+        echo "Fin syncinstalationfiles " . date("Y-m-d H:i:s") . "\n";
+    }
+    
+    function multiple_download(array $urls, $save_path = '/tmp') {
+        $multi_handle = curl_multi_init();
+        $file_pointers = [];
+        $curl_handles = [];
+
+        // Add curl multi handles, one per file we don't already have
+        foreach ($urls as $key => $urlarr) {
+            
+            $file = $save_path . '/' . basename($urlarr["name"]);
+            if (!is_file($file)) {
+                $curl_handles[$key] = curl_init($urlarr["url"]);
+                $file_pointers[$key] = fopen($file, "w+");
+                curl_setopt($curl_handles[$key], CURLOPT_FILE, $file_pointers[$key]);
+                curl_setopt($curl_handles[$key], CURLOPT_HEADER, 0);
+                curl_setopt($curl_handles[$key], CURLOPT_CONNECTTIMEOUT, 0);
+
+                curl_setopt($curl_handles[$key], CURLOPT_SSL_VERIFYHOST, false);
+                curl_setopt($curl_handles[$key], CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($curl_handles[$key], CURLOPT_RETURNTRANSFER, 1);
+                curl_setopt($curl_handles[$key], CURLOPT_FOLLOWLOCATION, 0);
+                curl_setopt($curl_handles[$key], CURLOPT_VERBOSE, 1);
+                //curl_setopt($curl_handles[$key], CURLOPT_BINARYTRANSFER, 1);
+                curl_setopt($curl_handles[$key], CURLOPT_REFERER, 'http://megayavisor.lavenirapps.co');
+                curl_multi_add_handle($multi_handle, $curl_handles[$key]);
+            }
+        }
+
+        // Download the files
+        do {
+            curl_multi_exec($multi_handle, $running);
+            //echo 'running - '.$running;
+        } while ($running > 0);
+
+
+        // Free up objects
+        foreach ($urls as $key => $urlarr) {
+            fwrite($file_pointers[$key], curl_multi_getcontent($curl_handles[$key]));
+            curl_multi_remove_handle($multi_handle, $curl_handles[$key]);
+            curl_close($curl_handles[$key]);
+            fclose($file_pointers[$key]);           
+        }
+        curl_multi_close($multi_handle);
     }
 
 }
