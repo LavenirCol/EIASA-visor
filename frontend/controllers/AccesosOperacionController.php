@@ -89,7 +89,7 @@ class AccesosoperacionController extends Controller {
 //                    var_dump($data);                    
                     $i = 0;
                     foreach ($data as $rowData) {
-                        if ($i > 0) {
+                        if ($i > 1) {
                             $newrec = new SabanaReporteOperacion();
                             $newrec->Operador = $rowData[0];
                             $newrec->Documento_cliente_acceso = $rowData[1];
@@ -158,7 +158,7 @@ class AccesosoperacionController extends Controller {
 
                     $i = 0;
                     foreach ($data as $rowData) {
-                        if ($i > 1) {
+                        if ($i > 0) {
                             $sql = "SELECT count(*) as cantidad
                                 FROM sabana_reporte_operacion s 
                                 WHERE CONCAT(Dane_Departamento,Dane_Municipio) = '" . str_pad(strval($rowData[0]), 5, "0", STR_PAD_LEFT) . "'";
