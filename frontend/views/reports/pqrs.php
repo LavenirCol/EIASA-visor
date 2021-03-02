@@ -84,6 +84,7 @@
                         <th data-priority="5" width="10%">Detalle</th>
                         <th data-priority="5" width="10%">Historial</th>
                         <th data-priority="5" width="10%">Autor</th>
+                        <th data-priority="5" width="10%">Estado</th>
                     </tr>
                 </thead>
                 <tbody>                                    

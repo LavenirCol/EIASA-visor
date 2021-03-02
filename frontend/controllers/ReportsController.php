@@ -1382,48 +1382,46 @@ class ReportsController extends \yii\web\Controller {
                 28 => 'country',
                 29 => 'access_id',
                 30 => 'address',
-                31 => 'latlng'
+                31 => 'lat',
+                32 => 'lng'
             );                    
             $totalData = Yii::$app->db->createCommand('SELECT COUNT(*) FROM tickets t inner join client c on t.fk_soc = c.idClient')->queryScalar();
-            $totalFiltered = $totalData;            
-
-            $sql = "SELECT * FROM tickets t inner join client c on t.fk_soc = c.idClient where 1=1 ";
-
-            if (!empty($requestData['search']['value'])) {
-                $sql .= " AND ( t.ref LIKE '" . $requestData['search']['value'] . "%' ";
-                $sql .= " OR c.ref LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR c.name LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR c.state LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR c.town LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR c.code_client LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR subject LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR type_label LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR category_label LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR severity_label LIKE '" . $requestData['search']['value'] . "%')";
+            $totalFiltered = $totalData;
+            $queryTickets = (new \yii\db\Query())
+            ->from('tickets')
+            ->innerJoin('client', 'tickets.fk_soc = client.idClient');
+            if (!empty($requestData['search']['value']))
+            {
+                $queryTickets->Where(['LIKE', 'tickets.ref', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'subject', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'type_label', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'category_label', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'severity_label', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'client.ref', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'client.name', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'client.state', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'client.town', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'client.code_client', $requestData['search']['value']."%", false]);                 
             }
-        
             $pdptos = empty($requestData['dptos']) ? '-1' : $requestData['dptos'];
             $pmpios = empty($requestData['mpios']) ? '-1' : $requestData['mpios'];
 
             if ($pdptos != '-1') {
-                $sql .= " AND state = '" . $pdptos . "'";
+                $queryTickets->andWhere(['=', 'state', $pdptos]);
             }
             if ($pmpios != '-1') {
-                $sql .= " AND town = '" . $pmpios . "'";
+                $queryTickets->andWhere(['=', 'town', $pmpios]);
             }
-
-            if (!empty($requestData['export'])) {
-                
-            } else {                
-                $sqlc = str_replace("*", "COUNT(*)", $sql);
-                $totalFiltered = Yii::$app->db->createCommand($sqlc)->queryScalar();
-
-                $sql .= " ORDER BY " . $columns[$requestData['order'][0]['column']] . "   " . $requestData['order'][0]['dir'] . "  LIMIT " . $requestData['start'] . " ," .
-                        $requestData['length'] . "   ";
+            if (empty($requestData['export'])) 
+            {
+                $totalFiltered = $queryTickets->count();
+                $order =  ($requestData['order'][0]['dir'] == 'asc') ?  SORT_ASC : SORT_DESC;
+                $pagination = new Pagination(['totalCount' => $totalFiltered, 'pageSize' => $requestData['length'], 'page' => $requestData['start']]);
+                $queryTickets->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
+                $queryTickets->offset($pagination->offset);
+                $queryTickets->limit($pagination->limit);
             }
-            
-            $result = Yii::$app->db->createCommand($sql)->queryAll();
-
+            $result = $queryTickets->all();
             $data = array();
             foreach ($result as $key => $row) {
                 $nestedData = array();
@@ -1468,10 +1466,8 @@ class ReportsController extends \yii\web\Controller {
                         '2021-12-25',
                     );
 
-                    $count5WD = 0;
-                    $d = date('Y-m-d', $row['datec']) . ' 00:00:00';
-                    //echo $d;
-                    $temp = strtotime($d); //example as today is 2016-03-25
+                    $count5WD = 0;                    
+                    $temp = strtotime(date('Y-m-d', $row['datec']) . ' 00:00:00');
                     while ($count5WD < 15) {
                         $next1WD = strtotime('+1 weekday', $temp);
                         $next1WDDate = date('Y-m-d', $next1WD);
@@ -1480,7 +1476,6 @@ class ReportsController extends \yii\web\Controller {
                         }
                         $temp = $next1WD;
                     }
-
                     $next5WD = date("d/m/Y", $temp);
                 }
                 $nestedData[] = $this->formatdate($next5WD);
@@ -1491,45 +1486,19 @@ class ReportsController extends \yii\web\Controller {
                 $nestedData[] = $row['phone'];
                 $nestedData[] = $row['email'];
                 $nestedData[] = $row['address'];
-                $nestedData[] = str_replace(array('Lat: ','Lon: '),'',$row['latlng']);
+                $nestedData[] = isset($row['lat'],$row['lng'])? $row['lat'].", ".$row['lng'] : '';
                 $nestedData[] = $row['message'];
-
-                $autor ="";
-                $msg = "<ul>";
-                $jsond = json_decode($row['messages']);
-                foreach ((array) $jsond as $key => $mesa) {
-                    $msg = $msg . '<li>' . date("Y-m-d H:i:s", $mesa->datec) . ' - ' . $mesa->message . '</li>';
-                    if(stripos($mesa->message,'creado'))
-                    {
-                       $autor =  str_replace(array('Autor: ','Ticket'),'',$mesa->message);
-                       $s = explode(' ',$autor);
-                       if(sizeof($s)> 0){
-                           $autor = str_replace('Ticket','',$s[0]);
-                       }
-                    }
-                }
-                $msg = $msg . "</ul>";
-
-                $nestedData[] =  $msg;
-                $nestedData[] =  $autor;
-                
-//                $nestedData[] = $row['idTicket'];
-//                $nestedData[] = $row['id'];
-//                $nestedData[] = $row['socid'];
-//                $nestedData[] = $row['ref'];
-//                $nestedData[] = $row['fk_soc'];
-//                $nestedData[] = $row['date_read'];
-//                $nestedData[] = $row['messages'];
-//                $nestedData[] = $row['idClient'];
-//                $nestedData[] = $row['entity'];
-//                $nestedData[] = $row['state_id'];
-//                $nestedData[] = $row['state_code'];
-//                $nestedData[] = $row['code_client'];
-//                $nestedData[] = $row['country_id'];
-//                $nestedData[] = $row['country_code'];
-//                $nestedData[] = $row['country'];
-
-                        $data[] = $nestedData;
+                $author ="";
+                $status = "";
+                $isExportData = !empty($requestData['export']);
+                $arrayMessage = (array)json_decode($row['messages']);
+                $history = $this->getHistoryFromMessageTicket($arrayMessage , $isExportData);     
+                $author = $this->getAuthorFromMessageTicket($arrayMessage);
+                $status = $this->getStateFromMessageTicket($arrayMessage);
+                $nestedData[] =  $history;
+                $nestedData[] =  $author;
+                $nestedData[] =  $status;
+                $data[] = $nestedData;
             }
 
             if (!empty($requestData['export'])) {
@@ -1547,42 +1516,7 @@ class ReportsController extends \yii\web\Controller {
                     fclose($output);
                     ob_end_flush();
                 }
-                if ($requestData['export'] == 'pdf') {
-                    $pdf = new Fpdf();
-                    /* Column headings */
-                    $header = array('Departamento','Municipio','Código Acceso','Cliente','Ref Ticket','Grupo','Tipo','Prioridad','Asunto','Fecha Creación','Fecha Limite','Fecha Cierre','Origen de Reporte','Cédula','Teléfonos','Email','Dirección / Barrio','Coordenadas','Detalle','Historial','Autor');
-                    /* Data loading */
-                    $pdf->AddPage('L', 'Legal');
-                    $pdf->SetFont('Courier', '', 6);
-                    /* Column widths */
-                    $w = array(30, 27, 20, 8, 20, 10, 20, 95, 15, 15, 10, 10, 20, 15, 28);
-                    /* Header */
-                    for ($i = 0; $i < count($header); $i++) {
-                        $pdf->Cell($w[$i], 7, utf8_decode($header[$i]), 1, 0, 'C');
-                    }
-                    $pdf->Ln();
-                    /* Data */
-                    foreach ($data as $row) {
-                        for ($i = 0; $i < 7; $i++) {
-                            $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
-                        }
-
-                        $barr = utf8_decode($row[7]);
-                        if (strlen($barr) > 70) {
-                            $barr = substr($barr, 0, 70) . '...';
-                        }
-
-                        $pdf->Cell($w[7], 6, $barr, 'LR');
-
-                        for ($i = 8; $i < 15; $i++) {
-                            $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
-                        }
-                        $pdf->Ln();
-                    }
-                    /* Closing line */
-                    $pdf->Cell(array_sum($w), 0, '', 'T');
-                    $pdf->Output('D', 'PqrsExport.pdf', true);
-                }
+                
             } else {
 
                 ob_start();
@@ -1598,7 +1532,7 @@ class ReportsController extends \yii\web\Controller {
                 ob_end_flush();
             }
         } catch (\Exception $ex) {
-            $returndata = ['error' => $ex->getMessage()];
+            $returndata = ['error' => $ex->getTrace()];
             echo json_encode($returndata);
         }
     }
@@ -1609,6 +1543,56 @@ class ReportsController extends \yii\web\Controller {
         } else {
             return '';
         }
+    }
+
+    private function getStateFromMessageTicket($arrayMessage)
+    {
+        $status = "";
+        if(count($arrayMessage)> 0)
+        {            
+            $itemMessage = array_values($arrayMessage)[0];
+            $arrayString = explode(' ',$itemMessage->message);
+            $status = (count($arrayString) > 0)?  ucwords($arrayString[count($arrayString) - 1]) : "";
+        }
+
+        return $status;
+    }
+
+    private function getAuthorFromMessageTicket($arrayMessage)
+    {
+        $author = '';
+        foreach ((array) $arrayMessage as $key => $itemMessage) {        
+            if(stripos($itemMessage->message,'creado')){                
+                $author =  str_replace(array('Autor: ','Ticket'),'',$itemMessage->message);
+                $array_author = explode(' ',$author);
+                if(sizeof($array_author)> 0){
+                    $author = str_replace('Ticket','',$array_author[0]);
+                }        
+                break;
+            }    
+        }       
+       
+        return $author;
+    }
+
+    private function getHistoryFromMessageTicket($arrayMessage, $exportData = false)
+    {
+        $history = (!$exportData)? "<ul>" : "";
+        $initialLine = (!$exportData)? "<li>" : "";
+        $finalLine = (!$exportData)? "</li>" : "\n";
+        foreach ((array) $arrayMessage as $key => $itemMessage) {
+            $history .= $initialLine . $itemMessage->id . ' - ' . date("Y-m-d H:i:s", $itemMessage->datec) . ' - ' . $this->getClearMessage($itemMessage->message,$exportData) . $finalLine;                      
+        }
+        $history .= (!$exportData)? "</ul>" : "";
+        
+        return $history; 
+    }
+
+    private function getClearMessage($message, $exportData = false)
+    {
+        $buscar=array(chr(13).chr(10), "\r\n", "\n", "\r");
+        $reemplazar=array("", "", "", "");
+        return (($exportData) ? html_entity_decode(str_ireplace($buscar,$reemplazar,$message)) : $message); 
     }
 
 }

@@ -272,20 +272,18 @@ class CronController extends Controller {
                     $newclient->access_id = $client['idprof6'];
                     $newclient->address = str_replace(array("\n", "\r", "\r\n", "\xE2\x80\x9010"), ' ', $client['address']);
                     $newclient->name = str_replace("\xC5\x84", 'ñ', $client['name']);
-
-                    $latlng = '';
-                    if (isset($client['array_options'])) {
-                        if (isset($client['array_options']["options_lat"])) {
-                            $latlng = $latlng . ' Lat: ' . $client['array_options']["options_lat"];
+                    if (isset($client['array_options'])) 
+                    {
+                        if (isset($client['array_options']["options_lat"])) 
+                        {
+                            $newclient->lat = $client['array_options']["options_lat"];
                         }
-                        if (isset($client['array_options']["options_lon"])) {
-                            $latlng = $latlng . ' Lon: ' . $client['array_options']["options_lon"];
+                        if (isset($client['array_options']["options_lon"])) 
+                        {
+                            $newclient->lat = $client['array_options']["options_lon"];
                         }
                     }
-
-                    $newclient->latlng = $latlng;
                     $newclient->save(false);
-
                     $this->processcontracts($client['id']);
                     $this->processproposals($client['id']);
                     $this->processinvoices($client['id']);
