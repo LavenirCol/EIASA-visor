@@ -462,11 +462,11 @@ class ReportsController extends \yii\web\Controller {
                     "data" => $data   // total data array
                 );
 
-                echo json_encode($json_data);
+                return json_encode($json_data);
             }
         } catch (\Exception $ex) {
             $returndata = ['error' => $ex->getMessage()];
-            echo json_encode($returndata);
+            return json_encode($returndata);
         }
     }
 
@@ -607,6 +607,7 @@ class ReportsController extends \yii\web\Controller {
                 43 => 'Fecha_Solicitud_Traslado_PQR',
                 44 => 'Semaforo',
                 45 => 'Fecha_Inactivo',
+                45 => 'Fecha_Inactivo2',
                 46 => 'Fecha_Desinstalado',
                 47 => 'Sexo',
                 48 => 'Genero',
@@ -703,33 +704,9 @@ class ReportsController extends \yii\web\Controller {
                 $nestedData[] = $this->formatdate($row['Fecha_Activo']);
                 $nestedData[] = $this->formatdate($row['Fecha_inicio_operación']);
                 $nestedData[] = $this->formatdate($row['Fecha_Solicitud_Traslado_PQR']);
-                $diasp = 0;
-                $semaforo = 'blanco';
-                // calcula dias
-                // Punto 5: el semáforo debe quedar así: 0 - 5  días (verde), 6-10 días (amarillo), 11 a 15 días (rojo) y > a 15 días hábiles morado.
-                if (isset($row['Fecha_Solicitud_Traslado_PQR'])) {
-                    if ($row['Fecha_Solicitud_Traslado_PQR'] !== '') {
-                        $d = $row['Fecha_Solicitud_Traslado_PQR'];
-                        $CheckInX = explode("/", $d);
-                        $date1 = mktime(0, 0, 0, $CheckInX[1], $CheckInX[0], $CheckInX[2]);
-                        $date2 = time();
-                        $diasp = ceil(($date2 - $date1) / (3600 * 24));
-                    }
-                }
-                if ($diasp > 15) {
-                    $semaforo = 'morado';
-                }
-                if ($diasp > 11 && $diasp <= 15) {
-                    $semaforo = 'rojo';
-                }
-                if ($diasp > 6 && $diasp <= 10) {
-                    $semaforo = 'amarillo';
-                }
-                if ($diasp > 0 && $diasp <= 5) {
-                    $semaforo = 'verde';
-                }
-                $nestedData[] = $diasp . " días. <img src='" . Url::base(true) . "/img/bandera_" . $semaforo . ".png' alt='' width='16'/>";
+                $nestedData[] = $this->getFlagColor($row['Fecha_Solicitud_Traslado_PQR'], !empty($requestData['export']));
                 $nestedData[] = $this->formatdate($row['Fecha_Inactivo']);
+                $nestedData[] = $this->getFlagColor($row['Fecha_Inactivo'], !empty($requestData['export']));
                 $nestedData[] = $this->formatdate($row['Fecha_Desinstalado']);
                 $nestedData[] = $row['Sexo'];
                 $nestedData[] = $row['Genero'];
@@ -758,43 +735,7 @@ class ReportsController extends \yii\web\Controller {
                     }
                     fclose($output);
                     ob_end_flush();
-                }
-                if ($requestData['export'] == 'pdf') {
-                    $pdf = new Fpdf();
-                    /* Column headings */
-                    $header = array('Operador', 'Documento_cliente_acceso', 'Dane_Mun_ID_Punto', 'Estado_actual', 'Region', 'Dane_Departamento', 'Departamento', 'Dane_Municipio', 'Municipio', 'Barrio', 'Direccion', 'Estrato', 'Dificultad__de_acceso_al_municipio', 'Coordenadas_Grados_decimales', 'Nombre_Cliente', 'Telefono', 'Celular', 'Correo_Electronico', 'VIP', 'Codigo_Proyecto_VIP', 'Nombre_Proyecto_VIP', 'Velocidad_Contratada_Downstream', 'Meta', 'Fecha_max_de_cumplimiento_de_meta', 'Tipo_Solucion_UM_Operatividad', 'Operador_Prestante', 'IP', 'Olt', 'PuertoOlt', 'Serial_ONT', 'Port_ONT', 'Nodo', 'Armario', 'Red_Primaria', 'Red_Secundaria', 'Nodo2', 'Amplificador', 'Tap_Boca', 'Mac_Cpe', 'Fecha_Instalado', 'Fecha_Activo', 'Fecha_inicio_operación', 'Fecha_Solicitud_Traslado_PQR', 'Fecha_Inactivo', 'Fecha_Desinstalado', 'Sexo', 'Genero', 'Orientacion_Sexual', 'Educacion_', 'Etnias', 'Discapacidad', 'Estratos', 'Beneficiario_Ley_1699_de_2013', 'SISBEN_IV');
-                    /* Data loading */
-                    $pdf->AddPage('L', 'Legal');
-                    $pdf->SetFont('Courier', '', 6);
-                    /* Column widths */
-                    $w = array(30, 27, 20, 8, 20, 10, 20, 95, 15, 15, 10, 10, 20, 15, 28);
-                    /* Header */
-                    for ($i = 0; $i < count($header); $i++) {
-                        $pdf->Cell($w[$i], 7, utf8_decode($header[$i]), 1, 0, 'C');
-                    }
-                    $pdf->Ln();
-                    /* Data */
-                    foreach ($data as $row) {
-                        for ($i = 0; $i < 7; $i++) {
-                            $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
-                        }
-
-                        $barr = utf8_decode($row[7]);
-                        if (strlen($barr) > 70) {
-                            $barr = substr($barr, 0, 70) . '...';
-                        }
-
-                        $pdf->Cell($w[7], 6, $barr, 'LR');
-
-                        for ($i = 8; $i < 15; $i++) {
-                            $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
-                        }
-                        $pdf->Ln();
-                    }
-                    /* Closing line */
-                    $pdf->Cell(array_sum($w), 0, '', 'T');
-                    $pdf->Output('D', 'AccesosOperacionExport.pdf', true);
-                }
+                }                
             } else {
                 ob_start();
                 ob_start('ob_gzhandler');
@@ -1214,31 +1155,7 @@ class ReportsController extends \yii\web\Controller {
                 $nestedData[] = $row['Velocidad_Contratada_Downstream'];
                 $nestedData[] = $row['Meta'];
                 $nestedData[] = $this->formatdate($row['Fecha_max_de_cumplimiento_de_meta']);
-                $diasp = 0;
-                $semaforo = 'blanco';
-                // calcula dias
-                // Punto 4: el semáforo debe quedar así: verde mayor a  30 días calendario, amarillo entre 30 y 10 días, rojo entre 10 a 0 días calendario
-                if (isset($row['Fecha_max_de_cumplimiento_de_meta'])) {
-                    if ($row['Fecha_max_de_cumplimiento_de_meta'] !== '') {
-                        $d = $row['Fecha_max_de_cumplimiento_de_meta'];
-                        $CheckInX = explode("/", $d);
-                        $date1 = mktime(0, 0, 0, $CheckInX[1], $CheckInX[0], $CheckInX[2]);
-                        $date2 = time();
-                        $diasp = ceil(($date2 - $date1) / (3600 * 24));
-                        $diasp = $diasp * -1;
-                    }
-                }
-                if ($diasp > 30) {
-                    $semaforo = 'verde';
-                }
-                if ($diasp > 10 && $diasp <= 30) {
-                    $semaforo = 'amarillo';
-                }
-                if ($diasp > 0 && $diasp <= 10) {
-                    $semaforo = 'rojo';
-                }
-                $nestedData[] = $diasp . " días. <img src='" . Url::base(true) . "/img/bandera_" . $semaforo . ".png' alt='' width='16'/>";
-                //$nestedData[] = $row['Dias_pendientes_de_la_fecha_de_cumplimiento'];
+                $nestedData[] = $this->getFlagColor($row['Fecha_max_de_cumplimiento_de_meta'], !empty($requestData['export']));
                 $nestedData[] = $this->formatdate($row['FECHA_APROBACION_INTERVENTORIA']);
                 $nestedData[] = $this->formatdate($row['FECHA_APROBACION_META_SUPERVISION']);
                 $nestedData[] = $row['Tipo_Solucion_UM_Operatividad'];
@@ -1593,6 +1510,31 @@ class ReportsController extends \yii\web\Controller {
         $buscar=array(chr(13).chr(10), "\r\n", "\n", "\r");
         $reemplazar=array("", "", "", "");
         return (($exportData) ? html_entity_decode(str_ireplace($buscar,$reemplazar,$message)) : $message); 
+    }
+
+    private function getFlagColor($date, $isExportData)
+    {
+        $daysDifference = 0;
+        $flagColor = 'blanco';
+        if (isset($date)) {
+            if ($date !== '') {                
+                $CheckInX = explode("/", $date);
+                $initialTime = mktime(0, 0, 0, $CheckInX[1], $CheckInX[0], $CheckInX[2]);
+                $finalTime = time();
+                $daysDifference = ceil(($finalTime - $initialTime) / (3600 * 24));
+            }
+        }
+        if ($daysDifference > 15) {
+            $flagColor = 'morado';
+        }else  if ($daysDifference > 11 && $daysDifference <= 15) {
+            $flagColor = 'rojo';
+        }else if ($daysDifference > 6 && $daysDifference <= 10) {
+            $flagColor = 'amarillo';
+        }else if ($daysDifference > 0 && $daysDifference <= 5) {
+            $flagColor = 'verde';
+        }    
+
+        return $daysDifference . " días. ". (($isExportData)? ucwords($flagColor) :  "<img src='" . Url::base(true) . "/img/bandera_" . $flagColor . ".png' alt='' width='16'/>");
     }
 
 }
