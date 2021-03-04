@@ -41,9 +41,18 @@ class ReportsController extends \yii\web\Controller {
         $sql = "SELECT h.* FROM hsstock h limit 0";
         $rows = $connection->createCommand($sql)->queryAll();
 
+        $daneCodeList = (new \yii\db\Query())
+        ->select(['district_code'])
+        ->from('hsstock')
+        ->distinct()
+        ->orderBy(['district_code' => SORT_ASC])
+        ->all();
+        
+
         return $this->render('inventarios', [
                     'deptos' => $deptos,
                     'mpios' => $mpios,
+                    'daneCodeList' => $daneCodeList,
                     'materials' => $materials,
                     'factories' => $factories,
                     'models' => $models,
@@ -227,8 +236,16 @@ class ReportsController extends \yii\web\Controller {
         $sql = "SELECT distinct Departamento FROM sabana_reporte_instalacion";
         $deptos = $connection->createCommand($sql)->queryAll();
 
+        $daneCodeList = (new \yii\db\Query())
+        ->select(['concat(Dane_Departamento,Dane_Municipio) as daneCode '])
+        ->from('sabana_reporte_instalacion')
+        ->distinct()
+        ->orderBy(['daneCode' => SORT_ASC])
+        ->all();
+
         return $this->render('instalaciondash', [
                     'deptos' => $deptos,
+                    'daneCodeList' => $daneCodeList,
                     'insts' => $insts
         ]);
     }
@@ -298,9 +315,17 @@ class ReportsController extends \yii\web\Controller {
         $sql = "SELECT * FROM sabana_reporte_cambios_reemplazos";
         $insts = $connection->createCommand($sql)->queryAll();
 
+        $daneCodeList = (new \yii\db\Query())
+        ->select(['daneCode' => 'Concat(Dane_Departamento_Old, Dane_Municipio_Old)'])
+        ->from('sabana_reporte_cambios_reemplazos')
+        ->distinct()
+        ->orderBy(['daneCode' => SORT_ASC])
+        ->all();
+
         return $this->render('cambiosreemplazos', array(
                     'deptos' => $deptos,
                     'mpios' => $mpios,
+                    'daneCodeList' => $daneCodeList,
                     'insts' => $insts));
     }
 
@@ -336,51 +361,50 @@ class ReportsController extends \yii\web\Controller {
             $totalData = Yii::$app->db->createCommand('SELECT COUNT(*) FROM hsstock')->queryScalar();
             $totalFiltered = $totalData;
 
-            $sql = "SELECT * FROM `hsstock` where 1=1 ";
-
-            if (!empty($requestData['search']['value'])) {
-                $sql .= " AND ( name LIKE '" . $requestData['search']['value'] . "%' ";
-                $sql .= " OR sku LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR location LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR city LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR district LIKE '" . $requestData['search']['value'] . "%')";
+            $hsStockData = (new \yii\db\Query())->from('hsstock');
+            if (!empty($requestData['search']['value'])){
+                $hsStockData->Where(['LIKE', 'name', $requestData['search']['value']."%", false])                
+                ->orWhere(['LIKE', 'sku', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'location', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'city', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'district', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'district_code', $requestData['search']['value']."%", false]);  
             }
-
             $pdptos = empty($requestData['dptos']) ? '-1' : $requestData['dptos'];
             $pmpios = empty($requestData['mpios']) ? '-1' : $requestData['mpios'];
+            $daneCodeFilter = empty($requestData['daneCodeFilter']) ? '-1' : $requestData['daneCodeFilter'];
             $pmaterials = empty($requestData['materials']) ? '-1' : $requestData['materials'];
             $pfactories = empty($requestData['factories']) ? '-1' : $requestData['factories'];
             $pmodels = empty($requestData['models']) ? '-1' : $requestData['models'];
 
-            if ($pdptos != '-1') {
-                $sql .= " AND city = '" . $pdptos . "'";
+            if ($pdptos != '-1') {                
+                $hsStockData->andWhere(['=', 'city', $pdptos]);
             }
-            if ($pmpios != '-1') {
-                $sql .= " AND district = '" . $pmpios . "'";
+            if ($pmpios != '-1') {                
+                $hsStockData->andWhere(['=', 'district', $pmpios]);
             }
-            if ($pmaterials != '-1') {
-                $sql .= " AND name = '" . $pmaterials . "'";
+            if ($pmaterials != '-1') {                
+                $hsStockData->andWhere(['=', 'name', $pmaterials]);
             }
             if ($pfactories != '-1') {
-                $sql .= " AND factory = '" . $pfactories . "'";
+                $hsStockData->andWhere(['=', 'factory', $pfactories]);
             }
             if ($pmodels != '-1') {
-                $sql .= " AND model = '" . $pmodels . "'";
+                $hsStockData->andWhere(['=', 'model', $pmodels]);
+            }
+            if ($daneCodeFilter != '-1') {
+                $hsStockData->andWhere(['=', 'district_code', $daneCodeFilter]);
             }
 
-            if (!empty($requestData['export'])) {
-                
-            } else {
-                $sqlc = str_replace("*", "COUNT(*)", $sql);
-                $totalFiltered = Yii::$app->db->createCommand($sqlc)->queryScalar();
-
-                $sql .= " ORDER BY " . $columns[$requestData['order'][0]['column']] . "   " . $requestData['order'][0]['dir'] . "  LIMIT " . $requestData['start'] . " ," .
-                        $requestData['length'] . "   ";
+            if (empty($requestData['export'])){
+                $totalFiltered = $hsStockData->count();
+                $order =  ($requestData['order'][0]['dir'] == 'asc') ?  SORT_ASC : SORT_DESC;
+                $pagination = new Pagination(['totalCount' => $totalFiltered, 'pageSize' => $requestData['length'], 'page' => $requestData['start']]);
+                $hsStockData->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
+                $hsStockData->offset($pagination->offset);
+                $hsStockData->limit($pagination->limit);     
             }
-
-
-            $result = Yii::$app->db->createCommand($sql)->queryAll();
-
+            $result = $hsStockData->all();
             $data = array();
             foreach ($result as $key => $row) {
                 $nestedData = array();

@@ -168,6 +168,7 @@ $(document).ready(function(){
                     d.materials = $('#materials').val();
                     d.factories = $('#factories').val();
                     d.models = $('#models').val();
+                    d.daneCodeFilter = $('#daneCodeFilter').val();
                 }
             },
             "fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) 
