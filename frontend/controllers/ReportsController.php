@@ -746,6 +746,7 @@ class ReportsController extends \yii\web\Controller {
 
             if (!empty($requestData['export'])) {
                 if ($requestData['export'] == 'csv') {
+                    ini_set('memory_limit','2048M');
                     ob_start();
                     ob_start('ob_gzhandler');
                     header('Content-Type: text/csv; charset=windows-1251');
