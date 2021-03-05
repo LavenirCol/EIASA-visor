@@ -45,3 +45,6 @@ phpunit.phar
 #ignore Settings VS Code 
 /.vscode
 frontend/web/info.php
+
+#ignore temp files
+/temp

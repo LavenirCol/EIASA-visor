@@ -237,8 +237,8 @@ class ReportsController extends \yii\web\Controller {
         $deptos = $connection->createCommand($sql)->queryAll();
 
         $daneCodeList = (new \yii\db\Query())
-        ->select(['concat(Dane_Departamento,Dane_Municipio) as daneCode '])
-        ->from('sabana_reporte_instalacion')
+        ->select(['daneCode' => 'DANE'])
+        ->from('avances_metas_instalacion')
         ->distinct()
         ->orderBy(['daneCode' => SORT_ASC])
         ->all();
@@ -279,10 +279,152 @@ class ReportsController extends \yii\web\Controller {
         $sql = "SELECT distinct Departamento FROM sabana_reporte_operacion";
         $deptos = $connection->createCommand($sql)->queryAll();
 
+        $daneCodeList = (new \yii\db\Query())
+        ->select(['daneCode' => 'DANE'])
+        ->from('avances_meta_operacion')
+        ->distinct()
+        ->orderBy(['daneCode' => SORT_ASC])
+        ->all();
+
         return $this->render('operaciondash', [
                     'deptos' => $deptos,
+                    'daneCodeList' => $daneCodeList,
                     'insts' => $insts
         ]);        
+    }
+
+    public function actionOperaciondashserver() {
+
+        try {
+            $requestData = $_REQUEST;           
+            $columns = array(
+                0 => 'DANE',
+                1 => 'Departamento',
+                2 => 'Municipio',
+                3 => 'Meta',
+                4 => 'Beneficiarios_En_Operacion',
+                5 => 'Meta_Tiempo_en_servicio',
+                6 => 'Tiempo_en_servicio',
+                7 => 'Avance'
+            );
+
+            $totalData = (new \yii\db\Query())->from('avances_meta_operacion')->count();
+            $totalFiltered = $totalData;
+
+            $dataReport = (new \yii\db\Query())
+            ->select(
+                [
+                    "DANE",
+                    "Departamento",
+                    "Municipio",
+                    "Meta" => "CONVERT(SUBSTRING_INDEX(`Meta`,'-',-1),UNSIGNED INTEGER)",
+                    "Beneficiarios_En_Operacion" => "CONVERT(SUBSTRING_INDEX(`Beneficiarios_En_Operacion`,'-',-1),UNSIGNED INTEGER)",
+                    "Meta_Tiempo_en_servicio" => "CONVERT(SUBSTRING_INDEX(`Meta_Tiempo_en_servicio`,'-',-1),UNSIGNED INTEGER)",
+                    "Tiempo_en_servicio" => "(Tiempo_en_servicio + 0.0)",
+                    "Avance" => "(Avance + 0.0)"
+                ]
+            )
+            ->from('avances_meta_operacion');
+            if (!empty($requestData['search']['value'])){
+                $dataReport->Where(['LIKE', 'DANE', $requestData['search']['value']."%", false])                
+                ->orWhere(['LIKE', 'Departamento', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Municipio', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Meta', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Beneficiarios_En_Operacion', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Meta_Tiempo_en_servicio', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Tiempo_en_servicio', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Avance', $requestData['search']['value']."%", false]);  
+            }            
+            $daneCodeFilter = empty($requestData['daneCodeFilter']) ? '-1' : $requestData['daneCodeFilter'];            
+            if ($daneCodeFilter != '-1') {
+                $dataReport->andWhere(['=', 'DANE', $daneCodeFilter]);
+            }
+
+            if (empty($requestData['export'])){
+                $totalFiltered = $dataReport->count();
+                $order =  ($requestData['order'][0]['dir'] == 'asc') ?  SORT_ASC : SORT_DESC;                
+                $dataReport->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
+                $dataReport->offset($requestData['start']);
+                $dataReport->limit($requestData['length']);     
+            }            
+            $result = $dataReport->all();
+            $data = array();
+            foreach ($result as $key => $row) {
+                $nestedData = array();
+                $nestedData[] = $row["DANE"];
+                $nestedData[] = $row["Departamento"];
+                $nestedData[] = $row['Municipio'];
+                $nestedData[] = number_format($row["Meta"],0,",",".");
+                $nestedData[] = number_format($row["Beneficiarios_En_Operacion"],0,",",".");
+                $nestedData[] = number_format($row["Meta_Tiempo_en_servicio"],0,",",".");
+                $nestedData[] = number_format($row["Tiempo_en_servicio"],0,",",".");
+                $nestedData[] = number_format($row["Avance"],2,",",".")." %";
+                $nestedData[] = ($row['Beneficiarios_En_Operacion'] > 0  && empty($requestData['export'])) ? "<a href='".Url::toRoute('reports/operaciondetails')."?dane=".$row['DANE']."' class='btn btn-sm btn-primary'>Detalles</a>" : "";
+                $data[] = $nestedData;
+            }
+
+            if (!empty($requestData['export'])) {
+                if ($requestData['export'] == 'csv') {
+                    ob_start();
+                    ob_start('ob_gzhandler');
+                    header('Content-Type: text/csv; charset=windows-1251');
+                    header('Content-Disposition: attachment; filename=Dashboard Operación.csv');
+                    $output = fopen('php://output', 'w');
+                    fwrite($output, "\xEF\xBB\xBF");
+                    fputcsv($output, ['DANE', 'Departamento', 'Municipio', 'Meta', 'Beneficiarios Instalados', 'Meta Tiempo en Servicio','Tiempo en Servicio','Avance'], ';');
+                    $index=0;
+                    foreach ($data as $key => $value) {                        
+                        fputcsv($output, $value, ';');
+                    }
+                    fclose($output);
+                    ob_end_flush();
+                }
+                if ($requestData['export'] == 'pdf') {
+                    $pdf = new Fpdf();
+                    /* Column headings */
+                    $header = array('DANE', 'Departamento', 'Municipio', 'Meta', 'Beneficiarios Instalados', 'Meta Tiempo en Servicio','Tiempo en Servicio','Avance');
+                    /* Data loading */
+                    $pdf->AddPage('L', 'Legal');
+                    $pdf->SetFont('Courier', 'B', 10);
+                    /* Column widths */
+                    $w = array(30, 40, 60, 20, 60, 60, 40, 30);
+                    /* Header */
+                    for ($index = 0; $index < count($header); $index++){
+                        $pdf->Cell($w[$index], 7, utf8_decode($header[$index]), 1, 0, 'C');
+                    }
+                    $pdf->Ln();
+                    /* Data */
+                    $pdf->SetFont('Courier', '', 10);
+                    foreach ($data as $row) {
+                        for ($index = 0; $index < 8; $index++){
+                            if($index > 2)
+                            {
+                                $pdf->Cell($w[$index], 6, utf8_decode($row[$index]), 1,0,'R');
+                            }else{
+                                $pdf->Cell($w[$index], 6, utf8_decode($row[$index]), 1,0,'L');
+                            }                            
+                        }
+                        $pdf->Ln();
+                    }
+                    /* Closing line */
+                    $pdf->Cell(array_sum($w), 0, '', 'T');
+                    $pdf->Output('D', 'Dashboard Operación.pdf', true);
+                }
+            } else {
+
+                $json_data = array(
+                    "draw" => intval($requestData['draw']),
+                    "recordsTotal" => intval($totalData),
+                    "recordsFiltered" => intval($totalFiltered),
+                    "data" => $data   // total data array
+                );
+
+                return json_encode($json_data);
+            }
+        }catch (\Exception $ex){
+            $returndata = ['error' => $ex->getMessage()];
+            return json_encode($returndata);
+        }
     }
 
     public function actionOperaciondetails() {
@@ -330,6 +472,133 @@ class ReportsController extends \yii\web\Controller {
     }
 
     /// Server side
+    public function actionInstalaciondashserver() {
+
+        try {
+            $requestData = $_REQUEST;           
+            $columns = array(
+                0 => 'DANE',
+                1 => 'Departamento',
+                2 => 'Municipio',
+                3 => 'Meta',
+                4 => 'Beneficiarios_Instalados',
+                5 => 'Avance'
+            );
+
+            $totalData = (new \yii\db\Query())->from('avances_metas_instalacion')->count();
+            $totalFiltered = $totalData;
+
+            $dataReport = (new \yii\db\Query())
+            ->select(
+                [
+                    "DANE",
+                    "Departamento",
+                    "Municipio",
+                    "Meta" => "CONVERT(SUBSTRING_INDEX(`Meta`,'-',-1),UNSIGNED INTEGER)",
+                    "Beneficiarios_Instalados" => "CONVERT(SUBSTRING_INDEX(`Beneficiarios_Instalados`,'-',-1),UNSIGNED INTEGER)",
+                    "Avance" => "(Avance + 0.0)"
+                ]
+            )
+            ->from('avances_metas_instalacion');
+            if (!empty($requestData['search']['value'])){
+                $dataReport->Where(['LIKE', 'DANE', $requestData['search']['value']."%", false])                
+                ->orWhere(['LIKE', 'Departamento', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Municipio', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Meta', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Beneficiarios_Instalados', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Avance', $requestData['search']['value']."%", false]);  
+            }            
+            $daneCodeFilter = empty($requestData['daneCodeFilter']) ? '-1' : $requestData['daneCodeFilter'];            
+            if ($daneCodeFilter != '-1') {
+                $dataReport->andWhere(['=', 'DANE', $daneCodeFilter]);
+            }
+
+            if (empty($requestData['export'])){
+                $totalFiltered = $dataReport->count();
+                $order =  ($requestData['order'][0]['dir'] == 'asc') ?  SORT_ASC : SORT_DESC;                
+                $dataReport->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
+                $dataReport->offset($requestData['start']);
+                $dataReport->limit($requestData['length']);     
+            }            
+            $result = $dataReport->all();
+            $data = array();
+            foreach ($result as $key => $row) {
+                $nestedData = array();
+                $nestedData[] = $row["DANE"];
+                $nestedData[] = $row["Departamento"];
+                $nestedData[] = $row['Municipio'];
+                $nestedData[] = number_format($row["Meta"],0,",",".");
+                $nestedData[] = number_format($row["Beneficiarios_Instalados"],0,",",".");
+                $nestedData[] = number_format($row["Avance"],2,",",".")." %";
+                $nestedData[] = ($row['Beneficiarios_Instalados'] > 0  && empty($requestData['export'])) ? "<a href='".Url::toRoute('reports/instalaciondetails')."?dane=".$row['DANE']."' class='btn btn-sm btn-primary'>Detalles</a>" : "";
+                $data[] = $nestedData;
+            }
+
+            if (!empty($requestData['export'])) {
+                if ($requestData['export'] == 'csv') {
+                    ob_start();
+                    ob_start('ob_gzhandler');
+                    header('Content-Type: text/csv; charset=windows-1251');
+                    header('Content-Disposition: attachment; filename=Dashboard Instalación.csv');
+                    $output = fopen('php://output', 'w');
+                    fwrite($output, "\xEF\xBB\xBF");
+                    fputcsv($output, ['DANE', 'Departamento', 'Municipio', 'Meta', 'Beneficiarios Instalados', 'Avances'], ';');
+                    $index=0;
+                    foreach ($data as $key => $value) {                        
+                        fputcsv($output, $value, ';');
+                    }
+                    fclose($output);
+                    ob_end_flush();
+                }
+                if ($requestData['export'] == 'pdf') {
+                    $pdf = new Fpdf();
+                    /* Column headings */
+                    $header = array('DANE', 'Departamento', 'Municipio', 'Meta', 'Beneficiarios Instalados', 'Avances');
+                    /* Data loading */
+                    $pdf->AddPage('L', 'Legal');
+                    $pdf->SetFont('Courier', 'B', 12);
+                    /* Column widths */
+                    $w = array(30, 40, 70, 40, 70, 30);
+                    /* Header */
+                    for ($index = 0; $index < count($header); $index++){
+                        $pdf->Cell($w[$index], 7, utf8_decode($header[$index]), 1, 0, 'C');
+                    }
+                    $pdf->Ln();
+                    /* Data */
+                    $pdf->SetFont('Courier', '', 10);
+                    foreach ($data as $row) {
+                        for ($index = 0; $index < 6; $index++){
+                            if($index > 2)
+                            {
+                                $pdf->Cell($w[$index], 6, utf8_decode($row[$index]), 1,0,'R');
+                            }else{
+                                $pdf->Cell($w[$index], 6, utf8_decode($row[$index]), 1,0,'L');
+                            }                            
+                        }
+                        $pdf->Ln();
+                    }
+                    /* Closing line */
+                    $pdf->Cell(array_sum($w), 0, '', 'T');
+                    $pdf->Output('D', 'Dashboard Instalación.pdf', true);
+                }
+            } else {
+
+                $json_data = array(
+                    "draw" => intval($requestData['draw']),
+                    "recordsTotal" => intval($totalData),
+                    "recordsFiltered" => intval($totalFiltered),
+                    "data" => $data   // total data array
+                );
+
+                return json_encode($json_data);
+            }
+        }catch (\Exception $ex){
+            $returndata = ['error' => $ex->getMessage()];
+            return json_encode($returndata);
+        }
+    }
+
+
 
     public function actionInventariosserver() {
 
@@ -859,46 +1128,44 @@ class ReportsController extends \yii\web\Controller {
                 70 => 'Tap_Boca_red_hfc_New',
                 71 => 'Mac_Cpe_New',
             );
-
-
-            $totalData = Yii::$app->db->createCommand('SELECT COUNT(*) FROM sabana_reporte_cambios_reemplazos')->queryScalar();
-            $totalFiltered = $totalData;
-
-            $sql = "SELECT * FROM `sabana_reporte_cambios_reemplazos` where 1=1 ";
-
+            $totalData = (new \yii\db\Query())->from('sabana_reporte_cambios_reemplazos')->count();
+            $totalFiltered = $totalData;           
+            $dataReport = (new \yii\db\Query())->from('sabana_reporte_cambios_reemplazos');
             if (!empty($requestData['search']['value'])) {
-                $sql .= " AND ( Documento_Cliente_Acceso_Old LIKE '" . $requestData['search']['value'] . "%' ";
-                $sql .= " OR Documento_Cliente_Acceso_New LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Dane_Municipio_Old LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Departamento_Old LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Municipio_Old LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Nombre_Cliente_Completo_Old LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Dane_Municipio_New LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Departamento_New LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Municipio_New LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Nombre_Cliente_Completo_New LIKE '" . $requestData['search']['value'] . "%')";
+                $dataReport->Where(['LIKE', 'Documento_Cliente_Acceso_Old', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Documento_Cliente_Acceso_New', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Dane_Municipio_Old', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Departamento_Old', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Municipio_Old', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Nombre_Cliente_Completo_Old', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Dane_Municipio_New', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Departamento_New', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Municipio_New', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Nombre_Cliente_Completo_New', $requestData['search']['value']."%", false]);
             }
-
             $pdptos = empty($requestData['dptos']) ? '-1' : $requestData['dptos'];
             $pmpios = empty($requestData['mpios']) ? '-1' : $requestData['mpios'];
+            $daneCodeFilter = empty($requestData['daneCodeFilter']) ? '-1' : $requestData['daneCodeFilter'];
 
             if ($pdptos != '-1') {
-                $sql .= " AND Departamento_Old = '" . $pdptos . "'";
+                $dataReport->andWhere(['=', 'Departamento_Old', $pdptos]);
             }
-            if ($pmpios != '-1') {
-                $sql .= " AND Municipio_Old = '" . $pmpios . "'";
+            if ($pmpios != '-1') {                
+                $dataReport->andWhere(['=', 'Municipio_Old', $pmpios]);
+            }
+            if ($daneCodeFilter != '-1') {                
+                $dataReport->andWhere(['=', 'Concat(Dane_Departamento_Old, Dane_Municipio_Old)', $daneCodeFilter]);
             }
 
             if (empty($requestData['export'])) {
-                $sqlc = str_replace("*", "COUNT(*)", $sql);
-                $totalFiltered = Yii::$app->db->createCommand($sqlc)->queryScalar();
-
-                $sql .= " ORDER BY " . $columns[$requestData['order'][0]['column']] . "   " . $requestData['order'][0]['dir'] . "  LIMIT " . $requestData['start'] . " ," .
-                        $requestData['length'] . "   ";
+                $totalFiltered = $dataReport->count();
+                $order =  ($requestData['order'][0]['dir'] == 'asc') ?  SORT_ASC : SORT_DESC;
+                $pagination = new Pagination(['totalCount' => $totalFiltered, 'pageSize' => $requestData['length'], 'page' => $requestData['start']]);
+                $dataReport->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
+                $dataReport->offset($pagination->offset);
+                $dataReport->limit($pagination->limit);
             }
-
-
-            $result = Yii::$app->db->createCommand($sql)->queryAll();
+            $result =  $dataReport->all();
 
             $data = array();
             foreach ($result as $key => $row) {
@@ -991,43 +1258,7 @@ class ReportsController extends \yii\web\Controller {
                     }
                     fclose($output);
                     ob_end_flush();
-                }
-                if ($requestData['export'] == 'pdf') {
-                    $pdf = new Fpdf();
-                    /* Column headings */
-                    $header = array('Ejecutor', 'Documento Cliente Acceso', 'Dane Mun - ID Punto', 'Estado Actual', 'Region', 'Dane Departamento', 'Departamento', 'Dane Municipio', 'Municipio', 'Barrio', 'Dirección', 'Estrato', 'Coordenadas Grados-decimales', 'Nombre Cliente Completo', 'Telefono', 'Celular', 'Correo Electronico', 'VIP (Si o No)', 'Codigo Proyecto VIP', 'Nombre Proyecto VIP', 'Velocidad Contratada MB', 'Meta', 'Tipo Solucion UM Operatividad', 'Operador Prestante', 'IP', 'Olt', 'PuertoOlt', 'Mac Onu', 'Port Onu', 'Nodo', 'Armario', 'Red Primaria', 'Red Secundaria', 'Nodo', 'Amplificador', 'Tap-Boca', 'Mac Cpe', 'Documento Cliente Acceso', 'Region', 'Dane Departamento', 'Departamento', 'Dane Municipio', 'Municipio', 'Barrio', 'Dirección', 'Estrato', 'Coordenadas Grados-decimales', 'Nombre Cliente Completo', 'Telefono', 'Celular', 'Correo Electronico', 'VIP (Si o No)', 'Codigo Proyecto VIP', 'Nombre Proyecto VIP', 'Velocidad Contratada MB', 'Meta', 'Tipo Solucion UM Operatividad', 'Operador Prestante', 'IP', 'Olt', 'PuertoOlt', 'Mac Onu', 'Port Onu', 'Nodo', 'Armario', 'Red Primaria', 'Red Secundaria', 'Nodo', 'Amplificador', 'Tap-Boca', 'Mac Cpe');
-                    /* Data loading */
-                    $pdf->AddPage('L', 'Legal');
-                    $pdf->SetFont('Courier', '', 6);
-                    /* Column widths */
-                    $w = array(30, 27, 20, 8, 20, 10, 20, 95, 15, 15, 10, 10, 20, 15, 28);
-                    /* Header */
-                    for ($i = 0; $i < 15; $i++) {
-                        $pdf->Cell($w[$i], 7, utf8_decode($header[$i]), 1, 0, 'C');
-                    }
-                    $pdf->Ln();
-                    /* Data */
-                    foreach ($data as $row) {
-                        for ($i = 0; $i < 7; $i++) {
-                            $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
-                        }
-
-                        $barr = utf8_decode($row[7]);
-                        if (strlen($barr) > 70) {
-                            $barr = substr($barr, 0, 70) . '...';
-                        }
-
-                        $pdf->Cell($w[7], 6, $barr, 'LR');
-
-                        for ($i = 8; $i < 15; $i++) {
-                            $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
-                        }
-                        $pdf->Ln();
-                    }
-                    /* Closing line */
-                    $pdf->Cell(array_sum($w), 0, '', 'T');
-                    $pdf->Output('D', 'CambiosyReemplazosExport.pdf', true);
-                }
+                }                
             } else {
                 ob_start();
                 ob_start('ob_gzhandler');
