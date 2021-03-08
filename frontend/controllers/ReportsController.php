@@ -557,8 +557,8 @@ class ReportsController extends \yii\web\Controller {
     public function actionOperaciondetailsserver() {
 
         try {
-
-            $requestData = $_REQUEST;
+            ini_set('memory_limit','-1');
+            $requestData = $_REQUEST;            
 
             $columns = array(
                 0 => 'sabana_reporte_operacion_id',
@@ -745,8 +745,7 @@ class ReportsController extends \yii\web\Controller {
             }
 
             if (!empty($requestData['export'])) {
-                if ($requestData['export'] == 'csv') {
-                    ini_set('memory_limit','2048M');
+                if ($requestData['export'] == 'csv') {                    
                     ob_start();
                     ob_start('ob_gzhandler');
                     header('Content-Type: text/csv; charset=windows-1251');
@@ -1086,9 +1085,8 @@ class ReportsController extends \yii\web\Controller {
     public function actionInstalaciondetailsserver() {
 
         try {
-
-            $requestData = $_REQUEST;
-
+            ini_set('memory_limit','-1');
+            $requestData = $_REQUEST;            
             $columns = array(
                 0 => 'sabana_reporte_instalacion_id',
                 1 => 'Operador',
