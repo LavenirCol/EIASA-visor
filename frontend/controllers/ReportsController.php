@@ -617,49 +617,37 @@ class ReportsController extends \yii\web\Controller {
                 53 => 'Estratos',
                 54 => 'Beneficiario_Ley_1699_de_2013',
                 55 => 'SISBEN_IV',
-            );
-
-
-            $totalData = Yii::$app->db->createCommand('SELECT COUNT(*) FROM sabana_reporte_operacion')->queryScalar();
+            );                       
+            $dataReport = (new \yii\db\Query())->from('sabana_reporte_operacion');
+            $totalData = $dataReport->count(); 
             $totalFiltered = $totalData;
-
-            $sql = "SELECT * FROM `sabana_reporte_operacion` where 1=1 ";
-
             if (!empty($requestData['search']['value'])) {
-                $sql .= " AND ( Documento_cliente_acceso LIKE '" . $requestData['search']['value'] . "%' ";
-                $sql .= " OR Dane_Mun_ID_Punto LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Departamento LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Municipio LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Nombre_Cliente LIKE '" . $requestData['search']['value'] . "%')";
+                $dataReport->Where(['LIKE', 'Documento_cliente_acceso', $requestData['search']['value'].'%', false ])
+                ->orWhere(['LIKE', 'Dane_Mun_ID_Punto', $requestData['search']['value'].'%', false ])
+                ->orWhere(['LIKE', 'Departamento', $requestData['search']['value'].'%', false ])
+                ->orWhere(['LIKE', 'Municipio', $requestData['search']['value'].'%', false ])
+                ->orWhere(['LIKE', 'Nombre_Cliente', $requestData['search']['value'].'%', false ]);
             }
 
             $pdptos = empty($requestData['dptos']) ? '-1' : $requestData['dptos'];
             $pmpios = empty($requestData['mpios']) ? '-1' : $requestData['mpios'];
-
             if ($pdptos != '-1') {
-                $sql .= " AND Departamento = '" . $pdptos . "'";
+                $dataReport->andWhere(['=','Departamento',$pdptos]);                
             }
-            if ($pmpios != '-1') {
-                $sql .= " AND Municipio = '" . $pmpios . "'";
+            if ($pmpios != '-1') {                
+                $dataReport->andWhere(['=','Municipio',$pmpios]); 
             }
-
-            if (!empty($requestData['export'])) {
-                
-            } else {
-                $sqlc = str_replace("*", "COUNT(*)", $sql);
-                $totalFiltered = Yii::$app->db->createCommand($sqlc)->queryScalar();
-
-                $sql .= " ORDER BY " . $columns[$requestData['order'][0]['column']] . "   " . $requestData['order'][0]['dir'] . "  LIMIT " . $requestData['start'] . " ," .
-                        $requestData['length'] . "   ";
+            if (empty($requestData['export'])){
+                $totalFiltered = $dataReport->count();
+                $order =  ($requestData['order'][0]['dir'] == 'asc') ?  SORT_ASC : SORT_DESC;
+                $dataReport->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
+                $dataReport->offset($requestData['start']);
+                $dataReport->limit($requestData['length']);
             }
-
-
-            $result = Yii::$app->db->createCommand($sql)->queryAll();
-
+            $result = $dataReport->all();
             $data = array();
             foreach ($result as $key => $row) {
                 $nestedData = array();
-//                $nestedData[] = $row['sabana_reporte_operacion_id'];
                 $nestedData[] = $row['Operador'];
                 $nestedData[] = $row['Documento_cliente_acceso'];
                 $nestedData[] = $row['Dane_Mun_ID_Punto'];
@@ -1152,43 +1140,39 @@ class ReportsController extends \yii\web\Controller {
             $totalData = Yii::$app->db->createCommand('SELECT COUNT(*) FROM sabana_reporte_instalacion')->queryScalar();
             $totalFiltered = $totalData;
 
+            $dataReport = (new \yii\db\Query())->from('sabana_reporte_instalacion');
+            
             $sql = "SELECT * FROM `sabana_reporte_instalacion` where 1=1 ";
 
             if (!empty($requestData['search']['value'])) {
-                $sql .= " AND ( Documento_cliente_acceso LIKE '" . $requestData['search']['value'] . "%' ";
-                $sql .= " OR Dane_Mun_ID_Punto LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Departamento LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Municipio LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Nombre_Cliente LIKE '" . $requestData['search']['value'] . "%')";
+                $dataReport->Where(['LIKE', 'Documento_cliente_acceso',  $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Dane_Mun_ID_Punto',  $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Departamento',  $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Municipio',  $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Nombre_Cliente',  $requestData['search']['value']."%", false]);
             }
 
             $pdptos = empty($requestData['dptos']) ? '-1' : $requestData['dptos'];
             $pmpios = empty($requestData['mpios']) ? '-1' : $requestData['mpios'];
 
-            if ($pdptos != '-1') {
-                $sql .= " AND Departamento = '" . $pdptos . "'";
+            if ($pdptos != '-1') {               
+                $dataReport->andWhere(['=', 'Departamento',  $pdptos, false]);
             }
             if ($pmpios != '-1') {
-                $sql .= " AND Municipio = '" . $pmpios . "'";
+                $dataReport->andWhere(['=', 'Municipio',  $pmpios, false]);
             }
 
-            if (!empty($requestData['export'])) {
-                
-            } else {
-                $sqlc = str_replace("*", "COUNT(*)", $sql);
-                $totalFiltered = Yii::$app->db->createCommand($sqlc)->queryScalar();
-
-                $sql .= " ORDER BY " . $columns[$requestData['order'][0]['column']] . "   " . $requestData['order'][0]['dir'] . "  LIMIT " . $requestData['start'] . " ," .
-                        $requestData['length'] . "   ";
+            if (empty($requestData['export'])){                
+                $totalFiltered = $dataReport->count();
+                $order =  ($requestData['order'][0]['dir'] == 'asc') ?  SORT_ASC : SORT_DESC;
+                $dataReport->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
+                $dataReport->offset($requestData['start']);
+                $dataReport->limit($requestData['length']);
             }
-
-
-            $result = Yii::$app->db->createCommand($sql)->queryAll();
-
+            $result = $dataReport->all();
             $data = array();
             foreach ($result as $key => $row) {
                 $nestedData = array();
-//                $nestedData[] = $row['sabana_reporte_instalacion_id'];
                 $nestedData[] = $row['Operador'];
                 $nestedData[] = $row['Documento_cliente_acceso'];
                 $nestedData[] = $row['Dane_Mun_ID_Punto'];

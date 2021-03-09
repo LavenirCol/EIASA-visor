@@ -26,7 +26,7 @@ use \yii\helpers\Url;
                         </li>
                         <li style="width:100px;"></li>
                         <li>        
-                            <select class="custom-select" id="dptos" name="deptos">
+                            <select class="custom-select" id="dptos" name="dptos">
                                 <option value="-1">--Seleccione--</option>
                                 <?php foreach ($deptos as $depto) { ?>
                                     <option value="<?php echo $depto['Departamento']; ?>"><?php echo $depto['Departamento']; ?></option>
@@ -34,7 +34,7 @@ use \yii\helpers\Url;
                             </select>
                         </li>
                         <li>
-                            <a href="#" onclick="$('#dptos').val() == '-1' ? '' : window.open('<?php echo Url::toRoute('reports/operaciondetailsserver'); ?>?export=csv&deptos=' + $('#dptos').val());" class="btn btn-sm btn-primary">Descargar Departamento</a>        
+                           &nbsp;<a href="#" onclick="$('#dptos').val() == '-1' ? '' : window.open('<?php echo Url::toRoute('reports/operaciondetailsserver'); ?>?export=csv&dptos=' + $('#dptos').val());" class="btn btn-sm btn-primary">Descargar Departamento</a>        
                         </li>
                     </ol>
                 </nav>        
