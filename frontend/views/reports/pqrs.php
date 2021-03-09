@@ -42,7 +42,13 @@
                     </select>
                 </div>
                 <div class="col-lg-2">
-
+                    <label class="label-form" label-for="daneCodeFilter">Código DANE</label>
+                    <select class="custom-select" id="daneCodeFilter" name="daneCodeFilter">
+                        <option value="-1">--Seleccione--</option>
+                        <?php foreach ($daneCodeList as $daneCodeItem) { ?>
+                            <option value="<?php echo $daneCodeItem['daneCode']; ?>"><?php echo $daneCodeItem['daneCode']; ?></option>
+                        <?php } ?>
+                    </select>
                 </div>
                 <div class="col-lg-2">
 
@@ -59,12 +65,14 @@
     </form>        
     <div class="container pd-x-0 pd-lg-x-10 pd-xl-x-0">
       <div class="row">
+      <p>&nbsp;</p>
           <div class="col-lg-12 mb-5">
             <table class="table table-condensed table-striped responsive" style="width:100%" id="dataTablePqrs">
                 <thead>
                     <tr>
                         <th data-priority="1" width="10%">Departamento</th>
                         <th data-priority="2" width="10%">Municipio</th>
+                        <th data-priority="2" width="10%">Código DANE</th>
                         <th data-priority="3" width="10%">Código Acceso</th>
                         <th data-priority="4" width="15%">Cliente</th>
                         <th data-priority="5" width="10%">Ref Ticket</th>

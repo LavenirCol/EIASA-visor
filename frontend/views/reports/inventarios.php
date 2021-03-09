@@ -41,7 +41,7 @@
                     </select>
                 </div>
                 <div class="col-lg-2 pd-4">
-                    <label class="label-form" label-for="mpios">Código DANE</label>
+                    <label class="label-form" label-for="daneCodeFilter">Código DANE</label>
                     <select class="custom-select" id="daneCodeFilter" name="daneCodeFilter">
                         <option value="-1">--Seleccione--</option>
                         <?php foreach ($daneCodeList as $daneCodeItem){ ?>

@@ -222,9 +222,20 @@ class ReportsController extends \yii\web\Controller {
         $sql = "SELECT distinct c.town FROM tickets t inner join client c on t.fk_soc = c.idClient";
         $mpios = $connection->createCommand($sql)->queryAll();
 
+        $daneCodeList = (new \yii\db\Query())
+            ->select(['daneCode' => 'sys_district.code'])
+            ->from('tickets')
+            ->innerJoin('client', 'tickets.fk_soc = client.idClient')
+            ->innerJoin('sys_city', 'sys_city.name = client.state')
+            ->innerJoin('sys_district', 'upper(sys_district.name) = upper(client.town) and sys_city.id = sys_district.id_city')
+            ->distinct()
+            ->orderBy(['daneCode' => SORT_ASC])
+            ->all();
+
         return $this->render('pqrs', [
                     'deptos' => $deptos,
-                    'mpios' => $mpios
+                    'mpios' => $mpios,
+                    'daneCodeList' => $daneCodeList,
         ]);
     }
 
@@ -1539,7 +1550,7 @@ class ReportsController extends \yii\web\Controller {
                 13 => 'messages',
                 14 => 'idClient',
                 15 => 'entity',
-                16 => 'name',
+                16 => 'client.name',
                 17 => 'state_id',
                 18 => 'state_code',
                 19 => 'state',
@@ -1556,12 +1567,15 @@ class ReportsController extends \yii\web\Controller {
                 30 => 'address',
                 31 => 'lat',
                 32 => 'lng'
-            );                    
+            );            
             $totalData = Yii::$app->db->createCommand('SELECT COUNT(*) FROM tickets t inner join client c on t.fk_soc = c.idClient')->queryScalar();
             $totalFiltered = $totalData;
             $queryTickets = (new \yii\db\Query())
+            ->select(['state','town','daneCode' => 'sys_district.code','access_id','name' => 'client.name','tickets.ref','category_label','type_label','severity_label','subject','datec','date_close','idprof1','phone','email','address','lat','lng','tickets.message', 'tickets.messages'])            
             ->from('tickets')
-            ->innerJoin('client', 'tickets.fk_soc = client.idClient');
+            ->innerJoin('client', 'tickets.fk_soc = client.idClient')
+            ->innerJoin('sys_city', 'sys_city.name = client.state')
+            ->innerJoin('sys_district', 'upper(sys_district.name) = upper(client.town) and sys_city.id = sys_district.id_city');
             if (!empty($requestData['search']['value']))
             {
                 $queryTickets->Where(['LIKE', 'tickets.ref', $requestData['search']['value']."%", false])
@@ -1573,16 +1587,21 @@ class ReportsController extends \yii\web\Controller {
                  ->orWhere(['LIKE', 'client.name', $requestData['search']['value']."%", false])
                  ->orWhere(['LIKE', 'client.state', $requestData['search']['value']."%", false])
                  ->orWhere(['LIKE', 'client.town', $requestData['search']['value']."%", false])
-                 ->orWhere(['LIKE', 'client.code_client', $requestData['search']['value']."%", false]);                 
+                 ->orWhere(['LIKE', 'client.code_client', $requestData['search']['value']."%", false]) 
+                 ->orWhere(['LIKE', 'sys_district.code', $requestData['search']['value']."%", false]);                 
             }
             $pdptos = empty($requestData['dptos']) ? '-1' : $requestData['dptos'];
             $pmpios = empty($requestData['mpios']) ? '-1' : $requestData['mpios'];
+            $daneCodeFilter = empty($requestData['daneCodeFilter']) ? '-1' : $requestData['daneCodeFilter'];
 
             if ($pdptos != '-1') {
                 $queryTickets->andWhere(['=', 'state', $pdptos]);
             }
             if ($pmpios != '-1') {
                 $queryTickets->andWhere(['=', 'town', $pmpios]);
+            }
+            if ($daneCodeFilter != '-1') {
+                $queryTickets->andWhere(['=', 'sys_district.code', $daneCodeFilter]);
             }
             if (empty($requestData['export'])) 
             {
@@ -1599,6 +1618,7 @@ class ReportsController extends \yii\web\Controller {
                 $nestedData = array();
                 $nestedData[] = $row['state'];
                 $nestedData[] = $row['town'];
+                $nestedData[] = $row['daneCode'];
                 $nestedData[] = $row['access_id'];
                 $nestedData[] = $row['name'];
                 $nestedData[] = $row['ref'];
@@ -1704,7 +1724,7 @@ class ReportsController extends \yii\web\Controller {
                 ob_end_flush();
             }
         } catch (\Exception $ex) {
-            $returndata = ['error' => $ex->getTrace()];
+            $returndata = ['error' => $ex->__toString()];
             echo json_encode($returndata);
         }
     }
