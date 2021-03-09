@@ -1156,10 +1156,10 @@ class ReportsController extends \yii\web\Controller {
             $pmpios = empty($requestData['mpios']) ? '-1' : $requestData['mpios'];
 
             if ($pdptos != '-1') {               
-                $dataReport->andWhere(['=', 'Departamento',  $pdptos, false]);
+                $dataReport->andWhere(['=', 'Departamento',  $pdptos]);
             }
             if ($pmpios != '-1') {
-                $dataReport->andWhere(['=', 'Municipio',  $pmpios, false]);
+                $dataReport->andWhere(['=', 'Municipio',  $pmpios]);
             }
 
             if (empty($requestData['export'])){                
