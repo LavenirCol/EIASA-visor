@@ -112,8 +112,9 @@ use yii\helpers\Url;
                             <th>Fecha_Activo</th>
                             <th>Fecha_inicio_operación</th>
                             <th>Fecha_Solicitud_Traslado_PQR</th>
-                            <th>Semáforo</th>
+                            <th>Semáforo_Solicitud_Traslado_PQR</th>
                             <th>Fecha_Inactivo</th>
+                            <th>Semáforo_Fecha_Inactivo</th>
                             <th>Fecha_Desinstalado</th>
                             <th>Sexo</th>
                             <th>Genero</th>

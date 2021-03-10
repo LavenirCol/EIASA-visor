@@ -22,7 +22,7 @@
     <form method="post">
         <div class="container bd bd-2 p-3 rounded-10">
             <div class="row">
-                <div class="col-lg-2">
+                <div class="col-lg-2 pd-4">
                     <label class="label-form" label-for="deptos">Departamento</label>
                     <select class="custom-select" id="dptos" name="deptos">
                         <option value="-1">--Seleccione--</option>
@@ -31,7 +31,7 @@
                         <?php } ?>
                     </select>
                 </div>
-                <div class="col-lg-2">
+                <div class="col-lg-2 pd-4">
                     <label class="label-form" label-for="mpios">Municipio</label>
                     <select class="custom-select" id="mpios" name="mpios">
                         <option value="-1">--Seleccione--</option>
@@ -40,7 +40,16 @@
                         <?php } ?>
                     </select>
                 </div>
-                <div class="col-lg-2">
+                <div class="col-lg-2 pd-4">
+                    <label class="label-form" label-for="daneCodeFilter">Código DANE</label>
+                    <select class="custom-select" id="daneCodeFilter" name="daneCodeFilter">
+                        <option value="-1">--Seleccione--</option>
+                        <?php foreach ($daneCodeList as $daneCodeItem){ ?>
+                            <option value="<?php echo $daneCodeItem['district_code']; ?>"><?php echo $daneCodeItem['district_code']; ?></option>
+                        <?php } ?>
+                    </select>
+                </div>
+                <div class="col-lg-2 pd-4">
                     <label class="label-form" label-for="materials">Material</label>
                     <select class="custom-select" id="materials" name="materials">
                         <option value="-1">--Seleccione--</option>
@@ -49,7 +58,7 @@
                         <?php } ?>
                     </select>
                 </div>
-                <div class="col-lg-2">
+                <div class="col-lg-2 pd-4">
                     <label class="label-form" label-for="factories">Fabricante</label>
                     <select class="custom-select" id="factories" name="factories">
                         <option value="-1">--Seleccione--</option>
@@ -58,7 +67,7 @@
                         <?php } ?>
                     </select>
                 </div>
-                <div class="col-lg-2">
+                <div class="col-lg-2 pd-4">
                     <label class="label-form" label-for="models">Modelo</label>
                     <select class="custom-select" id="models" name="models">
                         <option value="-1">--Seleccione--</option>
@@ -67,7 +76,7 @@
                         <?php } ?>
                     </select>
                 </div>
-                <div class="col-lg-2">
+                <div class="col-lg-2 pd-4">
                     <button type="button" class="btn btn-primary btn-sm" id="btnsearch" style="width:100%">Buscar</button><br>
                     <button type="clear" class="btn btn-secondary btn-sm mt-2" style="width:100%">Borrar</button>
                 </div>

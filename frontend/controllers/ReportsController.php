@@ -41,9 +41,18 @@ class ReportsController extends \yii\web\Controller {
         $sql = "SELECT h.* FROM hsstock h limit 0";
         $rows = $connection->createCommand($sql)->queryAll();
 
+        $daneCodeList = (new \yii\db\Query())
+        ->select(['district_code'])
+        ->from('hsstock')
+        ->distinct()
+        ->orderBy(['district_code' => SORT_ASC])
+        ->all();
+        
+
         return $this->render('inventarios', [
                     'deptos' => $deptos,
                     'mpios' => $mpios,
+                    'daneCodeList' => $daneCodeList,
                     'materials' => $materials,
                     'factories' => $factories,
                     'models' => $models,
@@ -213,9 +222,20 @@ class ReportsController extends \yii\web\Controller {
         $sql = "SELECT distinct c.town FROM tickets t inner join client c on t.fk_soc = c.idClient";
         $mpios = $connection->createCommand($sql)->queryAll();
 
+        $daneCodeList = (new \yii\db\Query())
+            ->select(['daneCode' => 'sys_district.code'])
+            ->from('tickets')
+            ->innerJoin('client', 'tickets.fk_soc = client.idClient')
+            ->innerJoin('sys_city', 'sys_city.name = client.state')
+            ->innerJoin('sys_district', 'upper(sys_district.name) = upper(client.town) and sys_city.id = sys_district.id_city')
+            ->distinct()
+            ->orderBy(['daneCode' => SORT_ASC])
+            ->all();
+
         return $this->render('pqrs', [
                     'deptos' => $deptos,
-                    'mpios' => $mpios
+                    'mpios' => $mpios,
+                    'daneCodeList' => $daneCodeList,
         ]);
     }
 
@@ -227,8 +247,16 @@ class ReportsController extends \yii\web\Controller {
         $sql = "SELECT distinct Departamento FROM sabana_reporte_instalacion";
         $deptos = $connection->createCommand($sql)->queryAll();
 
+        $daneCodeList = (new \yii\db\Query())
+        ->select(['daneCode' => 'DANE'])
+        ->from('avances_metas_instalacion')
+        ->distinct()
+        ->orderBy(['daneCode' => SORT_ASC])
+        ->all();
+
         return $this->render('instalaciondash', [
                     'deptos' => $deptos,
+                    'daneCodeList' => $daneCodeList,
                     'insts' => $insts
         ]);
     }
@@ -246,7 +274,7 @@ class ReportsController extends \yii\web\Controller {
 
         $sql = "SELECT h.* FROM sabana_reporte_instalacion h WHERE CONCAT(Dane_Departamento,Dane_Municipio) = '$dane' ";
         $insts = $connection->createCommand($sql)->queryAll();
-        $municipio = $insts[0]['Departamento'] . ' - ' . $insts[0]['Municipio'];
+        $municipio = (isset($insts[0]['Departamento'],$insts[0]['Municipio'])) ? ($insts[0]['Departamento'] . ' - ' . $insts[0]['Municipio']) : '';
         return $this->render('instalaciondetails', array(
                     'deptos' => $deptos,
                     'mpios' => $mpios,
@@ -262,10 +290,152 @@ class ReportsController extends \yii\web\Controller {
         $sql = "SELECT distinct Departamento FROM sabana_reporte_operacion";
         $deptos = $connection->createCommand($sql)->queryAll();
 
+        $daneCodeList = (new \yii\db\Query())
+        ->select(['daneCode' => 'DANE'])
+        ->from('avances_meta_operacion')
+        ->distinct()
+        ->orderBy(['daneCode' => SORT_ASC])
+        ->all();
+
         return $this->render('operaciondash', [
                     'deptos' => $deptos,
+                    'daneCodeList' => $daneCodeList,
                     'insts' => $insts
         ]);        
+    }
+
+    public function actionOperaciondashserver() {
+
+        try {
+            $requestData = $_REQUEST;           
+            $columns = array(
+                0 => 'DANE',
+                1 => 'Departamento',
+                2 => 'Municipio',
+                3 => 'Meta',
+                4 => 'Beneficiarios_En_Operacion',
+                5 => 'Meta_Tiempo_en_servicio',
+                6 => 'Tiempo_en_servicio',
+                7 => 'Avance'
+            );
+
+            $totalData = (new \yii\db\Query())->from('avances_meta_operacion')->count();
+            $totalFiltered = $totalData;
+
+            $dataReport = (new \yii\db\Query())
+            ->select(
+                [
+                    "DANE",
+                    "Departamento",
+                    "Municipio",
+                    "Meta" => "CONVERT(SUBSTRING_INDEX(`Meta`,'-',-1),UNSIGNED INTEGER)",
+                    "Beneficiarios_En_Operacion" => "CONVERT(SUBSTRING_INDEX(`Beneficiarios_En_Operacion`,'-',-1),UNSIGNED INTEGER)",
+                    "Meta_Tiempo_en_servicio" => "CONVERT(SUBSTRING_INDEX(`Meta_Tiempo_en_servicio`,'-',-1),UNSIGNED INTEGER)",
+                    "Tiempo_en_servicio" => "(Tiempo_en_servicio + 0.0)",
+                    "Avance" => "(Avance + 0.0)"
+                ]
+            )
+            ->from('avances_meta_operacion');
+            if (!empty($requestData['search']['value'])){
+                $dataReport->Where(['LIKE', 'DANE', $requestData['search']['value']."%", false])                
+                ->orWhere(['LIKE', 'Departamento', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Municipio', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Meta', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Beneficiarios_En_Operacion', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Meta_Tiempo_en_servicio', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Tiempo_en_servicio', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Avance', $requestData['search']['value']."%", false]);  
+            }            
+            $daneCodeFilter = empty($requestData['daneCodeFilter']) ? '-1' : $requestData['daneCodeFilter'];            
+            if ($daneCodeFilter != '-1') {
+                $dataReport->andWhere(['=', 'DANE', $daneCodeFilter]);
+            }
+
+            if (empty($requestData['export'])){
+                $totalFiltered = $dataReport->count();
+                $order =  ($requestData['order'][0]['dir'] == 'asc') ?  SORT_ASC : SORT_DESC;                
+                $dataReport->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
+                $dataReport->offset($requestData['start']);
+                $dataReport->limit($requestData['length']);     
+            }            
+            $result = $dataReport->all();
+            $data = array();
+            foreach ($result as $key => $row) {
+                $nestedData = array();
+                $nestedData[] = $row["DANE"];
+                $nestedData[] = $row["Departamento"];
+                $nestedData[] = $row['Municipio'];
+                $nestedData[] = number_format($row["Meta"],0,",",".");
+                $nestedData[] = number_format($row["Beneficiarios_En_Operacion"],0,",",".");
+                $nestedData[] = number_format($row["Meta_Tiempo_en_servicio"],0,",",".");
+                $nestedData[] = number_format($row["Tiempo_en_servicio"],0,",",".");
+                $nestedData[] = number_format($row["Avance"],2,",",".")." %";
+                $nestedData[] = ($row['Beneficiarios_En_Operacion'] > 0  && empty($requestData['export'])) ? "<a href='".Url::toRoute('reports/operaciondetails')."?dane=".$row['DANE']."' class='btn btn-sm btn-primary'>Detalles</a>" : "";
+                $data[] = $nestedData;
+            }
+
+            if (!empty($requestData['export'])) {
+                if ($requestData['export'] == 'csv') {
+                    ob_start();
+                    ob_start('ob_gzhandler');
+                    header('Content-Type: text/csv; charset=windows-1251');
+                    header('Content-Disposition: attachment; filename=Dashboard Operación.csv');
+                    $output = fopen('php://output', 'w');
+                    fwrite($output, "\xEF\xBB\xBF");
+                    fputcsv($output, ['DANE', 'Departamento', 'Municipio', 'Meta', 'Beneficiarios Instalados', 'Meta Tiempo en Servicio','Tiempo en Servicio','Avance'], ';');
+                    $index=0;
+                    foreach ($data as $key => $value) {                        
+                        fputcsv($output, $value, ';');
+                    }
+                    fclose($output);
+                    ob_end_flush();
+                }
+                if ($requestData['export'] == 'pdf') {
+                    $pdf = new Fpdf();
+                    /* Column headings */
+                    $header = array('DANE', 'Departamento', 'Municipio', 'Meta', 'Beneficiarios Instalados', 'Meta Tiempo en Servicio','Tiempo en Servicio','Avance');
+                    /* Data loading */
+                    $pdf->AddPage('L', 'Legal');
+                    $pdf->SetFont('Courier', 'B', 10);
+                    /* Column widths */
+                    $w = array(30, 40, 60, 20, 60, 60, 40, 30);
+                    /* Header */
+                    for ($index = 0; $index < count($header); $index++){
+                        $pdf->Cell($w[$index], 7, utf8_decode($header[$index]), 1, 0, 'C');
+                    }
+                    $pdf->Ln();
+                    /* Data */
+                    $pdf->SetFont('Courier', '', 10);
+                    foreach ($data as $row) {
+                        for ($index = 0; $index < 8; $index++){
+                            if($index > 2)
+                            {
+                                $pdf->Cell($w[$index], 6, utf8_decode($row[$index]), 1,0,'R');
+                            }else{
+                                $pdf->Cell($w[$index], 6, utf8_decode($row[$index]), 1,0,'L');
+                            }                            
+                        }
+                        $pdf->Ln();
+                    }
+                    /* Closing line */
+                    $pdf->Cell(array_sum($w), 0, '', 'T');
+                    $pdf->Output('D', 'Dashboard Operación.pdf', true);
+                }
+            } else {
+
+                $json_data = array(
+                    "draw" => intval($requestData['draw']),
+                    "recordsTotal" => intval($totalData),
+                    "recordsFiltered" => intval($totalFiltered),
+                    "data" => $data   // total data array
+                );
+
+                return json_encode($json_data);
+            }
+        }catch (\Exception $ex){
+            $returndata = ['error' => $ex->getMessage()];
+            return json_encode($returndata);
+        }
     }
 
     public function actionOperaciondetails() {
@@ -298,13 +468,148 @@ class ReportsController extends \yii\web\Controller {
         $sql = "SELECT * FROM sabana_reporte_cambios_reemplazos";
         $insts = $connection->createCommand($sql)->queryAll();
 
+        $daneCodeList = (new \yii\db\Query())
+        ->select(['daneCode' => 'Concat(Dane_Departamento_Old, Dane_Municipio_Old)'])
+        ->from('sabana_reporte_cambios_reemplazos')
+        ->distinct()
+        ->orderBy(['daneCode' => SORT_ASC])
+        ->all();
+
         return $this->render('cambiosreemplazos', array(
                     'deptos' => $deptos,
                     'mpios' => $mpios,
+                    'daneCodeList' => $daneCodeList,
                     'insts' => $insts));
     }
 
     /// Server side
+    public function actionInstalaciondashserver() {
+
+        try {
+            $requestData = $_REQUEST;           
+            $columns = array(
+                0 => 'DANE',
+                1 => 'Departamento',
+                2 => 'Municipio',
+                3 => 'Meta',
+                4 => 'Beneficiarios_Instalados',
+                5 => 'Avance'
+            );
+
+            $totalData = (new \yii\db\Query())->from('avances_metas_instalacion')->count();
+            $totalFiltered = $totalData;
+
+            $dataReport = (new \yii\db\Query())
+            ->select(
+                [
+                    "DANE",
+                    "Departamento",
+                    "Municipio",
+                    "Meta" => "CONVERT(SUBSTRING_INDEX(`Meta`,'-',-1),UNSIGNED INTEGER)",
+                    "Beneficiarios_Instalados" => "CONVERT(SUBSTRING_INDEX(`Beneficiarios_Instalados`,'-',-1),UNSIGNED INTEGER)",
+                    "Avance" => "(Avance + 0.0)"
+                ]
+            )
+            ->from('avances_metas_instalacion');
+            if (!empty($requestData['search']['value'])){
+                $dataReport->Where(['LIKE', 'DANE', $requestData['search']['value']."%", false])                
+                ->orWhere(['LIKE', 'Departamento', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Municipio', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Meta', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Beneficiarios_Instalados', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Avance', $requestData['search']['value']."%", false]);  
+            }            
+            $daneCodeFilter = empty($requestData['daneCodeFilter']) ? '-1' : $requestData['daneCodeFilter'];            
+            if ($daneCodeFilter != '-1') {
+                $dataReport->andWhere(['=', 'DANE', $daneCodeFilter]);
+            }
+
+            if (empty($requestData['export'])){
+                $totalFiltered = $dataReport->count();
+                $order =  ($requestData['order'][0]['dir'] == 'asc') ?  SORT_ASC : SORT_DESC;                
+                $dataReport->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
+                $dataReport->offset($requestData['start']);
+                $dataReport->limit($requestData['length']);     
+            }            
+            $result = $dataReport->all();
+            $data = array();
+            foreach ($result as $key => $row) {
+                $nestedData = array();
+                $nestedData[] = $row["DANE"];
+                $nestedData[] = $row["Departamento"];
+                $nestedData[] = $row['Municipio'];
+                $nestedData[] = number_format($row["Meta"],0,",",".");
+                $nestedData[] = number_format($row["Beneficiarios_Instalados"],0,",",".");
+                $nestedData[] = number_format($row["Avance"],2,",",".")." %";
+                $nestedData[] = ($row['Beneficiarios_Instalados'] > 0  && empty($requestData['export'])) ? "<a href='".Url::toRoute('reports/instalaciondetails')."?dane=".$row['DANE']."' class='btn btn-sm btn-primary'>Detalles</a>" : "";
+                $data[] = $nestedData;
+            }
+
+            if (!empty($requestData['export'])) {
+                if ($requestData['export'] == 'csv') {
+                    ob_start();
+                    ob_start('ob_gzhandler');
+                    header('Content-Type: text/csv; charset=windows-1251');
+                    header('Content-Disposition: attachment; filename=Dashboard Instalación.csv');
+                    $output = fopen('php://output', 'w');
+                    fwrite($output, "\xEF\xBB\xBF");
+                    fputcsv($output, ['DANE', 'Departamento', 'Municipio', 'Meta', 'Beneficiarios Instalados', 'Avances'], ';');
+                    $index=0;
+                    foreach ($data as $key => $value) {                        
+                        fputcsv($output, $value, ';');
+                    }
+                    fclose($output);
+                    ob_end_flush();
+                }
+                if ($requestData['export'] == 'pdf') {
+                    $pdf = new Fpdf();
+                    /* Column headings */
+                    $header = array('DANE', 'Departamento', 'Municipio', 'Meta', 'Beneficiarios Instalados', 'Avances');
+                    /* Data loading */
+                    $pdf->AddPage('L', 'Legal');
+                    $pdf->SetFont('Courier', 'B', 12);
+                    /* Column widths */
+                    $w = array(30, 40, 70, 40, 70, 30);
+                    /* Header */
+                    for ($index = 0; $index < count($header); $index++){
+                        $pdf->Cell($w[$index], 7, utf8_decode($header[$index]), 1, 0, 'C');
+                    }
+                    $pdf->Ln();
+                    /* Data */
+                    $pdf->SetFont('Courier', '', 10);
+                    foreach ($data as $row) {
+                        for ($index = 0; $index < 6; $index++){
+                            if($index > 2)
+                            {
+                                $pdf->Cell($w[$index], 6, utf8_decode($row[$index]), 1,0,'R');
+                            }else{
+                                $pdf->Cell($w[$index], 6, utf8_decode($row[$index]), 1,0,'L');
+                            }                            
+                        }
+                        $pdf->Ln();
+                    }
+                    /* Closing line */
+                    $pdf->Cell(array_sum($w), 0, '', 'T');
+                    $pdf->Output('D', 'Dashboard Instalación.pdf', true);
+                }
+            } else {
+
+                $json_data = array(
+                    "draw" => intval($requestData['draw']),
+                    "recordsTotal" => intval($totalData),
+                    "recordsFiltered" => intval($totalFiltered),
+                    "data" => $data   // total data array
+                );
+
+                return json_encode($json_data);
+            }
+        }catch (\Exception $ex){
+            $returndata = ['error' => $ex->getMessage()];
+            return json_encode($returndata);
+        }
+    }
+
+
 
     public function actionInventariosserver() {
 
@@ -336,51 +641,50 @@ class ReportsController extends \yii\web\Controller {
             $totalData = Yii::$app->db->createCommand('SELECT COUNT(*) FROM hsstock')->queryScalar();
             $totalFiltered = $totalData;
 
-            $sql = "SELECT * FROM `hsstock` where 1=1 ";
-
-            if (!empty($requestData['search']['value'])) {
-                $sql .= " AND ( name LIKE '" . $requestData['search']['value'] . "%' ";
-                $sql .= " OR sku LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR location LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR city LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR district LIKE '" . $requestData['search']['value'] . "%')";
+            $hsStockData = (new \yii\db\Query())->from('hsstock');
+            if (!empty($requestData['search']['value'])){
+                $hsStockData->Where(['LIKE', 'name', $requestData['search']['value']."%", false])                
+                ->orWhere(['LIKE', 'sku', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'location', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'city', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'district', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'district_code', $requestData['search']['value']."%", false]);  
             }
-
             $pdptos = empty($requestData['dptos']) ? '-1' : $requestData['dptos'];
             $pmpios = empty($requestData['mpios']) ? '-1' : $requestData['mpios'];
+            $daneCodeFilter = empty($requestData['daneCodeFilter']) ? '-1' : $requestData['daneCodeFilter'];
             $pmaterials = empty($requestData['materials']) ? '-1' : $requestData['materials'];
             $pfactories = empty($requestData['factories']) ? '-1' : $requestData['factories'];
             $pmodels = empty($requestData['models']) ? '-1' : $requestData['models'];
 
-            if ($pdptos != '-1') {
-                $sql .= " AND city = '" . $pdptos . "'";
+            if ($pdptos != '-1') {                
+                $hsStockData->andWhere(['=', 'city', $pdptos]);
             }
-            if ($pmpios != '-1') {
-                $sql .= " AND district = '" . $pmpios . "'";
+            if ($pmpios != '-1') {                
+                $hsStockData->andWhere(['=', 'district', $pmpios]);
             }
-            if ($pmaterials != '-1') {
-                $sql .= " AND name = '" . $pmaterials . "'";
+            if ($pmaterials != '-1') {                
+                $hsStockData->andWhere(['=', 'name', $pmaterials]);
             }
             if ($pfactories != '-1') {
-                $sql .= " AND factory = '" . $pfactories . "'";
+                $hsStockData->andWhere(['=', 'factory', $pfactories]);
             }
             if ($pmodels != '-1') {
-                $sql .= " AND model = '" . $pmodels . "'";
+                $hsStockData->andWhere(['=', 'model', $pmodels]);
+            }
+            if ($daneCodeFilter != '-1') {
+                $hsStockData->andWhere(['=', 'district_code', $daneCodeFilter]);
             }
 
-            if (!empty($requestData['export'])) {
-                
-            } else {
-                $sqlc = str_replace("*", "COUNT(*)", $sql);
-                $totalFiltered = Yii::$app->db->createCommand($sqlc)->queryScalar();
-
-                $sql .= " ORDER BY " . $columns[$requestData['order'][0]['column']] . "   " . $requestData['order'][0]['dir'] . "  LIMIT " . $requestData['start'] . " ," .
-                        $requestData['length'] . "   ";
+            if (empty($requestData['export'])){
+                $totalFiltered = $hsStockData->count();
+                $order =  ($requestData['order'][0]['dir'] == 'asc') ?  SORT_ASC : SORT_DESC;
+                $pagination = new Pagination(['totalCount' => $totalFiltered, 'pageSize' => $requestData['length'], 'page' => $requestData['start']]);
+                $hsStockData->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
+                $hsStockData->offset($pagination->offset);
+                $hsStockData->limit($pagination->limit);     
             }
-
-
-            $result = Yii::$app->db->createCommand($sql)->queryAll();
-
+            $result = $hsStockData->all();
             $data = array();
             foreach ($result as $key => $row) {
                 $nestedData = array();
@@ -462,11 +766,11 @@ class ReportsController extends \yii\web\Controller {
                     "data" => $data   // total data array
                 );
 
-                echo json_encode($json_data);
+                return json_encode($json_data);
             }
         } catch (\Exception $ex) {
             $returndata = ['error' => $ex->getMessage()];
-            echo json_encode($returndata);
+            return json_encode($returndata);
         }
     }
 
@@ -607,6 +911,7 @@ class ReportsController extends \yii\web\Controller {
                 43 => 'Fecha_Solicitud_Traslado_PQR',
                 44 => 'Semaforo',
                 45 => 'Fecha_Inactivo',
+                45 => 'Fecha_Inactivo2',
                 46 => 'Fecha_Desinstalado',
                 47 => 'Sexo',
                 48 => 'Genero',
@@ -691,33 +996,9 @@ class ReportsController extends \yii\web\Controller {
                 $nestedData[] = $this->formatdate($row['Fecha_Activo']);
                 $nestedData[] = $this->formatdate($row['Fecha_inicio_operación']);
                 $nestedData[] = $this->formatdate($row['Fecha_Solicitud_Traslado_PQR']);
-                $diasp = 0;
-                $semaforo = 'blanco';
-                // calcula dias
-                // Punto 5: el semáforo debe quedar así: 0 - 5  días (verde), 6-10 días (amarillo), 11 a 15 días (rojo) y > a 15 días hábiles morado.
-                if (isset($row['Fecha_Solicitud_Traslado_PQR'])) {
-                    if ($row['Fecha_Solicitud_Traslado_PQR'] !== '') {
-                        $d = $row['Fecha_Solicitud_Traslado_PQR'];
-                        $CheckInX = explode("/", $d);
-                        $date1 = mktime(0, 0, 0, $CheckInX[1], $CheckInX[0], $CheckInX[2]);
-                        $date2 = time();
-                        $diasp = ceil(($date2 - $date1) / (3600 * 24));
-                    }
-                }
-                if ($diasp > 15) {
-                    $semaforo = 'morado';
-                }
-                if ($diasp > 11 && $diasp <= 15) {
-                    $semaforo = 'rojo';
-                }
-                if ($diasp > 6 && $diasp <= 10) {
-                    $semaforo = 'amarillo';
-                }
-                if ($diasp > 0 && $diasp <= 5) {
-                    $semaforo = 'verde';
-                }
-                $nestedData[] = $diasp . " días. <img src='" . Url::base(true) . "/img/bandera_" . $semaforo . ".png' alt='' width='16'/>";
+                $nestedData[] = $this->getFlagColor($row['Fecha_Solicitud_Traslado_PQR'], !empty($requestData['export']));
                 $nestedData[] = $this->formatdate($row['Fecha_Inactivo']);
+                $nestedData[] = $this->getFlagColor($row['Fecha_Inactivo'], !empty($requestData['export']));
                 $nestedData[] = $this->formatdate($row['Fecha_Desinstalado']);
                 $nestedData[] = $row['Sexo'];
                 $nestedData[] = $row['Genero'];
@@ -746,43 +1027,7 @@ class ReportsController extends \yii\web\Controller {
                     }
                     fclose($output);
                     ob_end_flush();
-                }
-                if ($requestData['export'] == 'pdf') {
-                    $pdf = new Fpdf();
-                    /* Column headings */
-                    $header = array('Operador', 'Documento_cliente_acceso', 'Dane_Mun_ID_Punto', 'Estado_actual', 'Region', 'Dane_Departamento', 'Departamento', 'Dane_Municipio', 'Municipio', 'Barrio', 'Direccion', 'Estrato', 'Dificultad__de_acceso_al_municipio', 'Coordenadas_Grados_decimales', 'Nombre_Cliente', 'Telefono', 'Celular', 'Correo_Electronico', 'VIP', 'Codigo_Proyecto_VIP', 'Nombre_Proyecto_VIP', 'Velocidad_Contratada_Downstream', 'Meta', 'Fecha_max_de_cumplimiento_de_meta', 'Tipo_Solucion_UM_Operatividad', 'Operador_Prestante', 'IP', 'Olt', 'PuertoOlt', 'Serial_ONT', 'Port_ONT', 'Nodo', 'Armario', 'Red_Primaria', 'Red_Secundaria', 'Nodo2', 'Amplificador', 'Tap_Boca', 'Mac_Cpe', 'Fecha_Instalado', 'Fecha_Activo', 'Fecha_inicio_operación', 'Fecha_Solicitud_Traslado_PQR', 'Fecha_Inactivo', 'Fecha_Desinstalado', 'Sexo', 'Genero', 'Orientacion_Sexual', 'Educacion_', 'Etnias', 'Discapacidad', 'Estratos', 'Beneficiario_Ley_1699_de_2013', 'SISBEN_IV');
-                    /* Data loading */
-                    $pdf->AddPage('L', 'Legal');
-                    $pdf->SetFont('Courier', '', 6);
-                    /* Column widths */
-                    $w = array(30, 27, 20, 8, 20, 10, 20, 95, 15, 15, 10, 10, 20, 15, 28);
-                    /* Header */
-                    for ($i = 0; $i < count($header); $i++) {
-                        $pdf->Cell($w[$i], 7, utf8_decode($header[$i]), 1, 0, 'C');
-                    }
-                    $pdf->Ln();
-                    /* Data */
-                    foreach ($data as $row) {
-                        for ($i = 0; $i < 7; $i++) {
-                            $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
-                        }
-
-                        $barr = utf8_decode($row[7]);
-                        if (strlen($barr) > 70) {
-                            $barr = substr($barr, 0, 70) . '...';
-                        }
-
-                        $pdf->Cell($w[7], 6, $barr, 'LR');
-
-                        for ($i = 8; $i < 15; $i++) {
-                            $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
-                        }
-                        $pdf->Ln();
-                    }
-                    /* Closing line */
-                    $pdf->Cell(array_sum($w), 0, '', 'T');
-                    $pdf->Output('D', 'AccesosOperacionExport.pdf', true);
-                }
+                }                
             } else {
                 ob_start();
                 ob_start('ob_gzhandler');
@@ -882,46 +1127,44 @@ class ReportsController extends \yii\web\Controller {
                 70 => 'Tap_Boca_red_hfc_New',
                 71 => 'Mac_Cpe_New',
             );
-
-
-            $totalData = Yii::$app->db->createCommand('SELECT COUNT(*) FROM sabana_reporte_cambios_reemplazos')->queryScalar();
-            $totalFiltered = $totalData;
-
-            $sql = "SELECT * FROM `sabana_reporte_cambios_reemplazos` where 1=1 ";
-
+            $totalData = (new \yii\db\Query())->from('sabana_reporte_cambios_reemplazos')->count();
+            $totalFiltered = $totalData;           
+            $dataReport = (new \yii\db\Query())->from('sabana_reporte_cambios_reemplazos');
             if (!empty($requestData['search']['value'])) {
-                $sql .= " AND ( Documento_Cliente_Acceso_Old LIKE '" . $requestData['search']['value'] . "%' ";
-                $sql .= " OR Documento_Cliente_Acceso_New LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Dane_Municipio_Old LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Departamento_Old LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Municipio_Old LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Nombre_Cliente_Completo_Old LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Dane_Municipio_New LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Departamento_New LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Municipio_New LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR Nombre_Cliente_Completo_New LIKE '" . $requestData['search']['value'] . "%')";
+                $dataReport->Where(['LIKE', 'Documento_Cliente_Acceso_Old', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Documento_Cliente_Acceso_New', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Dane_Municipio_Old', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Departamento_Old', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Municipio_Old', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Nombre_Cliente_Completo_Old', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Dane_Municipio_New', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Departamento_New', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Municipio_New', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Nombre_Cliente_Completo_New', $requestData['search']['value']."%", false]);
             }
-
             $pdptos = empty($requestData['dptos']) ? '-1' : $requestData['dptos'];
             $pmpios = empty($requestData['mpios']) ? '-1' : $requestData['mpios'];
+            $daneCodeFilter = empty($requestData['daneCodeFilter']) ? '-1' : $requestData['daneCodeFilter'];
 
             if ($pdptos != '-1') {
-                $sql .= " AND Departamento_Old = '" . $pdptos . "'";
+                $dataReport->andWhere(['=', 'Departamento_Old', $pdptos]);
             }
-            if ($pmpios != '-1') {
-                $sql .= " AND Municipio_Old = '" . $pmpios . "'";
+            if ($pmpios != '-1') {                
+                $dataReport->andWhere(['=', 'Municipio_Old', $pmpios]);
+            }
+            if ($daneCodeFilter != '-1') {                
+                $dataReport->andWhere(['=', 'Concat(Dane_Departamento_Old, Dane_Municipio_Old)', $daneCodeFilter]);
             }
 
             if (empty($requestData['export'])) {
-                $sqlc = str_replace("*", "COUNT(*)", $sql);
-                $totalFiltered = Yii::$app->db->createCommand($sqlc)->queryScalar();
-
-                $sql .= " ORDER BY " . $columns[$requestData['order'][0]['column']] . "   " . $requestData['order'][0]['dir'] . "  LIMIT " . $requestData['start'] . " ," .
-                        $requestData['length'] . "   ";
+                $totalFiltered = $dataReport->count();
+                $order =  ($requestData['order'][0]['dir'] == 'asc') ?  SORT_ASC : SORT_DESC;
+                $pagination = new Pagination(['totalCount' => $totalFiltered, 'pageSize' => $requestData['length'], 'page' => $requestData['start']]);
+                $dataReport->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
+                $dataReport->offset($pagination->offset);
+                $dataReport->limit($pagination->limit);
             }
-
-
-            $result = Yii::$app->db->createCommand($sql)->queryAll();
+            $result =  $dataReport->all();
 
             $data = array();
             foreach ($result as $key => $row) {
@@ -1014,43 +1257,7 @@ class ReportsController extends \yii\web\Controller {
                     }
                     fclose($output);
                     ob_end_flush();
-                }
-                if ($requestData['export'] == 'pdf') {
-                    $pdf = new Fpdf();
-                    /* Column headings */
-                    $header = array('Ejecutor', 'Documento Cliente Acceso', 'Dane Mun - ID Punto', 'Estado Actual', 'Region', 'Dane Departamento', 'Departamento', 'Dane Municipio', 'Municipio', 'Barrio', 'Dirección', 'Estrato', 'Coordenadas Grados-decimales', 'Nombre Cliente Completo', 'Telefono', 'Celular', 'Correo Electronico', 'VIP (Si o No)', 'Codigo Proyecto VIP', 'Nombre Proyecto VIP', 'Velocidad Contratada MB', 'Meta', 'Tipo Solucion UM Operatividad', 'Operador Prestante', 'IP', 'Olt', 'PuertoOlt', 'Mac Onu', 'Port Onu', 'Nodo', 'Armario', 'Red Primaria', 'Red Secundaria', 'Nodo', 'Amplificador', 'Tap-Boca', 'Mac Cpe', 'Documento Cliente Acceso', 'Region', 'Dane Departamento', 'Departamento', 'Dane Municipio', 'Municipio', 'Barrio', 'Dirección', 'Estrato', 'Coordenadas Grados-decimales', 'Nombre Cliente Completo', 'Telefono', 'Celular', 'Correo Electronico', 'VIP (Si o No)', 'Codigo Proyecto VIP', 'Nombre Proyecto VIP', 'Velocidad Contratada MB', 'Meta', 'Tipo Solucion UM Operatividad', 'Operador Prestante', 'IP', 'Olt', 'PuertoOlt', 'Mac Onu', 'Port Onu', 'Nodo', 'Armario', 'Red Primaria', 'Red Secundaria', 'Nodo', 'Amplificador', 'Tap-Boca', 'Mac Cpe');
-                    /* Data loading */
-                    $pdf->AddPage('L', 'Legal');
-                    $pdf->SetFont('Courier', '', 6);
-                    /* Column widths */
-                    $w = array(30, 27, 20, 8, 20, 10, 20, 95, 15, 15, 10, 10, 20, 15, 28);
-                    /* Header */
-                    for ($i = 0; $i < 15; $i++) {
-                        $pdf->Cell($w[$i], 7, utf8_decode($header[$i]), 1, 0, 'C');
-                    }
-                    $pdf->Ln();
-                    /* Data */
-                    foreach ($data as $row) {
-                        for ($i = 0; $i < 7; $i++) {
-                            $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
-                        }
-
-                        $barr = utf8_decode($row[7]);
-                        if (strlen($barr) > 70) {
-                            $barr = substr($barr, 0, 70) . '...';
-                        }
-
-                        $pdf->Cell($w[7], 6, $barr, 'LR');
-
-                        for ($i = 8; $i < 15; $i++) {
-                            $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
-                        }
-                        $pdf->Ln();
-                    }
-                    /* Closing line */
-                    $pdf->Cell(array_sum($w), 0, '', 'T');
-                    $pdf->Output('D', 'CambiosyReemplazosExport.pdf', true);
-                }
+                }                
             } else {
                 ob_start();
                 ob_start('ob_gzhandler');
@@ -1197,31 +1404,7 @@ class ReportsController extends \yii\web\Controller {
                 $nestedData[] = $row['Velocidad_Contratada_Downstream'];
                 $nestedData[] = $row['Meta'];
                 $nestedData[] = $this->formatdate($row['Fecha_max_de_cumplimiento_de_meta']);
-                $diasp = 0;
-                $semaforo = 'blanco';
-                // calcula dias
-                // Punto 4: el semáforo debe quedar así: verde mayor a  30 días calendario, amarillo entre 30 y 10 días, rojo entre 10 a 0 días calendario
-                if (isset($row['Fecha_max_de_cumplimiento_de_meta'])) {
-                    if ($row['Fecha_max_de_cumplimiento_de_meta'] !== '') {
-                        $d = $row['Fecha_max_de_cumplimiento_de_meta'];
-                        $CheckInX = explode("/", $d);
-                        $date1 = mktime(0, 0, 0, $CheckInX[1], $CheckInX[0], $CheckInX[2]);
-                        $date2 = time();
-                        $diasp = ceil(($date2 - $date1) / (3600 * 24));
-                        $diasp = $diasp * -1;
-                    }
-                }
-                if ($diasp > 30) {
-                    $semaforo = 'verde';
-                }
-                if ($diasp > 10 && $diasp <= 30) {
-                    $semaforo = 'amarillo';
-                }
-                if ($diasp > 0 && $diasp <= 10) {
-                    $semaforo = 'rojo';
-                }
-                $nestedData[] = $diasp . " días. <img src='" . Url::base(true) . "/img/bandera_" . $semaforo . ".png' alt='' width='16'/>";
-                //$nestedData[] = $row['Dias_pendientes_de_la_fecha_de_cumplimiento'];
+                $nestedData[] = $this->getFlagColor($row['Fecha_max_de_cumplimiento_de_meta'], !empty($requestData['export']));
                 $nestedData[] = $this->formatdate($row['FECHA_APROBACION_INTERVENTORIA']);
                 $nestedData[] = $this->formatdate($row['FECHA_APROBACION_META_SUPERVISION']);
                 $nestedData[] = $row['Tipo_Solucion_UM_Operatividad'];
@@ -1350,7 +1533,7 @@ class ReportsController extends \yii\web\Controller {
                 13 => 'messages',
                 14 => 'idClient',
                 15 => 'entity',
-                16 => 'name',
+                16 => 'client.name',
                 17 => 'state_id',
                 18 => 'state_code',
                 19 => 'state',
@@ -1365,53 +1548,60 @@ class ReportsController extends \yii\web\Controller {
                 28 => 'country',
                 29 => 'access_id',
                 30 => 'address',
-                31 => 'latlng'
-            );                    
+                31 => 'lat',
+                32 => 'lng'
+            );            
             $totalData = Yii::$app->db->createCommand('SELECT COUNT(*) FROM tickets t inner join client c on t.fk_soc = c.idClient')->queryScalar();
-            $totalFiltered = $totalData;            
-
-            $sql = "SELECT * FROM tickets t inner join client c on t.fk_soc = c.idClient where 1=1 ";
-
-            if (!empty($requestData['search']['value'])) {
-                $sql .= " AND ( t.ref LIKE '" . $requestData['search']['value'] . "%' ";
-                $sql .= " OR c.ref LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR c.name LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR c.state LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR c.town LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR c.code_client LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR subject LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR type_label LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR category_label LIKE '" . $requestData['search']['value'] . "%'";
-                $sql .= " OR severity_label LIKE '" . $requestData['search']['value'] . "%')";
+            $totalFiltered = $totalData;
+            $queryTickets = (new \yii\db\Query())
+            ->select(['state','town','daneCode' => 'sys_district.code','access_id','name' => 'client.name','tickets.ref','category_label','type_label','severity_label','subject','datec','date_close','idprof1','phone','email','address','lat','lng','tickets.message', 'tickets.messages'])            
+            ->from('tickets')
+            ->innerJoin('client', 'tickets.fk_soc = client.idClient')
+            ->innerJoin('sys_city', 'sys_city.name = client.state')
+            ->innerJoin('sys_district', 'upper(sys_district.name) = upper(client.town) and sys_city.id = sys_district.id_city');
+            if (!empty($requestData['search']['value']))
+            {
+                $queryTickets->Where(['LIKE', 'tickets.ref', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'subject', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'type_label', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'category_label', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'severity_label', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'client.ref', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'client.name', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'client.state', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'client.town', $requestData['search']['value']."%", false])
+                 ->orWhere(['LIKE', 'client.code_client', $requestData['search']['value']."%", false]) 
+                 ->orWhere(['LIKE', 'sys_district.code', $requestData['search']['value']."%", false]);                 
             }
-        
             $pdptos = empty($requestData['dptos']) ? '-1' : $requestData['dptos'];
             $pmpios = empty($requestData['mpios']) ? '-1' : $requestData['mpios'];
+            $daneCodeFilter = empty($requestData['daneCodeFilter']) ? '-1' : $requestData['daneCodeFilter'];
 
             if ($pdptos != '-1') {
-                $sql .= " AND state = '" . $pdptos . "'";
+                $queryTickets->andWhere(['=', 'state', $pdptos]);
             }
             if ($pmpios != '-1') {
-                $sql .= " AND town = '" . $pmpios . "'";
+                $queryTickets->andWhere(['=', 'town', $pmpios]);
             }
-
-            if (!empty($requestData['export'])) {
-                
-            } else {                
-                $sqlc = str_replace("*", "COUNT(*)", $sql);
-                $totalFiltered = Yii::$app->db->createCommand($sqlc)->queryScalar();
-
-                $sql .= " ORDER BY " . $columns[$requestData['order'][0]['column']] . "   " . $requestData['order'][0]['dir'] . "  LIMIT " . $requestData['start'] . " ," .
-                        $requestData['length'] . "   ";
+            if ($daneCodeFilter != '-1') {
+                $queryTickets->andWhere(['=', 'sys_district.code', $daneCodeFilter]);
             }
-            
-            $result = Yii::$app->db->createCommand($sql)->queryAll();
-
+            if (empty($requestData['export'])) 
+            {
+                $totalFiltered = $queryTickets->count();
+                $order =  ($requestData['order'][0]['dir'] == 'asc') ?  SORT_ASC : SORT_DESC;
+                $pagination = new Pagination(['totalCount' => $totalFiltered, 'pageSize' => $requestData['length'], 'page' => $requestData['start']]);
+                $queryTickets->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
+                $queryTickets->offset($pagination->offset);
+                $queryTickets->limit($pagination->limit);
+            }
+            $result = $queryTickets->all();
             $data = array();
             foreach ($result as $key => $row) {
                 $nestedData = array();
                 $nestedData[] = $row['state'];
                 $nestedData[] = $row['town'];
+                $nestedData[] = $row['daneCode'];
                 $nestedData[] = $row['access_id'];
                 $nestedData[] = $row['name'];
                 $nestedData[] = $row['ref'];
@@ -1451,10 +1641,8 @@ class ReportsController extends \yii\web\Controller {
                         '2021-12-25',
                     );
 
-                    $count5WD = 0;
-                    $d = date('Y-m-d', $row['datec']) . ' 00:00:00';
-                    //echo $d;
-                    $temp = strtotime($d); //example as today is 2016-03-25
+                    $count5WD = 0;                    
+                    $temp = strtotime(date('Y-m-d', $row['datec']) . ' 00:00:00');
                     while ($count5WD < 15) {
                         $next1WD = strtotime('+1 weekday', $temp);
                         $next1WDDate = date('Y-m-d', $next1WD);
@@ -1463,7 +1651,6 @@ class ReportsController extends \yii\web\Controller {
                         }
                         $temp = $next1WD;
                     }
-
                     $next5WD = date("d/m/Y", $temp);
                 }
                 $nestedData[] = $this->formatdate($next5WD);
@@ -1474,45 +1661,19 @@ class ReportsController extends \yii\web\Controller {
                 $nestedData[] = $row['phone'];
                 $nestedData[] = $row['email'];
                 $nestedData[] = $row['address'];
-                $nestedData[] = str_replace(array('Lat: ','Lon: '),'',$row['latlng']);
+                $nestedData[] = isset($row['lat'],$row['lng'])? $row['lat'].", ".$row['lng'] : '';
                 $nestedData[] = $row['message'];
-
-                $autor ="";
-                $msg = "<ul>";
-                $jsond = json_decode($row['messages']);
-                foreach ((array) $jsond as $key => $mesa) {
-                    $msg = $msg . '<li>' . date("Y-m-d H:i:s", $mesa->datec) . ' - ' . $mesa->message . '</li>';
-                    if(stripos($mesa->message,'creado'))
-                    {
-                       $autor =  str_replace(array('Autor: ','Ticket'),'',$mesa->message);
-                       $s = explode(' ',$autor);
-                       if(sizeof($s)> 0){
-                           $autor = str_replace('Ticket','',$s[0]);
-                       }
-                    }
-                }
-                $msg = $msg . "</ul>";
-
-                $nestedData[] =  $msg;
-                $nestedData[] =  $autor;
-                
-//                $nestedData[] = $row['idTicket'];
-//                $nestedData[] = $row['id'];
-//                $nestedData[] = $row['socid'];
-//                $nestedData[] = $row['ref'];
-//                $nestedData[] = $row['fk_soc'];
-//                $nestedData[] = $row['date_read'];
-//                $nestedData[] = $row['messages'];
-//                $nestedData[] = $row['idClient'];
-//                $nestedData[] = $row['entity'];
-//                $nestedData[] = $row['state_id'];
-//                $nestedData[] = $row['state_code'];
-//                $nestedData[] = $row['code_client'];
-//                $nestedData[] = $row['country_id'];
-//                $nestedData[] = $row['country_code'];
-//                $nestedData[] = $row['country'];
-
-                        $data[] = $nestedData;
+                $author ="";
+                $status = "";
+                $isExportData = !empty($requestData['export']);
+                $arrayMessage = (array)json_decode($row['messages']);
+                $history = $this->getHistoryFromMessageTicket($arrayMessage , $isExportData);     
+                $author = $this->getAuthorFromMessageTicket($arrayMessage);
+                $status = $this->getStateFromMessageTicket($arrayMessage);
+                $nestedData[] =  $history;
+                $nestedData[] =  $author;
+                $nestedData[] =  $status;
+                $data[] = $nestedData;
             }
 
             if (!empty($requestData['export'])) {
@@ -1530,42 +1691,7 @@ class ReportsController extends \yii\web\Controller {
                     fclose($output);
                     ob_end_flush();
                 }
-                if ($requestData['export'] == 'pdf') {
-                    $pdf = new Fpdf();
-                    /* Column headings */
-                    $header = array('Departamento','Municipio','Código Acceso','Cliente','Ref Ticket','Grupo','Tipo','Prioridad','Asunto','Fecha Creación','Fecha Limite','Fecha Cierre','Origen de Reporte','Cédula','Teléfonos','Email','Dirección / Barrio','Coordenadas','Detalle','Historial','Autor');
-                    /* Data loading */
-                    $pdf->AddPage('L', 'Legal');
-                    $pdf->SetFont('Courier', '', 6);
-                    /* Column widths */
-                    $w = array(30, 27, 20, 8, 20, 10, 20, 95, 15, 15, 10, 10, 20, 15, 28);
-                    /* Header */
-                    for ($i = 0; $i < count($header); $i++) {
-                        $pdf->Cell($w[$i], 7, utf8_decode($header[$i]), 1, 0, 'C');
-                    }
-                    $pdf->Ln();
-                    /* Data */
-                    foreach ($data as $row) {
-                        for ($i = 0; $i < 7; $i++) {
-                            $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
-                        }
-
-                        $barr = utf8_decode($row[7]);
-                        if (strlen($barr) > 70) {
-                            $barr = substr($barr, 0, 70) . '...';
-                        }
-
-                        $pdf->Cell($w[7], 6, $barr, 'LR');
-
-                        for ($i = 8; $i < 15; $i++) {
-                            $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
-                        }
-                        $pdf->Ln();
-                    }
-                    /* Closing line */
-                    $pdf->Cell(array_sum($w), 0, '', 'T');
-                    $pdf->Output('D', 'PqrsExport.pdf', true);
-                }
+                
             } else {
 
                 ob_start();
@@ -1581,7 +1707,7 @@ class ReportsController extends \yii\web\Controller {
                 ob_end_flush();
             }
         } catch (\Exception $ex) {
-            $returndata = ['error' => $ex->getMessage()];
+            $returndata = ['error' => $ex->__toString()];
             echo json_encode($returndata);
         }
     }
@@ -1592,6 +1718,81 @@ class ReportsController extends \yii\web\Controller {
         } else {
             return '';
         }
+    }
+
+    private function getStateFromMessageTicket($arrayMessage)
+    {
+        $status = "";
+        if(count($arrayMessage)> 0)
+        {            
+            $itemMessage = array_values($arrayMessage)[0];
+            $arrayString = explode(' ',$itemMessage->message);
+            $status = (count($arrayString) > 0)?  ucwords($arrayString[count($arrayString) - 1]) : "";
+        }
+
+        return $status;
+    }
+
+    private function getAuthorFromMessageTicket($arrayMessage)
+    {
+        $author = '';
+        foreach ((array) $arrayMessage as $key => $itemMessage) {        
+            if(stripos($itemMessage->message,'creado')){                
+                $author =  str_replace(array('Autor: ','Ticket'),'',$itemMessage->message);
+                $array_author = explode(' ',$author);
+                if(sizeof($array_author)> 0){
+                    $author = str_replace('Ticket','',$array_author[0]);
+                }        
+                break;
+            }    
+        }       
+       
+        return $author;
+    }
+
+    private function getHistoryFromMessageTicket($arrayMessage, $exportData = false)
+    {
+        $history = (!$exportData)? "<ul>" : "";
+        $initialLine = (!$exportData)? "<li>" : "";
+        $finalLine = (!$exportData)? "</li>" : "\n";
+        foreach ((array) $arrayMessage as $key => $itemMessage) {
+            $history .= $initialLine . $itemMessage->id . ' - ' . date("Y-m-d H:i:s", $itemMessage->datec) . ' - ' . $this->getClearMessage($itemMessage->message,$exportData) . $finalLine;                      
+        }
+        $history .= (!$exportData)? "</ul>" : "";
+        
+        return $history; 
+    }
+
+    private function getClearMessage($message, $exportData = false)
+    {
+        $buscar=array(chr(13).chr(10), "\r\n", "\n", "\r");
+        $reemplazar=array("", "", "", "");
+        return (($exportData) ? html_entity_decode(str_ireplace($buscar,$reemplazar,$message)) : $message); 
+    }
+
+    private function getFlagColor($date, $isExportData)
+    {
+        $daysDifference = 0;
+        $flagColor = 'blanco';
+        if (isset($date)) {
+            if ($date !== '') {                
+                $CheckInX = explode("/", $date);
+                $initialTime = mktime(0, 0, 0, $CheckInX[1], $CheckInX[0], $CheckInX[2]);
+                $finalTime = time();
+                $daysDifference = ceil(($finalTime - $initialTime) / (3600 * 24));
+            }
+        }
+        if ($daysDifference > 15) {
+            $flagColor = 'morado';
+        }else  if ($daysDifference > 11 && $daysDifference <= 15) {
+            $flagColor = 'rojo';
+        }else if ($daysDifference > 6 && $daysDifference <= 10) {
+            $flagColor = 'amarillo';
+        }else if ($daysDifference > 0 && $daysDifference <= 5) {
+            $flagColor = 'verde';
+        }    
+
+        return $daysDifference . " días. ". (($isExportData)? ucwords($flagColor) :  "<img src='" . Url::base(true) . "/img/bandera_" . $flagColor . ".png' alt='' width='16'/>");
     }
 
 }

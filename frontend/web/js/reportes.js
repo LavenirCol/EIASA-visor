@@ -1,11 +1,5 @@
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 $(document).ready(function(){
-    //table settings 
+
     $.extend(true, $.fn.dataTable.defaults, {
         "searching": true,
         "ordering": true,
@@ -69,8 +63,7 @@ $(document).ready(function(){
             orderable: false,
             targets:   -1
         } ],
-    });
-    
+    });    
     
     $('.dataTablec').DataTable({
         'paging': false,
@@ -105,14 +98,9 @@ $(document).ready(function(){
     
     // Serever side
     
-    function makeserverprocessing(datatable, ajaxcall){
-        if($(datatable).length === 0)
-        {
-            return;
-        }
-
-        $(datatable).DataTable({
-            //'retrieve': true,
+    function makeserverprocessing(datatable, ajaxcall){       
+        if($(datatable).length === 0){ return; }
+        $(datatable).DataTable({            
             'paging': true,
             'searching': true,
             'ordering': true,
@@ -122,6 +110,7 @@ $(document).ready(function(){
             'processing': true,
             'serverSide': true,
             'dom': 'Bfrtip',
+            columnDefs: columnDefsDataTable(datatable),
             'buttons': [
                 {
                     text: 'Excel',
@@ -132,6 +121,7 @@ $(document).ready(function(){
                         url = url + '&materials='+$('#materials').val();
                         url = url + '&factories='+$('#factories').val();
                         url = url + '&models='+$('#models').val();
+                        url = url + '&daneCodeFilter='+$('#daneCodeFilter').val();
                         url = url + '&export=csv';
                         window.open(url);
                     }
@@ -149,6 +139,7 @@ $(document).ready(function(){
                             url = url + '&materials='+$('#materials').val();
                             url = url + '&factories='+$('#factories').val();
                             url = url + '&models='+$('#models').val();
+                            url = url + '&daneCodeFilter='+$('#daneCodeFilter').val();
                             url = url + '&export=pdf';
                             window.open(url);
                         }
@@ -168,6 +159,7 @@ $(document).ready(function(){
                     d.materials = $('#materials').val();
                     d.factories = $('#factories').val();
                     d.models = $('#models').val();
+                    d.daneCodeFilter = $('#daneCodeFilter').val();
                 }
             },
             "fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) 
@@ -182,42 +174,36 @@ $(document).ready(function(){
                         } 
                     }); 
                 }
+                
                 return nRow; 
             }, 
-        });
-        
-       
-        // search
-        //btnsearch
+        });        
         $("#btnsearch").click(function(e){            
             $(datatable).DataTable().ajax.reload();
         });
-
-
     }
 
-        
-    //inventarios
+    function columnDefsDataTable(datatable)
+    {
+        if(datatable === "#dataTableInstalaciondash"){
+            return [{className: "dt-body-center", targets: [3,4,5,6]}];
+        }
+        else if(datatable === "#dataTableOperaciondash")
+        {
+            return [{className: "dt-body-center", targets: [3,4,5,6,7,8]}];
+        }
+
+        return null;
+    }
+
     makeserverprocessing('#dataTableInventarios','/reports/inventariosserver');
-    
-    //instalacion
     makeserverprocessing('#dataTableInstalacion','/reports/instalacionserver');
-    
-    //operaciondetails
+    makeserverprocessing('#dataTableInstalaciondash','/reports/instalaciondashserver');
     makeserverprocessing('#dataTableOperaciondetails','/reports/operaciondetailsserver');
-    
-    //instlaciondetails
+    makeserverprocessing('#dataTableOperaciondash','/reports/operaciondashserver');
     makeserverprocessing('#dataTableInstalaciondetails','/reports/instalaciondetailsserver');
-
-    //CambiosyReemplazos
     makeserverprocessing('#dataTableCambiosReemplazos','/reports/cambiosreemplazosserver');
-
-    //pqrs
     makeserverprocessing('#dataTablePqrs','/reports/pqrsserver');
-    //clientes
     makeserverprocessing('#dataTableClientes','/visor/clientsserver');
-
-    //pqrsDashboard
     makeserverprocessing('#dataTableDetailsTickets','/reports/ticketsseverity');
-
 });

@@ -44,68 +44,49 @@ use \yii\helpers\Url;
 </div><!-- content -->
 
 <div class="content">
+    <form method="post">
+        <div class="container bd bd-2 p-3 rounded-10">
+            <div class="row">                
+                <div class="col-lg-2">
+                    <label class="label-form" label-for="deptos">Código DANE</label>
+                    <select class="custom-select" id="daneCodeFilter" name="daneCodeFilter">
+                        <option value="-1">--Seleccione--</option>
+                        <?php foreach ($daneCodeList as $daneCodeItem){ ?>
+                            <option value="<?php echo $daneCodeItem['daneCode']; ?>"><?php echo $daneCodeItem['daneCode']; ?></option>
+                        <?php } ?>
+                    </select>
+                </div>                
+                <div class="col-lg-2"></div>
+                <div class="col-lg-2"></div>
+                <div class="col-lg-2"></div>
+                <div class="col-lg-2"></div>
+                <div class="col-lg-2">
+                    <button type="button" class="btn btn-primary btn-sm" id="btnsearch" style="width:100%">Buscar</button><br>
+                    <button type="clear" class="btn btn-secondary btn-sm mt-2" style="width:100%">Borrar</button>
+                </div>
+            </div>  
+        </div>
+    </form> 
     <div class="container pd-x-0 pd-lg-x-10 pd-xl-x-0">
         <div class="row">
             <div class="col-lg-12 mb-5">
-                <table class="table table-condensed table-striped dataTablec" id="dataTableInstalaciondash" style="width:100%">
+                <p>&nbsp;</p>
+                <h4 class="mg-b-0"></h4>
+                <table class="table table-condensed table-striped" id="dataTableInstalaciondash" style="width:100%">                
                     <thead>
                         <tr>
                             <th>DANE</th>
                             <th>Departamento</th>
                             <th>Municipio</th>
-                            <th align="center">Meta</th>
-                            <th align="center">Beneficiarios Instalados</th>
-                            <th align="center">Avance</th>
-                            <th></th>
-                            <th></th>
+                            <th class="dt-body-right">Meta</th>
+                            <th class="dt-body-right">Beneficiarios Instalados</th>
+                            <th class="dt-body-right">Avance</th>
+                            <th></th>                     
                         </tr>
-                    </thead>
+                    </thead>                    
                     <tbody>
-                        <?php
-                        $metas = 0;
-                        $beneficiarios = 0;
-
-                        foreach ((array) $insts as $inst) {
-
-                            $metas = $metas + intval($inst['Meta']);
-                            $beneficiarios = $beneficiarios + intval($inst['Beneficiarios_Instalados']);
-                            ?>
-                            <tr>
-                                <td><?php echo $inst['DANE'] ?></td>
-                                <td><?php echo $inst['Departamento'] ?></td>
-                                <td><?php echo $inst['Municipio'] ?></td>
-                                <td align="center"><?php echo number_format($inst['Meta']) ?></td>
-                                <td align="center"><?php echo number_format($inst['Beneficiarios_Instalados']) ?></td>
-                                <td align="center"><?php echo number_format($inst['Avance']) ?> %</td>
-                                <td align="center">
-                                    <?php if ($inst['Beneficiarios_Instalados'] > 0) { ?>
-                                        <a href="<?php echo Url::toRoute('reports/instalaciondetails'); ?>?dane=<?php echo $inst['DANE']; ?>" class="btn btn-sm btn-primary">Detalles</a> 
-                                    <?php } ?>
-                                </td>
-                                <td></td>
-                            </tr>
-                        <?php } ?>      
+                        
                     </tbody>
-                    <tfoot>
-                        <tr style="font-weight: bold">
-                            <td></td>
-                            <td></td>
-                            <td>Total</td>
-                            <td align="center"><?php echo number_format($metas) ?></td>
-                            <td align="center"><?php echo number_format($beneficiarios) ?></td>
-                            <td align="center"><?php
-                                $avance = 0;
-                                if ((float) ($beneficiarios) > 0) {
-                                    $result = (float) ($beneficiarios / $metas);
-                                    $avance = round($result * 100, 2);
-                                }
-
-                                echo number_format($avance, 2, '.', '');
-                                ?> %</td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
                 </table>
             </div>
         </div>

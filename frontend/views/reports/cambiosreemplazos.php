@@ -45,8 +45,14 @@ use yii\helpers\Url;
                     </select>
                 </div>
                 <div class="col-lg-2">
-
-                </div>
+                    <label class="label-form" label-for="deptos">Código DANE</label>
+                    <select class="custom-select" id="daneCodeFilter" name="daneCodeFilter">
+                        <option value="-1">--Seleccione--</option>
+                        <?php foreach ($daneCodeList as $daneCodeItem){ ?>
+                            <option value="<?php echo $daneCodeItem['daneCode']; ?>"><?php echo $daneCodeItem['daneCode']; ?></option>
+                        <?php } ?>
+                    </select>
+                </div>                
                 <div class="col-lg-2">
 
                 </div>
