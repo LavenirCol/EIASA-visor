@@ -274,7 +274,7 @@ class ReportsController extends \yii\web\Controller {
 
         $sql = "SELECT h.* FROM sabana_reporte_instalacion h WHERE CONCAT(Dane_Departamento,Dane_Municipio) = '$dane' ";
         $insts = $connection->createCommand($sql)->queryAll();
-        $municipio = $insts[0]['Departamento'] . ' - ' . $insts[0]['Municipio'];
+        $municipio = (isset($insts[0]['Departamento'],$insts[0]['Municipio'])) ? ($insts[0]['Departamento'] . ' - ' . $insts[0]['Municipio']) : '';
         return $this->render('instalaciondetails', array(
                     'deptos' => $deptos,
                     'mpios' => $mpios,
