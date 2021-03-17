@@ -280,7 +280,7 @@ class CronController extends Controller {
                         }
                         if (isset($client['array_options']["options_lon"])) 
                         {
-                            $newclient->lat = $client['array_options']["options_lon"];
+                            $newclient->lng = $client['array_options']["options_lon"];
                         }
                     }
                     $newclient->save(false);
