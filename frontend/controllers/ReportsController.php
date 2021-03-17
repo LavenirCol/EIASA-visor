@@ -8,6 +8,7 @@ use Fpdf\Fpdf;
 use yii\helpers\Url;
 use \yii\db;
 use yii\data\Pagination;
+use frontend\utils\ExcelUtils;
 
 class ReportsController extends \yii\web\Controller {
 
@@ -1678,22 +1679,12 @@ class ReportsController extends \yii\web\Controller {
 
             if (!empty($requestData['export'])) {
                 if ($requestData['export'] == 'csv') {
-                    ob_start();
-                    ob_start('ob_gzhandler');
-                    header('Content-Type: text/csv; charset=windows-1251');
-                    header('Content-Disposition: attachment; filename=PqrsExport.csv');
-                    $output = fopen('php://output', 'w');
-                    fwrite($output, "\xEF\xBB\xBF");
-                    fputcsv($output, ['Departamento','Municipio','Código Acceso','Cliente','Ref Ticket','Grupo','Tipo','Prioridad','Asunto','Fecha Creación','Fecha Limite','Fecha Cierre','Origen de Reporte','Cédula','Teléfonos','Email','Dirección / Barrio','Coordenadas','Detalle','Historial','Autor'], ';');
-                    foreach ($data as $key => $value) {
-                        fputcsv($output, $value, ';');
-                    }
-                    fclose($output);
-                    ob_end_flush();
+                    $header = ['Departamento','Municipio','Código Dane','Código Acceso','Cliente','Ref Ticket','Grupo','Tipo','Prioridad','Asunto','Fecha Creación','Fecha Limite','Fecha Cierre','Origen de Reporte','Cédula','Teléfonos','Email','Dirección / Barrio','Coordenadas','Detalle','Historial','Autor', 'Estado Ticket'];
+                    $excel = new ExcelUtils();
+                    $excel->export("PqrExport.xlsx",$header,$data);
                 }
                 
             } else {
-
                 ob_start();
                 ob_start('ob_gzhandler');
                 $json_data = array(
@@ -1702,7 +1693,6 @@ class ReportsController extends \yii\web\Controller {
                     "recordsFiltered" => intval($totalFiltered),
                     "data" => $data   // total data array
                 );
-
                 echo json_encode($json_data);
                 ob_end_flush();
             }
