@@ -18,7 +18,9 @@ use app\models\Settings;
 use app\models\Tickets;
 use app\models\Hsstock;
 use app\models\Hstask;
-
+require_once __DIR__ . '/../../vendor/autoload.php';
+use PhpAmqpLib\Message\AMQPMessage;
+use PhpAmqpLib\Connection\AMQPStreamConnection;
 class CronController extends Controller {
 
     public $root_path = "";
@@ -1170,6 +1172,30 @@ class CronController extends Controller {
             fclose($file_pointers[$key]);           
         }
         curl_multi_close($multi_handle);
+    }
+
+    public function actionRabbitmqSend()
+    {
+        $connection = new AMQPStreamConnection('172.17.0.2', 5672, 'guest', 'guest');
+        $channel = $connection->channel();
+        
+        $channel->queue_declare('hello', false, false, false, false);
+        
+        $tickets = (new \yii\db\Query())
+            ->select(['state','town','daneCode' => 'sys_district.code','access_id','name' => 'client.name','tickets.ref','category_label','type_label','severity_label','subject','datec','date_close','idprof1','phone','email','address','lat','lng','tickets.message', 'tickets.messages'])            
+            ->from('tickets')
+            ->innerJoin('client', 'tickets.fk_soc = client.idClient')
+            ->innerJoin('sys_city', 'sys_city.name = client.state')
+            ->innerJoin('sys_district', 'upper(sys_district.name) = upper(client.town) and sys_city.id = sys_district.id_city')
+            ->all();
+
+        foreach($tickets as $ticket)
+        {
+            $msg = new AMQPMessage($ticket);
+            $channel->basic_publish($msg, '', 'hello');
+        }        
+        $channel->close();
+        $connection->close();
     }
 
 }
