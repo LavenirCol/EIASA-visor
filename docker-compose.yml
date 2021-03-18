@@ -1,38 +1,48 @@
 version: '3.2'
-
 services:
-
-  frontend:
-    build: frontend
+  app:
+    build: 
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: yiisoftware/yii2-php:7.4-apache
+    container_name: VisorEiasaApp
+    restart: unless-stopped
+    tty: true
+    working_dir: /app/web
+    volumes:
+      - ./:/app/web
+      - ./docker/apache/000-default.conf:/etc/apache2/sites-available/000-default.conf
+    networks:
+      - app-network-eiasa
     ports:
       - 20080:80
-    volumes:
-      # Re-use local composer cache via host-volume
-      - ~/.composer-docker/cache:/root/.composer/cache:delegated
-      # Mount source-code for development
-      - ./:/app
-
-  backend:
-    build: backend
-    ports:
-      - 21080:80
-    volumes:
-      # Re-use local composer cache via host-volume
-      - ~/.composer-docker/cache:/root/.composer/cache:delegated
-      # Mount source-code for development
-      - ./:/app
-
-  mysql:
-    image: mysql:5.7
+      - 4431:443
     environment:
-      - MYSQL_ROOT_PASSWORD=verysecret
-      - MYSQL_DATABASE=yii2advanced
-      - MYSQL_USER=yii2advanced
-      - MYSQL_PASSWORD=secret
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+  db:
+    image: mariadb:latest
+    container_name: VisorEiasaDB
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_DATABASE: eiasa_visor
+      MYSQL_ROOT_PASSWORD: X0AhfRCK8GMeHfx2
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - app-network-eiasa
+#Docker Networks
+networks:
+  app-network-eiasa:
+    driver: bridge
 
-  #pgsql:
-  #  image: postgres:9.5
-  #  environment:
-  #    - POSTGRES_DB=yii2advanced
-  #    - POSTGRES_USER=yii2advanced
-  #    - POSTGRES_PASSWORD=secret
+#Volumes
+volumes:
+  dbdata:
+    driver: local
