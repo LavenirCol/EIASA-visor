@@ -37,6 +37,16 @@ services:
       - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
     networks:
       - app-network-eiasa
+  rabbit:
+    image: rabbitmq:3-management
+    container_name: VisorRabbitMQ
+    restart: unless-stopped
+    tty: true
+    ports: 
+      - 15672:15672
+      - 5672:5672
+    networks:
+      - app-network-eiasa
 #Docker Networks
 networks:
   app-network-eiasa:

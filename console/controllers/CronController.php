@@ -18,9 +18,7 @@ use app\models\Settings;
 use app\models\Tickets;
 use app\models\Hsstock;
 use app\models\Hstask;
-require_once __DIR__ . '/../../vendor/autoload.php';
-use PhpAmqpLib\Message\AMQPMessage;
-use PhpAmqpLib\Connection\AMQPStreamConnection;
+use common\models\RabbitMQ;
 class CronController extends Controller {
 
     public $root_path = "";
@@ -582,6 +580,7 @@ class CronController extends Controller {
                 $newticket->date_read = $ticket['date_read'];
                 $newticket->date_close = $ticket['date_close'];
                 $newticket->messages = '';
+                $newticket->fk_statut =$ticket['fk_statut'];
 
                 $newticket->save(false);
 
@@ -1174,28 +1173,80 @@ class CronController extends Controller {
         curl_multi_close($multi_handle);
     }
 
-    public function actionRabbitmqSend()
+    public function actionRabbitmqSendClients()
     {
-        $connection = new AMQPStreamConnection('172.17.0.2', 5672, 'guest', 'guest');
-        $channel = $connection->channel();
-        
-        $channel->queue_declare('hello', false, false, false, false);
-        
-        $tickets = (new \yii\db\Query())
-            ->select(['state','town','daneCode' => 'sys_district.code','access_id','name' => 'client.name','tickets.ref','category_label','type_label','severity_label','subject','datec','date_close','idprof1','phone','email','address','lat','lng','tickets.message', 'tickets.messages'])            
-            ->from('tickets')
-            ->innerJoin('client', 'tickets.fk_soc = client.idClient')
-            ->innerJoin('sys_city', 'sys_city.name = client.state')
-            ->innerJoin('sys_district', 'upper(sys_district.name) = upper(client.town) and sys_city.id = sys_district.id_city')
-            ->all();
-
-        foreach($tickets as $ticket)
-        {
-            $msg = new AMQPMessage($ticket);
-            $channel->basic_publish($msg, '', 'hello');
-        }        
-        $channel->close();
-        $connection->close();
+        $rabbitMQ = new RabbitMQ();
+        $limit = 100;
+        $cycles = 400; // 28000 clientes aprox
+        for ($i = 0; $i <= $cycles; $i++) {
+            $rabbitMQ->publishMessageList("clientsFromDolibarr",$this->getClientsFromDolibarr($limit, $i));
+        }       
     }
 
+    public function getClientsFromDolibarr($limit, $page)
+    {
+        $clientSearch = json_decode($this->CallAPI("GET", "thirdparties", array(
+            "sortfield" => "t.rowid",
+            "sortorder" => "ASC",
+            "mode" => "0",
+            "limit" => $limit,
+            "page" => $page,
+            "sqlfilters" => "(t.idprof6 != '')"
+                )
+        ), true);
+        if (isset($clientSearch["error"]) && $clientSearch["error"]["code"] >= "300") {
+            echo "($page) Error Clientes " . $clientSearch["error"]["message"] . "\n";
+            return null;
+        } else {           
+            return (array) $clientSearch;        
+        }
+    }
+
+
+    public function saveClientDB($client)
+    {   
+        $currentclient = Client::find()->where(['idClient' => $client->id])->one();
+        if (!isset($currentclient))
+        {         
+            $newclient = new Client();
+            $newclient->attributes = (array)$client;
+            $newclient->idClient = $client->id;            
+            $newclient->state_id = $client->state_id;
+            $newclient->access_id = $client->idprof6;            
+            $newclient->address = str_replace(array("\n", "\r", "\r\n", "\xE2\x80\x9010"), ' ', $client->address);
+            $newclient->name = str_replace("\xC5\x84", 'ñ', $client->name);
+            print_r($client->array_options);
+            if (isset($client->array_options)) 
+            {
+                if (isset($client->array_options->options_lat)) 
+                {
+                    $newclient->lat = $client->array_options->options_lat;
+                }
+                if (isset($client->array_options->options_lon)) 
+                {
+                    $newclient->lng = $client->array_options->options_lon;
+                }
+            }
+            $newclient->save(false);            
+            $this->processtickets($client->id);
+        }
+        else
+        {
+            echo "Cliente encontraro \n";
+        }
+    }
+
+    public function actionSaveClientFromQueue()
+    {
+        $rabbitMQ = new RabbitMQ();
+        $callback = function($message)
+        {
+            $client = json_decode($message->body);
+            echo $client->id;
+            $this->saveClientDB($client);
+            echo "\n";
+            $message->ack();
+        };
+        $rabbitMQ->getMessage('clientsFromDolibarr',$callback);
+    }
 }

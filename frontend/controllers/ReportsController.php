@@ -377,19 +377,9 @@ class ReportsController extends \yii\web\Controller {
 
             if (!empty($requestData['export'])) {
                 if ($requestData['export'] == 'csv') {
-                    ob_start();
-                    ob_start('ob_gzhandler');
-                    header('Content-Type: text/csv; charset=windows-1251');
-                    header('Content-Disposition: attachment; filename=Dashboard Operación.csv');
-                    $output = fopen('php://output', 'w');
-                    fwrite($output, "\xEF\xBB\xBF");
-                    fputcsv($output, ['DANE', 'Departamento', 'Municipio', 'Meta', 'Beneficiarios Instalados', 'Meta Tiempo en Servicio','Tiempo en Servicio','Avance'], ';');
-                    $index=0;
-                    foreach ($data as $key => $value) {                        
-                        fputcsv($output, $value, ';');
-                    }
-                    fclose($output);
-                    ob_end_flush();
+                   $header = ['DANE', 'Departamento', 'Municipio', 'Meta', 'Beneficiarios Instalados', 'Meta Tiempo en Servicio','Tiempo en Servicio','Avance']; 
+                   $excel = new ExcelUtils();
+                   $excel->export("Dashboard Operación.xlsx",$header,$data);                   
                 }
                 if ($requestData['export'] == 'pdf') {
                     $pdf = new Fpdf();
@@ -548,19 +538,9 @@ class ReportsController extends \yii\web\Controller {
 
             if (!empty($requestData['export'])) {
                 if ($requestData['export'] == 'csv') {
-                    ob_start();
-                    ob_start('ob_gzhandler');
-                    header('Content-Type: text/csv; charset=windows-1251');
-                    header('Content-Disposition: attachment; filename=Dashboard Instalación.csv');
-                    $output = fopen('php://output', 'w');
-                    fwrite($output, "\xEF\xBB\xBF");
-                    fputcsv($output, ['DANE', 'Departamento', 'Municipio', 'Meta', 'Beneficiarios Instalados', 'Avances'], ';');
-                    $index=0;
-                    foreach ($data as $key => $value) {                        
-                        fputcsv($output, $value, ';');
-                    }
-                    fclose($output);
-                    ob_end_flush();
+                    $header = ['DANE', 'Departamento', 'Municipio', 'Meta', 'Beneficiarios Instalados', 'Avances']; 
+                    $excel = new ExcelUtils();
+                    $excel->export("Dashboard Instalación.xlsx",$header,$data);
                 }
                 if ($requestData['export'] == 'pdf') {
                     $pdf = new Fpdf();
@@ -709,18 +689,9 @@ class ReportsController extends \yii\web\Controller {
 
             if (!empty($requestData['export'])) {
                 if ($requestData['export'] == 'csv') {
-                    ob_start();
-                    ob_start('ob_gzhandler');
-                    header('Content-Type: text/csv; charset=windows-1251');
-                    header('Content-Disposition: attachment; filename=InventariosExport.csv');
-                    $output = fopen('php://output', 'w');
-                    fwrite($output, "\xEF\xBB\xBF");
-                    fputcsv($output, ['Serial o MAC', 'Modelo', 'Región', 'Código DANE Departamento', 'Departamento', 'Código DANE Municipio', 'Municipio', 'Barrio / Dirección', 'Descripción Material', 'Fabricante', 'Unidad de Medida', 'Cantidad', 'Coordenadas GPS', 'Estado', 'Fuente de Financiación'], ';');
-                    foreach ($data as $key => $value) {
-                        fputcsv($output, $value, ';');
-                    }
-                    fclose($output);
-                    ob_end_flush();
+                    $header = ['Serial o MAC', 'Modelo', 'Región', 'Código DANE Departamento', 'Departamento', 'Código DANE Municipio', 'Municipio', 'Barrio / Dirección', 'Descripción Material', 'Fabricante', 'Unidad de Medida', 'Cantidad', 'Coordenadas GPS', 'Estado', 'Fuente de Financiación']; 
+                    $excel = new ExcelUtils();
+                    $excel->export("InventariosExport.xlsx",$header,$data);
                 }
                 if ($requestData['export'] == 'pdf') {
                     $pdf = new Fpdf();
@@ -1016,18 +987,9 @@ class ReportsController extends \yii\web\Controller {
 
             if (!empty($requestData['export'])) {
                 if ($requestData['export'] == 'csv') {                    
-                    ob_start();
-                    ob_start('ob_gzhandler');
-                    header('Content-Type: text/csv; charset=windows-1251');
-                    header('Content-Disposition: attachment; filename=AccesosOperacionExport.csv');
-                    $output = fopen('php://output', 'w');
-                    fwrite($output, "\xEF\xBB\xBF");
-                    fputcsv($output, ['Operador', 'Documento_cliente_acceso', 'Dane_Mun_ID_Punto', 'Estado_actual', 'Region', 'Dane_Departamento', 'Departamento', 'Dane_Municipio', 'Municipio', 'Barrio', 'Direccion', 'Estrato', 'Dificultad__de_acceso_al_municipio', 'Coordenadas_Grados_decimales', 'Nombre_Cliente', 'Telefono', 'Celular', 'Correo_Electronico', 'VIP', 'Codigo_Proyecto_VIP', 'Nombre_Proyecto_VIP', 'Velocidad_Contratada_Downstream', 'Meta', 'Fecha_max_de_cumplimiento_de_meta', 'Tipo_Solucion_UM_Operatividad', 'Operador_Prestante', 'IP', 'Olt', 'PuertoOlt', 'Serial_ONT', 'Port_ONT', 'Nodo', 'Armario', 'Red_Primaria', 'Red_Secundaria', 'Nodo2', 'Amplificador', 'Tap_Boca', 'Mac_Cpe', 'Fecha_Instalado', 'Fecha_Activo', 'Fecha_inicio_operación', 'Fecha_Solicitud_Traslado_PQR', 'Fecha_Inactivo', 'Fecha_Desinstalado', 'Sexo', 'Genero', 'Orientacion_Sexual', 'Educacion_', 'Etnias', 'Discapacidad', 'Estratos', 'Beneficiario_Ley_1699_de_2013', 'SISBEN_IV'], ';');
-                    foreach ($data as $key => $value) {
-                        fputcsv($output, $value, ';');
-                    }
-                    fclose($output);
-                    ob_end_flush();
+                   $header = ['Operador', 'Documento_cliente_acceso', 'Dane_Mun_ID_Punto', 'Estado_actual', 'Region', 'Dane_Departamento', 'Departamento', 'Dane_Municipio', 'Municipio', 'Barrio', 'Direccion', 'Estrato', 'Dificultad__de_acceso_al_municipio', 'Coordenadas_Grados_decimales', 'Nombre_Cliente', 'Telefono', 'Celular', 'Correo_Electronico', 'VIP', 'Codigo_Proyecto_VIP', 'Nombre_Proyecto_VIP', 'Velocidad_Contratada_Downstream', 'Meta', 'Fecha_max_de_cumplimiento_de_meta', 'Tipo_Solucion_UM_Operatividad', 'Operador_Prestante', 'IP', 'Olt', 'PuertoOlt', 'Serial_ONT', 'Port_ONT', 'Nodo', 'Armario', 'Red_Primaria', 'Red_Secundaria', 'Nodo2', 'Amplificador', 'Tap_Boca', 'Mac_Cpe', 'Fecha_Instalado', 'Fecha_Activo', 'Fecha_inicio_operación', 'Fecha_Solicitud_Traslado_PQR', 'Fecha_Inactivo', 'Fecha_Desinstalado', 'Sexo', 'Genero', 'Orientacion_Sexual', 'Educacion_', 'Etnias', 'Discapacidad', 'Estratos', 'Beneficiario_Ley_1699_de_2013', 'SISBEN_IV']; 
+                   $excel = new ExcelUtils();
+                   $excel->export("AccesosOperacionExport.xlsx",$header,$data);
                 }                
             } else {
                 ob_start();
@@ -1246,18 +1208,9 @@ class ReportsController extends \yii\web\Controller {
 
             if (!empty($requestData['export'])) {
                 if ($requestData['export'] == 'csv') {
-                    ob_start();
-                    ob_start('ob_gzhandler');
-                    header('Content-Type: text/csv; charset=windows-1251');
-                    header('Content-Disposition: attachment; filename=CambiosyReemplazosExport.csv');
-                    $output = fopen('php://output', 'w');
-                    fwrite($output, "\xEF\xBB\xBF");
-                    fputcsv($output, ['Ejecutor', 'Documento Cliente Acceso', 'Dane Mun - ID Punto', 'Estado Actual', 'Region', 'Dane Departamento', 'Departamento', 'Dane Municipio', 'Municipio', 'Barrio', 'Dirección', 'Estrato', 'Coordenadas Grados-decimales', 'Nombre Cliente Completo', 'Telefono', 'Celular', 'Correo Electronico', 'VIP (Si o No)', 'Codigo Proyecto VIP', 'Nombre Proyecto VIP', 'Velocidad Contratada MB', 'Meta', 'Tipo Solucion UM Operatividad', 'Operador Prestante', 'IP', 'Olt', 'PuertoOlt', 'Mac Onu', 'Port Onu', 'Nodo', 'Armario', 'Red Primaria', 'Red Secundaria', 'Nodo', 'Amplificador', 'Tap-Boca', 'Mac Cpe', 'Documento Cliente Acceso', 'Region', 'Dane Departamento', 'Departamento', 'Dane Municipio', 'Municipio', 'Barrio', 'Dirección', 'Estrato', 'Coordenadas Grados-decimales', 'Nombre Cliente Completo', 'Telefono', 'Celular', 'Correo Electronico', 'VIP (Si o No)', 'Codigo Proyecto VIP', 'Nombre Proyecto VIP', 'Velocidad Contratada MB', 'Meta', 'Tipo Solucion UM Operatividad', 'Operador Prestante', 'IP', 'Olt', 'PuertoOlt', 'Mac Onu', 'Port Onu', 'Nodo', 'Armario', 'Red Primaria', 'Red Secundaria', 'Nodo', 'Amplificador', 'Tap-Boca', 'Mac Cpe'], ';');
-                    foreach ($data as $key => $value) {
-                        fputcsv($output, $value, ';');
-                    }
-                    fclose($output);
-                    ob_end_flush();
+                   $header = ['Ejecutor', 'Documento Cliente Acceso', 'Dane Mun - ID Punto', 'Estado Actual', 'Region', 'Dane Departamento', 'Departamento', 'Dane Municipio', 'Municipio', 'Barrio', 'Dirección', 'Estrato', 'Coordenadas Grados-decimales', 'Nombre Cliente Completo', 'Telefono', 'Celular', 'Correo Electronico', 'VIP (Si o No)', 'Codigo Proyecto VIP', 'Nombre Proyecto VIP', 'Velocidad Contratada MB', 'Meta', 'Tipo Solucion UM Operatividad', 'Operador Prestante', 'IP', 'Olt', 'PuertoOlt', 'Mac Onu', 'Port Onu', 'Nodo', 'Armario', 'Red Primaria', 'Red Secundaria', 'Nodo', 'Amplificador', 'Tap-Boca', 'Mac Cpe', 'Documento Cliente Acceso', 'Region', 'Dane Departamento', 'Departamento', 'Dane Municipio', 'Municipio', 'Barrio', 'Dirección', 'Estrato', 'Coordenadas Grados-decimales', 'Nombre Cliente Completo', 'Telefono', 'Celular', 'Correo Electronico', 'VIP (Si o No)', 'Codigo Proyecto VIP', 'Nombre Proyecto VIP', 'Velocidad Contratada MB', 'Meta', 'Tipo Solucion UM Operatividad', 'Operador Prestante', 'IP', 'Olt', 'PuertoOlt', 'Mac Onu', 'Port Onu', 'Nodo', 'Armario', 'Red Primaria', 'Red Secundaria', 'Nodo', 'Amplificador', 'Tap-Boca', 'Mac Cpe'];
+                   $excel = new ExcelUtils();
+                   $excel->export("CambiosyReemplazosExport.xlsx",$header,$data);
                 }                
             } else {
                 ob_start();
@@ -1444,18 +1397,9 @@ class ReportsController extends \yii\web\Controller {
 
             if (!empty($requestData['export'])) {
                 if ($requestData['export'] == 'csv') {
-                    ob_start();
-                    ob_start('ob_gzhandler');
-                    header('Content-Type: text/csv; charset=windows-1251');
-                    header('Content-Disposition: attachment; filename=AccesosInstalacionExport.csv');
-                    $output = fopen('php://output', 'w');
-                    fwrite($output, "\xEF\xBB\xBF");
-                    fputcsv($output, ['Operador', 'Documento_cliente_acceso', 'Dane_Mun_ID_Punto', 'Estado_actual', 'Region', 'Dane_Departamento', 'Departamento', 'Dane_Municipio', 'Municipio', 'Barrio', 'Direccion', 'Estrato', 'Dificultad__de_acceso_al_municipio', 'Coordenadas_Grados_decimales', 'Nombre_Cliente', 'Telefono', 'Celular', 'Correo_Electronico', 'VIP', 'Codigo_Proyecto_VIP', 'Nombre_Proyecto_VIP', 'Velocidad_Contratada_Downstream', 'Meta', 'Fecha_max_de_cumplimiento_de_meta', 'Dias_pendientes_de_la_fecha_de_cumplimiento', 'FECHA_APROBACION_INTERVENTORIA', 'FECHA_APROBACION_META_SUPERVISION', 'Tipo_Solucion_UM_Operatividad', 'Operador_Prestante', 'IP', 'Olt', 'PuertoOlt', 'Serial_ONT', 'Port_ONT', 'Nodo', 'Armario', 'Red_Primaria', 'Red_Secundaria', 'Nodo2', 'Amplificador', 'Tap_Boca', 'Mac_Cpe', 'Fecha_Asignado_o_Presupuestado', 'Fecha_En_proceso_de_Instalacion', 'Fecha_Anulado', 'Fecha_Instalado', 'Fecha_Activo', 'Fecha_aprobacion_de_meta', 'Sexo', 'Genero', 'Orientacion_Sexual', 'Educacion', 'Etnias', 'Discapacidad', 'Estratos', 'Beneficiario_Ley_1699_de_2013', 'SISBEN_IV'], ';');
-                    foreach ($data as $key => $value) {
-                        fputcsv($output, $value, ';');
-                    }
-                    fclose($output);
-                    ob_end_flush();
+                   $header = ['Operador', 'Documento_cliente_acceso', 'Dane_Mun_ID_Punto', 'Estado_actual', 'Region', 'Dane_Departamento', 'Departamento', 'Dane_Municipio', 'Municipio', 'Barrio', 'Direccion', 'Estrato', 'Dificultad__de_acceso_al_municipio', 'Coordenadas_Grados_decimales', 'Nombre_Cliente', 'Telefono', 'Celular', 'Correo_Electronico', 'VIP', 'Codigo_Proyecto_VIP', 'Nombre_Proyecto_VIP', 'Velocidad_Contratada_Downstream', 'Meta', 'Fecha_max_de_cumplimiento_de_meta', 'Dias_pendientes_de_la_fecha_de_cumplimiento', 'FECHA_APROBACION_INTERVENTORIA', 'FECHA_APROBACION_META_SUPERVISION', 'Tipo_Solucion_UM_Operatividad', 'Operador_Prestante', 'IP', 'Olt', 'PuertoOlt', 'Serial_ONT', 'Port_ONT', 'Nodo', 'Armario', 'Red_Primaria', 'Red_Secundaria', 'Nodo2', 'Amplificador', 'Tap_Boca', 'Mac_Cpe', 'Fecha_Asignado_o_Presupuestado', 'Fecha_En_proceso_de_Instalacion', 'Fecha_Anulado', 'Fecha_Instalado', 'Fecha_Activo', 'Fecha_aprobacion_de_meta', 'Sexo', 'Genero', 'Orientacion_Sexual', 'Educacion', 'Etnias', 'Discapacidad', 'Estratos', 'Beneficiario_Ley_1699_de_2013', 'SISBEN_IV']; 
+                   $excel = new ExcelUtils();
+                   $excel->export("AccesosInstalacionExport.xlsx",$header,$data);
                 }
                 if ($requestData['export'] == 'pdf') {
                     $pdf = new Fpdf();
@@ -1555,11 +1499,12 @@ class ReportsController extends \yii\web\Controller {
             $totalData = Yii::$app->db->createCommand('SELECT COUNT(*) FROM tickets t inner join client c on t.fk_soc = c.idClient')->queryScalar();
             $totalFiltered = $totalData;
             $queryTickets = (new \yii\db\Query())
-            ->select(['state','town','daneCode' => 'sys_district.code','access_id','name' => 'client.name','tickets.ref','category_label','type_label','severity_label','subject','datec','date_close','idprof1','phone','email','address','lat','lng','tickets.message', 'tickets.messages'])            
+            ->select(['state','town','daneCode' => 'sys_district.code','access_id','name' => 'client.name','tickets.ref','category_label','type_label','severity_label','subject','datec','date_close','idprof1','phone','email','address','lat','lng','tickets.message', 'tickets.messages', 'status' => 'status_ticket.name'])            
             ->from('tickets')
             ->innerJoin('client', 'tickets.fk_soc = client.idClient')
             ->innerJoin('sys_city', 'sys_city.name = client.state')
-            ->innerJoin('sys_district', 'upper(sys_district.name) = upper(client.town) and sys_city.id = sys_district.id_city');
+            ->innerJoin('sys_district', 'upper(sys_district.name) = upper(client.town) and sys_city.id = sys_district.id_city')
+            ->leftJoin('status_ticket', 'status_ticket.status_code = tickets.fk_statut');
             if (!empty($requestData['search']['value']))
             {
                 $queryTickets->Where(['LIKE', 'tickets.ref', $requestData['search']['value']."%", false])
@@ -1670,7 +1615,7 @@ class ReportsController extends \yii\web\Controller {
                 $arrayMessage = (array)json_decode($row['messages']);
                 $history = $this->getHistoryFromMessageTicket($arrayMessage , $isExportData);     
                 $author = $this->getAuthorFromMessageTicket($arrayMessage);
-                $status = $this->getStateFromMessageTicket($arrayMessage);
+                $status = $row['status'];
                 $nestedData[] =  $history;
                 $nestedData[] =  $author;
                 $nestedData[] =  $status;
@@ -1757,6 +1702,7 @@ class ReportsController extends \yii\web\Controller {
     {
         $buscar=array(chr(13).chr(10), "\r\n", "\n", "\r");
         $reemplazar=array("", "", "", "");
+        $message = strip_tags($message);
         return (($exportData) ? html_entity_decode(str_ireplace($buscar,$reemplazar,$message)) : $message); 
     }
 
