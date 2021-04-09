@@ -48,3 +48,5 @@ frontend/web/info.php
 
 #ignore temp files
 /temp
+
+/eiasadocs

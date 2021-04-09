@@ -98,10 +98,15 @@ $(document).ready(function(){
     
     // Serever side
     
-    function makeserverprocessing(datatable, ajaxcall){       
+    function makeserverprocessing(datatable, ajaxcall){
+        var paging = true;
+        if(datatable === "#dataTableDetailsTickets")
+        {
+            var paging = false;
+        }
         if($(datatable).length === 0){ return; }
         $(datatable).DataTable({            
-            'paging': true,
+            'paging': paging,
             'searching': true,
             'ordering': true,
             'info': true,
@@ -176,11 +181,11 @@ $(document).ready(function(){
                 }
                 
                 return nRow; 
-            }, 
+            },           
         });        
         $("#btnsearch").click(function(e){            
             $(datatable).DataTable().ajax.reload();
-        });
+        });        
     }
 
     function columnDefsDataTable(datatable)
@@ -194,7 +199,7 @@ $(document).ready(function(){
         }
 
         return null;
-    }
+    }   
 
     makeserverprocessing('#dataTableInventarios','/reports/inventariosserver');
     makeserverprocessing('#dataTableInstalacion','/reports/instalacionserver');
@@ -207,3 +212,20 @@ $(document).ready(function(){
     makeserverprocessing('#dataTableClientes','/visor/clientsserver');
     makeserverprocessing('#dataTableDetailsTickets','/reports/ticketsseverity');
 });
+
+function previewFile(url, extensionFile)
+{    
+    if(extensionFile === 'gif' || extensionFile === 'jpg' || extensionFile === 'jpeg' || extensionFile === 'bmp' || extensionFile === 'png')
+    {
+        $.fancybox.open({
+            'src':  url
+        });
+    }
+    else
+    {
+        $.fancybox.open({
+            'src': 'http://docs.google.com/gview?url='+ url +'&embedded=true',
+            'type': 'iframe'
+        });
+    }   
+}

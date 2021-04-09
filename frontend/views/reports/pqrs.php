@@ -1,7 +1,19 @@
 <?php
- use yii\web\View
+ use yii\web\View;
 ?>
-
+<style>  
+.card-file-thumb{
+        background-size: cover; 
+        background-repeat: no-repeat;
+    }
+.fancybox-slide--iframe .fancybox-content {
+        width  :  80%;
+        height :  80%;
+        max-width  : 80%;
+        max-height : 80%;
+        margin: 0;
+    }
+</style>  
 <div class="content content-fixed bd-b pb-3">
   <div class="container pd-x-0 pd-lg-x-10 pd-xl-x-0">
     <div class="d-sm-flex align-items-center justify-content-between">
@@ -93,6 +105,8 @@
                         <th data-priority="5" width="10%">Historial</th>
                         <th data-priority="5" width="10%">Autor</th>
                         <th data-priority="5" width="10%">Estado</th>
+                        <th data-priority="5" width="10%"></th>
+                        <th data-priority="5" width="10%">Archivos Adjuntos</th>
                     </tr>
                 </thead>
                 <tbody>                                    
@@ -102,11 +116,11 @@
       </div>
     </div>
 </div>
-<style>
+<>
     .swal2-content{
         text-align: justify !important;
     }
-</style>
+</>
 <?php 
     $this->registerJs(
         "
@@ -119,7 +133,7 @@
               showCloseButton: false,
               focusConfirm: false
             });
-        }
+        }        
         ",
         View::POS_HEAD,
         '.btndetail'

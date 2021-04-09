@@ -2,6 +2,8 @@
 
 namespace frontend\controllers;
 
+use app\models\Document;
+use app\models\Settings;
 use Yii;
 use yii\base\Exception;
 use Fpdf\Fpdf;
@@ -9,6 +11,8 @@ use yii\helpers\Url;
 use \yii\db;
 use yii\data\Pagination;
 use frontend\utils\ExcelUtils;
+use GuzzleHttp\Psr7\Query;
+use phpDocumentor\Reflection\Types\Object_;
 
 class ReportsController extends \yii\web\Controller {
 
@@ -93,24 +97,34 @@ class ReportsController extends \yii\web\Controller {
         $pdptos = empty($requestData['dptos']) ? '-1' : $requestData['dptos'];
         $pmpios = empty($requestData['mpios']) ? '-1' : $requestData['mpios'];
         
-        $sql = "SELECT category_label, type_label, severity_label, count(*) as conteo FROM tickets t inner join  client c ON t.fk_soc = c.idClient WHERE 1 =1 ";
+        $queryTicketsSeverity = (new \yii\db\Query())
+        ->select(['category_label', 'type_label', 'severity_label', 'conteo' => 'count(*)' ])
+        ->from('tickets')
+        ->innerJoin('client', 'client.idClient = tickets.fk_soc');
+        $queryTotal = $queryTicketsSeverity;
         
         if (!empty($requestData['search']['value'])) {
-            $sql .= " AND ( category_label LIKE '" . $requestData['search']['value'] . "%' ";
-            $sql .= " OR type_label LIKE '" . $requestData['search']['value'] . "%'";
-            $sql .= " OR severity_label LIKE '" . $requestData['search']['value'] . "%')";
+            $queryTicketsSeverity->Where(['LIKE', 'category_label', $requestData['search']['value']."%", false])
+            ->orWhere(['LIKE', 'type_label',$requestData['search']['value']."%", false])
+            ->orWhere(['LIKE', 'severity_label',$requestData['search']['value']."%", false]);           
         }
 
-        if ($pdptos != '-1') {
-            $sql .= " AND state = '" . $pdptos . "'";
+        if ($pdptos != '-1') {            
+            $queryTicketsSeverity->andWhere(['=', 'state', $pdptos]);
         }
-        if ($pmpios != '-1') {
-            $sql .= " AND town = '" . $pmpios . "'";
+        if ($pmpios != '-1') {            
+            $queryTicketsSeverity->andWhere(['=', 'town', $pmpios]);
         }
-        $sql .= " group by category_label, type_label, severity_label order by 1,2,3";        
-        $tickets_severity = $connection->createCommand($sql)->queryAll();
-        $sql = "SELECT count(*) FROM tickets t inner join  client c ON t.fk_soc = c.idClient WHERE 1 =1";
-        $total = $connection->createCommand($sql)->queryScalar();
+        if(Yii::$app->user->identity->attributes['idProfile'] != 1)
+        {
+            $category = $this->getCategoryTicketsFilter();
+            $queryTicketsSeverity->andWhere(['category_label' => $category]);
+        }
+        $queryTicketsSeverity->groupBy(['category_label', 'type_label', 'severity_label']);
+        $queryTicketsSeverity->orderBy(['category_label' => SORT_ASC, 'type_label'  => SORT_ASC, 'severity_label'  => SORT_ASC]);
+        $total = $queryTotal->count();
+        
+        $tickets_severity = $queryTicketsSeverity->all();
         $data = array();
         foreach ($tickets_severity as $key => $row) {
             $nestedData = array();
@@ -124,8 +138,9 @@ class ReportsController extends \yii\web\Controller {
 
         ob_start();
         ob_start('ob_gzhandler');
+        $draw = (isset($requestData['draw']))?intval($requestData['draw']):1;
         $json_data = array(
-            "draw" => intval($requestData['draw']),
+            "draw" => $draw,
             "recordsTotal" => intval($total),
             "recordsFiltered" => intval(count($tickets_severity)),
             "data" => $data   // total data array
@@ -143,27 +158,35 @@ class ReportsController extends \yii\web\Controller {
         $pmpios = $request->post('mpios');
         //dias promedio abiertos
         $sql = "SELECT ROUND(AVG(DATEDIFF(NOW(), DATE_FORMAT(FROM_UNIXTIME(`datec`), '%Y-%m-%d')) ),2) AS days FROM tickets t  inner join  client c ON t.fk_soc = c.idClient  where t.date_close  = ''";
-        if ($pdptos != '-1') {
-            $sql .= " AND state = '" . $pdptos . "'";
+        $queryAvgOpenedByDay = (new \yii\db\Query())
+        ->select(["days" => "ROUND(AVG(DATEDIFF(NOW(), DATE_FORMAT(FROM_UNIXTIME(`datec`), '%Y-%m-%d')) ),2)"])
+        ->from("tickets")
+        ->innerJoin("client", "client.idClient = tickets.fk_soc")
+        ->where(['=','date_close', '']);
+        $queryAvgClosedByDay = (new \yii\db\Query())
+        ->select(["days" => "ROUND(AVG(DATEDIFF(DATE_FORMAT(FROM_UNIXTIME(`date_close`), '%Y-%m-%d'), DATE_FORMAT(FROM_UNIXTIME(`datec`), '%Y-%m-%d')) ),2)"])
+        ->from("tickets")
+        ->innerJoin("client", "client.idClient = tickets.fk_soc")
+        ->where(['<>','date_close', '']);
+        if ($pdptos != '-1') {            
+            $queryAvgOpenedByDay->andWhere(['=', 'state', $pdptos]);
+            $queryAvgClosedByDay->andWhere(['=', 'state', $pdptos]);
         }
-        if ($pmpios != '-1') {
-            $sql .= " AND town = '" . $pmpios . "'";
+        if ($pmpios != '-1') {            
+            $queryAvgOpenedByDay->andWhere(['=', 'town', $pmpios]);
+            $queryAvgClosedByDay->andWhere(['=', 'town', $pmpios]);
         }
-         
-         $daysopen = $connection->createCommand($sql)->queryOne();
- 
-         //dias promedio cierre
-         $sql = "SELECT ROUND(AVG(DATEDIFF(DATE_FORMAT(FROM_UNIXTIME(`date_close`), '%Y-%m-%d'), DATE_FORMAT(FROM_UNIXTIME(`datec`), '%Y-%m-%d')) ),2) AS days FROM tickets t  inner join  client c ON t.fk_soc = c.idClient  where t.date_close  <> ''";
-         if ($pdptos != '-1') {
-            $sql .= " AND state = '" . $pdptos . "'";
+        if(Yii::$app->user->identity->attributes['idProfile'] != 1)
+        {
+            $category = $this->getCategoryTicketsFilter();
+            $queryAvgOpenedByDay->andWhere(['category_label' => $category]);
+            $queryAvgClosedByDay->andWhere(['category_label' => $category]);
         }
-        if ($pmpios != '-1') {
-            $sql .= " AND town = '" . $pmpios . "'";
-        }
-         $daysclosed = $connection->createCommand($sql)->queryOne();
-
+        $daysopen = $queryAvgOpenedByDay->one();
+        $daysclosed = $queryAvgClosedByDay->one();
         echo json_encode([ 'daysopen' => $daysopen,
                            'daysclosed' => $daysclosed ]);
+        exit(0);
     }
 
     public function actionTicketsprocess()
@@ -184,6 +207,7 @@ class ReportsController extends \yii\web\Controller {
         }
         $tickets_estado = $connection->createCommand($sql)->queryAll();
         echo json_encode($tickets_estado);
+        exit(0);
     }
 
     public function actionTicketsgroups()
@@ -193,8 +217,20 @@ class ReportsController extends \yii\web\Controller {
         $pmpios = $request->post('mpios');
 
         $connection = Yii::$app->getDb();
+        $queryTicketsgroups = (new \yii\db\Query())
+        ->from('tickets')
+        ->select(['category_label'])
+        ->innerJoin('client', 'tickets.fk_soc = client.idClient');
+        if(Yii::$app->user->identity->attributes['idProfile'] != 1)
+        {
+            $category = $this->getCategoryTicketsFilter();
+            $queryTicketsgroups->andWhere(['category_label' => $category]);
+        }
+        $queryTicketsgroups->distinct()
+        ->orderBy(['category_label' => SORT_ASC]);
+
         $sql = "SELECT distinct t.category_label FROM tickets t inner join client c on t.fk_soc = c.idClient order by 1";
-        $categories = $connection->createCommand($sql)->queryAll();
+        $categories = $queryTicketsgroups->all();
         //tickets por grupo
         $sql = "select DATE_FORMAT(FROM_UNIXTIME(`t`.`datec`), '%Y-%m') as fecha, ";
         foreach ($categories as $key => $row) {
@@ -210,8 +246,10 @@ class ReportsController extends \yii\web\Controller {
             $sql .= " AND town = '" . $pmpios . "'";
         }
         $sql = $sql . " group by  DATE_FORMAT(FROM_UNIXTIME(`t`.`datec`), '%Y-%m') ";
+        
         $tickets_grupo = $connection->createCommand($sql)->queryAll();
         echo json_encode($tickets_grupo);
+        exit(0);
     }
 
     public function actionPqrs() {
@@ -1494,20 +1532,21 @@ class ReportsController extends \yii\web\Controller {
                 29 => 'access_id',
                 30 => 'address',
                 31 => 'lat',
-                32 => 'lng'
-            );            
-            $totalData = Yii::$app->db->createCommand('SELECT COUNT(*) FROM tickets t inner join client c on t.fk_soc = c.idClient')->queryScalar();
-            $totalFiltered = $totalData;
+                32 => 'lng',
+                33 => 'documentList'
+            );
             $queryTickets = (new \yii\db\Query())
             ->select(['state','town','daneCode' => 'sys_district.code','access_id','name' => 'client.name','tickets.ref','category_label','type_label','severity_label','subject','datec','date_close','idprof1','phone','email','address','lat','lng','tickets.message', 'tickets.messages', 'status' => 'status_ticket.name'])            
             ->from('tickets')
             ->innerJoin('client', 'tickets.fk_soc = client.idClient')
             ->innerJoin('sys_city', 'sys_city.name = client.state')
             ->innerJoin('sys_district', 'upper(sys_district.name) = upper(client.town) and sys_city.id = sys_district.id_city')
-            ->leftJoin('status_ticket', 'status_ticket.status_code = tickets.fk_statut');
+            ->leftJoin('status_ticket', 'status_ticket.status_code = tickets.fk_statut');            
+            $totalData = $queryTickets->count();
+            $totalFiltered = $totalData;
             if (!empty($requestData['search']['value']))
             {
-                $queryTickets->Where(['LIKE', 'tickets.ref', $requestData['search']['value']."%", false])
+                $queryTickets->andWhere(['LIKE', 'tickets.ref', $requestData['search']['value']."%", false])
                  ->orWhere(['LIKE', 'subject', $requestData['search']['value']."%", false])
                  ->orWhere(['LIKE', 'type_label', $requestData['search']['value']."%", false])
                  ->orWhere(['LIKE', 'category_label', $requestData['search']['value']."%", false])
@@ -1522,7 +1561,6 @@ class ReportsController extends \yii\web\Controller {
             $pdptos = empty($requestData['dptos']) ? '-1' : $requestData['dptos'];
             $pmpios = empty($requestData['mpios']) ? '-1' : $requestData['mpios'];
             $daneCodeFilter = empty($requestData['daneCodeFilter']) ? '-1' : $requestData['daneCodeFilter'];
-
             if ($pdptos != '-1') {
                 $queryTickets->andWhere(['=', 'state', $pdptos]);
             }
@@ -1532,15 +1570,21 @@ class ReportsController extends \yii\web\Controller {
             if ($daneCodeFilter != '-1') {
                 $queryTickets->andWhere(['=', 'sys_district.code', $daneCodeFilter]);
             }
+            if(Yii::$app->user->identity->attributes['idProfile'] != 1)
+            {
+                $category = $this->getCategoryTicketsFilter();
+                $queryTickets->andWhere(['category_label' => $category]);
+            }
+            
             if (empty($requestData['export'])) 
             {
                 $totalFiltered = $queryTickets->count();
                 $order =  ($requestData['order'][0]['dir'] == 'asc') ?  SORT_ASC : SORT_DESC;
                 $pagination = new Pagination(['totalCount' => $totalFiltered, 'pageSize' => $requestData['length'], 'page' => $requestData['start']]);
                 $queryTickets->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
-                $queryTickets->offset($pagination->offset);
-                $queryTickets->limit($pagination->limit);
-            }
+                $queryTickets->offset($requestData['start']);
+                $queryTickets->limit($requestData['length']);
+            }            
             $result = $queryTickets->all();
             $data = array();
             foreach ($result as $key => $row) {
@@ -1619,6 +1663,8 @@ class ReportsController extends \yii\web\Controller {
                 $nestedData[] =  $history;
                 $nestedData[] =  $author;
                 $nestedData[] =  $status;
+                $nestedData[] = "";
+                $nestedData[] = $this->getDocumentTicketList($row['ref']);
                 $data[] = $nestedData;
             }
 
@@ -1647,6 +1693,97 @@ class ReportsController extends \yii\web\Controller {
         }
     }
 
+    private function getCategoryTicketsFilter()
+    {
+        $config = Settings::find()->where(['=','key','CATEGORIAS VISIBLE TICKETS'])
+        ->one();
+        $category = explode(',',$config->value);
+
+        return $category;
+    }
+    
+    private function getDocumentTicketList($refTicket)
+    {
+        
+        $documentList = Document::find()->where(['level1name' => $refTicket, 'iddocumentType' => 6 ])->all();
+        $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
+        $htmlDocument ='<div class="row row-xs" id="filecontainer" style="margin-bottom: 60px; cursor:pointer">';
+         foreach($documentList as $document)
+         {             
+            $extensionFile = pathinfo($document->name, PATHINFO_EXTENSION);
+            $iconStyle = $this->getIconStyle($extensionFile, $keyurlbase, $document->iddocument);
+            $htmlDocument .=  
+            '<div class="col-xs-6 col-sm-4 col-md-3 colfile" data-iddocument="'.$document->iddocument.'" onClick="previewFile(\''.$keyurlbase->value.'/visor/getfile?id='.$document->iddocument.'\',\''.$extensionFile.'\' )">
+             <div class="card card-file">
+              <div class="dropdown-file">
+                <a href="" class="dropdown-link" data-toggle="dropdown"><i data-feather="more-vertical"></i></a>
+                <div class="dropdown-menu dropdown-menu-right">                  
+                </div>
+              </div><!-- dropdown -->
+              <div class="card-file-thumb '.$iconStyle->color.'" style="'.$iconStyle->background.'">
+                <i class="far '.$iconStyle->icon.'"></i>
+              </div>
+              <div class="card-body">
+                <h6>'.$document->name.'</h6>
+                <p>'.mime_content_type($document->path.$document->name).'</p>
+                <p>'.$document->date.'</p>
+                <span>'.$document->size.'</span>
+              </div>
+              </div>
+            </div><!-- col -->';
+         }
+        $htmlDocument .= '</div>';
+        return $htmlDocument ;
+    }
+
+    private function getIconStyle($extensionFile, $keyurlbase, $idDocument)
+    {
+        $iconStyle = new Object_();
+        $iconStyle->icon = 'fa-file';
+        $iconStyle->color = "tx-teal";
+        $iconStyle->background = "";
+        switch(strtolower($extensionFile))
+        {   
+            case "doc": 
+                $iconStyle->icon = "fa-file-word";
+                $iconStyle->color = "tx-primary";
+            break;
+            case "xls": 
+                $iconStyle->icon = "fa-file-excel";
+                $iconStyle->color = "tx-success";
+                break;
+            case "ppt": 
+                $iconStyle->icon = "fa-file-powerpoint";
+                $iconStyle->color = "tx-orange";
+                break;
+            case "pdf": 
+                $iconStyle->icon = "fa-file-pdf";
+                $iconStyle->color = "tx-danger";
+                break;
+            case "zip": 
+                $iconStyle->icon = "fa-file-archive";
+                $iconStyle->color = "tx-warning";
+                break;
+            case "rar": 
+                $iconStyle->icon = "fa-file-archive";
+                $iconStyle->color = "tx-purple";
+                break;
+            case "txt": 
+                $iconStyle->icon = "fa-file-alt";
+                $iconStyle->color = "tx-black";
+                break;
+            case "gif":
+            case "jpg":
+            case "jpeg":
+            case "png":
+            case "bmp":     
+                $iconStyle->icon = "";
+                $iconStyle->color = "";
+                $iconStyle->background = "background-image: url(".$keyurlbase->value."/visor/getfile?id=".$idDocument."&t=true); filter: opacity(0.5);";
+                break;            
+        }
+        return $iconStyle;
+    }
     public function formatdate($date) {
         if (isset($date) && strlen($date) > 0) {
             return date("Y-m-d", strtotime(str_replace('/', '-', $date)));

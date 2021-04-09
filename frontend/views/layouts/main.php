@@ -81,6 +81,7 @@ AppAsset::register($this);
             <?php if(Yii::$app->user->identity->attributes['idProfile']  == 1){ ?>
             <li class="nav-item"><a href="<?php echo Url::toRoute('user/index'); ?>" class="nav-link"><i data-feather="users"></i> Usuarios</a></li>
             <li class="nav-item"><a href="<?php echo Url::toRoute('module/index'); ?>" class="nav-link"><i data-feather="folder"></i> Módulos</a></li>
+            <li class="nav-item"><a href="<?php echo Url::toRoute('config/index'); ?>" class="nav-link"><i data-feather="settings"></i> Configuración</a></li>
             <?php } ?>
         <?php
           }

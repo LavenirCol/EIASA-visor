@@ -68,7 +68,6 @@ class VisorController extends \yii\web\Controller {
 
         try {
             $requestData = $_REQUEST;
-
             $columns = array(
                 0 => 'access_id',
                 1 => 'idprof1',
@@ -104,9 +103,10 @@ class VisorController extends \yii\web\Controller {
             }
 
             $result = Yii::$app->db->createCommand($sql)->queryAll();
-
             $data = array();
             foreach ($result as $key => $row) {
+                try
+                {
                 $nestedData = array();
                 $nestedData[] = '<button class="btn btn-primary btn-sm selectsuscriptor" style="padding: 5px;font-size: 10px;margin-top: 5px;" data-idcliente="'. $row["idClient"].'" >Seleccionar</button>';
                 $nestedData[] = $row["access_id"];
@@ -119,6 +119,10 @@ class VisorController extends \yii\web\Controller {
                 $nestedData[] = $row["email"] == null ? '' : $row["email"];
 
                 $data[] = $nestedData;
+                }catch(Exception $ex1)
+                {
+                    echo $ex1;
+                }
             }
 
             if (!empty($requestData['export'])) {
@@ -181,7 +185,7 @@ class VisorController extends \yii\web\Controller {
                     "data" => $data   // total data array
                 );
 
-                echo json_encode($json_data);
+                echo json_encode($json_data);exit;
             }
         } catch (\Exception $ex) {
             $returndata = ['error' => $ex->getMessage()];

@@ -19,6 +19,8 @@ use app\models\Tickets;
 use app\models\Hsstock;
 use app\models\Hstask;
 use common\models\RabbitMQ;
+use Exception;
+
 class CronController extends Controller {
 
     public $root_path = "";
@@ -37,7 +39,7 @@ class CronController extends Controller {
         $apikey = 'gFmK1A57ZQolc0V33727Jo4ohxyAGIPh';
         $url = 'https://megayacrm.lavenirapps.co/api/index.php/' . $entity;
         //dev
-        //$apikey = '1bo1dgm0B4Xd48nW3iNZXvaJh1AXCH36';
+        //$apikey = '3BEzwP1RIEa1Pui6P5k6ynOhRfy8V380';
         //$url = 'https://eiasa-dev.lavenirapps.co/api/index.php/' . $entity;
         $curl = curl_init();
         $httpheader = ['DOLAPIKEY: ' . $apikey];
@@ -561,30 +563,36 @@ class CronController extends Controller {
         }
 
         echo "procesando tickets (" . sizeof($tickets) . ")\n";
-        foreach ((array) $tickets as $ticket) {
+        foreach ((array) $tickets as $ticket) 
+        {
+            try
+            {
+                if (isset($ticket['ref'])) {
+                    // crea ticket
+                    $newticket = new Tickets();
+                    $newticket->id = $ticket['id'];
+                    $newticket->socid = $ticket['socid'];
+                    $newticket->ref = $ticket['ref'];
+                    $newticket->fk_soc = $ticket['fk_soc'];
+                    $newticket->subject = $ticket['subject'];
+                    $newticket->message = $ticket['message'];
+                    $newticket->message = str_replace(array("\n", "\r", "\r\n", "\xE2\x80\x9010", "\xE2\x80\xAC"), ' ', $ticket['message']);
+                    $newticket->type_label = $ticket['type_label'];
+                    $newticket->category_label = $ticket['category_label'];
+                    $newticket->severity_label = $ticket['severity_label'];
+                    $newticket->datec = $ticket['datec'];
+                    $newticket->date_read = $ticket['date_read'];
+                    $newticket->date_close = $ticket['date_close'];
+                    $newticket->messages = '';
+                    $newticket->fk_statut =$ticket['fk_statut'];
 
-            if (isset($ticket['ref'])) {
-                // crea ticket
-                $newticket = new Tickets();
-                $newticket->id = $ticket['id'];
-                $newticket->socid = $ticket['socid'];
-                $newticket->ref = $ticket['ref'];
-                $newticket->fk_soc = $ticket['fk_soc'];
-                $newticket->subject = $ticket['subject'];
-                $newticket->message = $ticket['message'];
-                $newticket->message = str_replace(array("\n", "\r", "\r\n", "\xE2\x80\x9010", "\xE2\x80\xAC"), ' ', $ticket['message']);
-                $newticket->type_label = $ticket['type_label'];
-                $newticket->category_label = $ticket['category_label'];
-                $newticket->severity_label = $ticket['severity_label'];
-                $newticket->datec = $ticket['datec'];
-                $newticket->date_read = $ticket['date_read'];
-                $newticket->date_close = $ticket['date_close'];
-                $newticket->messages = '';
-                $newticket->fk_statut =$ticket['fk_statut'];
+                    $newticket->save(false);
 
-                $newticket->save(false);
-
-                $this->processticketdetail($ticket['id']);
+                    $this->processticketdetail($ticket['id']);
+                }
+            }catch(Exception $ex)
+            {
+                echo $ex->getMessage()."\n";
             }
         }
     }
@@ -1248,5 +1256,87 @@ class CronController extends Controller {
             $message->ack();
         };
         $rabbitMQ->getMessage('clientsFromDolibarr',$callback);
+    }
+
+    function listDocumentsTicket($ref)
+    {
+        return json_decode($this->callAPI("GET", "documents",  array("modulepart"=>"ticket", "ref"=>$ref)));
+    }
+
+    function getContentDocument($document)
+    {
+        $original_file = $document->level1name."/".$document->name;
+        return json_decode($this->callAPI("GET", "documents/download",  array("modulepart"=>"ticket", "original_file"=>$original_file)));
+    }
+
+    function getDocumentsTicket($idTicket)
+    {       
+       $listDocumentsTicket =  $this->listDocumentsTicket($idTicket);       
+       $index=0;
+       foreach($listDocumentsTicket as $document)
+       {          
+           try
+           {
+
+            
+                    
+          
+           if (isset($document->name))
+           {   
+                if($index == 0)
+                {
+                    $index++;
+                    $folder = $this->Createfolder(9, 0, $idTicket);
+                    $module = Module::find()->where(['idmodule' => 9])->one();       
+                    $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
+                    $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+                    $fpath = $keyfolderraiz->value . '/' . $module->moduleName . '/' . $folder['data']->folderName. '/';
+                    $vpath = $keyurlbase->value . '/' . $module->moduleName . '/' . $folder['data']->folderName . '/';
+                    Document::deleteAll(['level1name' => $idTicket, 'idFolder' => $folder['data']->idfolder]);
+                }
+                
+                echo "\n".$document->name."\n";  
+                $name = $document->name;
+                $names = explode('.', $name);
+                $ext = end($names);                
+                if ($ext !== 'odt' && $ext !== 'json') 
+                {
+                    $this->base64ToFile(($this->getContentDocument($document))->content, $fpath . $document->name);
+                    $newdocument = new Document();                    
+                    $newdocument->size = $document->size;
+                    $newdocument->date = isset($document->date) ? gmdate("Y-m-d H:i:s", $document->date) : "";
+                    $newdocument->name = $document->name;
+                    $newdocument->level1name = $document->level1name;
+                    $newdocument->iddocumentType = 6;
+                    $newdocument->idFolder = $folder['data']->idfolder;
+                    $newdocument->type = $document->type;
+                    $newdocument->path = $fpath;
+                    $newdocument->fullname = $document->fullname;
+                    $newdocument->relativename = $vpath . $document->name;
+                    $newdocument->save(false);
+                }
+            }
+
+
+           }catch(Exception $exc)
+           {
+               echo "Error ". $exc->getMessage();
+           }
+       }
+    }
+
+    function actionSyncTicketClients()
+    {
+        // $clientList = Client::find()->where(['>','idClient', 29432])->all();
+        // foreach($clientList as $client)
+        // {
+        //     $this->processtickets($client->idClient);
+        // }
+        $ticketsList = Tickets::find()->all();
+        foreach($ticketsList as $tickect)
+        {
+            $this->getDocumentsTicket($tickect->ref);
+            echo $tickect->ref."\n";
+        }
     }
 }
