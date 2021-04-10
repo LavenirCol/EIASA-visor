@@ -78,15 +78,26 @@ class ReportsController extends \yii\web\Controller {
     }
 
     public function actionPqrsdash() {
-        $connection = Yii::$app->getDb();
-        $sql = "SELECT distinct c.state FROM tickets t inner join client c on t.fk_soc = c.idClient order by 1";
-        $deptos = $connection->createCommand($sql)->queryAll();
-        $sql = "SELECT distinct c.town FROM tickets t inner join client c on t.fk_soc = c.idClient order by 1";
-        $mpios = $connection->createCommand($sql)->queryAll();
+
+        $deptosList = (new \yii\db\Query())
+        ->select(['state'])
+        ->from('tickets')
+        ->innerJoin('client', 'tickets.fk_soc = client.idClient')
+        ->distinct()
+        ->orderBy(['state' => SORT_ASC])
+        ->all();
+
+        $mpiosList = (new \yii\db\Query())
+        ->select(['town'])
+        ->from('tickets')
+        ->innerJoin('client', 'tickets.fk_soc = client.idClient')
+        ->distinct()
+        ->orderBy(['state' => SORT_ASC])
+        ->all();
  
         return $this->render('pqrsdash', [
-                    'deptos' => $deptos,
-                    'mpios' => $mpios
+                    'deptos' => $deptosList,
+                    'mpios' => $mpiosList
         ]);
     }
 
@@ -303,21 +314,24 @@ class ReportsController extends \yii\web\Controller {
     public function actionInstalaciondetails() {
         $request = Yii::$app->request;
         $dane = $request->get('dane');
-        $connection = Yii::$app->getDb();
-
-        $sql = "SELECT distinct Departamento as city FROM sabana_reporte_instalacion h WHERE CONCAT(Dane_Departamento,Dane_Municipio) = '$dane' limit 1";
-        $deptos = $connection->createCommand($sql)->queryAll();
-
-        $sql = "SELECT distinct Municipio as district FROM sabana_reporte_instalacion h WHERE CONCAT(Dane_Departamento,Dane_Municipio) = '$dane' limit 1";
-        $mpios = $connection->createCommand($sql)->queryAll();
-
-        $sql = "SELECT h.* FROM sabana_reporte_instalacion h WHERE CONCAT(Dane_Departamento,Dane_Municipio) = '$dane' ";
-        $insts = $connection->createCommand($sql)->queryAll();
-        $municipio = (isset($insts[0]['Departamento'],$insts[0]['Municipio'])) ? ($insts[0]['Departamento'] . ' - ' . $insts[0]['Municipio']) : '';
+        $deptosList = (new \yii\db\Query())
+        ->select(['city' => 'Departamento'])
+        ->from('sabana_reporte_instalacion')
+        ->where(['=','CONCAT(Dane_Departamento,Dane_Municipio)', $dane])
+        ->distinct()
+        ->orderBy(['city' => SORT_ASC])
+        ->all();
+        $mpiosList = (new \yii\db\Query())
+        ->select(['district' => 'Municipio'])
+        ->from('sabana_reporte_instalacion')
+        ->where(['=','CONCAT(Dane_Departamento,Dane_Municipio)', $dane])
+        ->distinct()
+        ->orderBy(['district' => SORT_ASC])
+        ->all();        
+        $municipio = (isset($insts[0]['Departamento'],$insts[0]['Municipio'])) ? ($insts[0]['Departamento'] . ' - ' . $insts[0]['Municipio']) : '';        
         return $this->render('instalaciondetails', array(
-                    'deptos' => $deptos,
-                    'mpios' => $mpios,
-                    'insts' => $insts,
+                    'deptos' => $deptosList,
+                    'mpios' => $mpiosList,                   
                     'municipio' => $municipio));
     }
 
@@ -469,21 +483,29 @@ class ReportsController extends \yii\web\Controller {
 
     public function actionOperaciondetails() {
         $request = Yii::$app->request;
-        $dane = $request->get('dane');
-        $connection = Yii::$app->getDb();
-
-        $sql = "SELECT distinct Departamento as city FROM sabana_reporte_operacion h WHERE CONCAT(Dane_Departamento,Dane_Municipio) = '$dane' limit 1";
-        $deptos = $connection->createCommand($sql)->queryAll();
-
-        $sql = "SELECT distinct Municipio as district FROM sabana_reporte_operacion h WHERE CONCAT(Dane_Departamento,Dane_Municipio) = '$dane' limit 1";
-        $mpios = $connection->createCommand($sql)->queryAll();
-
-        $sql = "SELECT h.* FROM sabana_reporte_operacion h WHERE CONCAT(Dane_Departamento,Dane_Municipio) = '$dane' limit 1 ";
-        $insts = $connection->createCommand($sql)->queryAll();
+        $dane = $request->get('dane');        
+        $deptosList = (new \yii\db\Query())
+        ->select(['city' => 'Departamento'])
+        ->from('sabana_reporte_operacion')
+        ->where(['=','CONCAT(Dane_Departamento,Dane_Municipio)', $dane])
+        ->distinct()
+        ->orderBy(['city' => SORT_ASC])
+        ->all();
+        $mpiosList = (new \yii\db\Query())
+        ->select(['district' => 'Municipio'])
+        ->from('sabana_reporte_operacion')
+        ->where(['=','CONCAT(Dane_Departamento,Dane_Municipio)', $dane])
+        ->distinct()
+        ->orderBy(['district' => SORT_ASC])
+        ->all();        
+        $insts = (new \yii\db\Query())        
+        ->from('sabana_reporte_operacion')
+        ->where(['=','CONCAT(Dane_Departamento,Dane_Municipio)', $dane])        
+        ->all();
         $municipio = $insts[0]['Departamento'] . ' - ' . $insts[0]['Municipio'];
         return $this->render('operaciondetails', array(
-                    'deptos' => $deptos,
-                    'mpios' => $mpios,
+                    'deptos' => $deptosList,
+                    'mpios' => $mpiosList,
                     'insts' => $insts,
                     'municipio' => $municipio));
     }
