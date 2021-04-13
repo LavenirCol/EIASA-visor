@@ -23,7 +23,7 @@ class AppAsset extends AssetBundle
         'https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.css'
     ];
     public $js = [
-        'theme/dashforge/lib/jquery/jquery.min.js',
+        'theme/dashforge/lib/jquery/jquery-3.6.0.min.js',
         'theme/dashforge/lib/bootstrap/js/bootstrap.bundle.min.js',
         'theme/dashforge/lib/feather-icons/feather.min.js',
         'theme/dashforge/lib/perfect-scrollbar/perfect-scrollbar.min.js',
