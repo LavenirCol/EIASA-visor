@@ -1663,8 +1663,11 @@ class ReportsController extends \yii\web\Controller {
                 $nestedData[] =  $history;
                 $nestedData[] =  $author;
                 $nestedData[] =  $status;
-                $nestedData[] = "";
-                $nestedData[] = $this->getDocumentTicketList($row['ref']);
+                if(empty($requestData['export']))
+                {
+                    $nestedData[] = "";
+                    $nestedData[] = $this->getDocumentTicketList($row['ref']);
+                }
                 $data[] = $nestedData;
             }
 
