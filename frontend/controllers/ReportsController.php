@@ -11,13 +11,15 @@ use yii\helpers\Url;
 use \yii\db;
 use yii\data\Pagination;
 use frontend\utils\ExcelUtils;
-use GuzzleHttp\Psr7\Query;
+use yii\filters\VerbFilter;
+use \yii\db\Query;
+use yii\web\Controller;
 use phpDocumentor\Reflection\Types\Object_;
 
-class ReportsController extends \yii\web\Controller {
-
-    public function beforeAction($action) {
-        $this->enableCsrfValidation = false;
+class ReportsController extends Controller {
+   
+    public function beforeAction($action){
+        
         return parent::beforeAction($action);
     }
 
@@ -840,27 +842,38 @@ class ReportsController extends \yii\web\Controller {
                     `hstask`.`datecreate`,
                     `hstask`.`dateupdate`
                 FROM `hstask` where 1=1 ";
-
-        $data = Yii::$app->db->createCommand($sql)->queryAll();
-
-        $totalData = count($data);
+        $queryTask = new Query();
+        $queryTask->from('hstask')
+        ->select(['uuid',
+        'reference',
+        'template',
+        'address',
+        'city',
+        'district',
+        'code',
+        'lat',
+        'lng',
+        'status',
+        'pdf',
+        'datecreate',
+        'dateupdate']);        
+        $totalData = $queryTask->count();
         $totalFiltered = $totalData;
-
-        if (!empty($requestData['search']['value'])) {
-            $sql .= " AND ( uuid LIKE '" . $requestData['search']['value'] . "%' ";
-            $sql .= " OR reference LIKE '" . $requestData['search']['value'] . "%'";
-            $sql .= " OR address LIKE '" . $requestData['search']['value'] . "%'";
-            $sql .= " OR city LIKE '" . $requestData['search']['value'] . "%'";
-            $sql .= " OR district LIKE '" . $requestData['search']['value'] . "%')";
+        if (!empty($requestData['search']['value'])){
+            $queryTask->where(['LIKE','uuid', $requestData['search']['value'] . "%'", false ])
+            ->where(['LIKE','reference', $requestData['search']['value'] . "%'", false])
+            ->where(['LIKE','address', $requestData['search']['value'] . "%'", false])
+            ->where(['LIKE','city', $requestData['search']['value'] . "%'", false])
+            ->where(['LIKE','district', $requestData['search']['value'] . "%'", false]);
+        }        
+        $totalFiltered = $queryTask->count();
+        if (empty($requestData['export'])){
+            $order =  ($requestData['order'][0]['dir'] == 'asc') ?  SORT_ASC : SORT_DESC;
+            $queryTask->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
+            $queryTask->offset($requestData['start']);
+            $queryTask->limit($requestData['length']);
         }
-        $data = Yii::$app->db->createCommand($sql)->queryAll();
-        $totalFiltered = count($data);
-
-        $sql .= " ORDER BY " . $columns[$requestData['order'][0]['column']] . "   " . $requestData['order'][0]['dir'] . "  LIMIT " . $requestData['start'] . " ," .
-                $requestData['length'] . "   ";
-
-        $result = Yii::$app->db->createCommand($sql)->queryAll();
-
+        $result = $queryTask->all();
         $data = array();
         foreach ($result as $key => $row) {
             $nestedData = array();
@@ -880,14 +893,24 @@ class ReportsController extends \yii\web\Controller {
             $data[] = $nestedData;
         }
 
-        $json_data = array(
-            "draw" => intval($requestData['draw']),
-            "recordsTotal" => intval($totalData),
-            "recordsFiltered" => intval($totalFiltered),
-            "data" => $data   // total data array
-        );
-
-        echo json_encode($json_data);
+        if (!empty($requestData['export'])) {
+            if ($requestData['export'] == 'csv') {                    
+               $header = ['uuid', 'Referencia', 'Plantilla', 'Dirección', 'Ciudad', 'Departamento', 'Código', 'Latitud', 'Longitud', 'Estado', 'PDF', 'Fecha_Creación', 'Fecha Actualización']; 
+               $excel = new ExcelUtils();
+               $excel->export("Reporte_Instalacion.xlsx",$header,$data);
+            }                
+        } else {
+            ob_start();
+            ob_start('ob_gzhandler');
+            $json_data = array(
+                "draw" => intval($requestData['draw']),
+                "recordsTotal" => intval($totalData),
+                "recordsFiltered" => intval($totalFiltered),
+                "data" => $data   // total data array
+            );
+            echo json_encode($json_data);
+            ob_end_flush();
+        }        
     }
 
     public function actionOperaciondetailsserver() {

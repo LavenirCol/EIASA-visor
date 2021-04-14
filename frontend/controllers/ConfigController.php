@@ -8,12 +8,12 @@ use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use app\models\Settings;
 use app\models\Tickets;
+use Exception;
 
 class ConfigController extends Controller
 {
     public function beforeAction($action) 
-    {
-        $this->enableCsrfValidation = false;
+    {  
         return parent::beforeAction($action);
     }
     public function behaviors()
@@ -52,14 +52,24 @@ class ConfigController extends Controller
 
     public function actionUpdateconfigtickets()
     {
-        $configTickets = Settings::find()->where(['=','key','CATEGORIAS VISIBLE TICKETS'])
-        ->one();
-        $configList = Yii::$app->request->bodyParams['configList'];
-        
-        
-        $configTickets->value = implode(",",$configList);
-        $configTickets->save();
-
-        return json_encode("ok");
+        $response = Yii::$app->response;
+        try
+        {
+            $configTickets = Settings::find()->where(['=','key','CATEGORIAS VISIBLE TICKETS'])
+            ->one();
+            $configList = Yii::$app->request->bodyParams['configList'];
+            $configTickets->value = implode(",",$configList);
+            $configTickets->save();
+            $response->format = \yii\web\Response::FORMAT_JSON;
+            $response->statusCode = 200;
+            $response->data = ['message' => 'Configuration was saved'];            
+            
+        }catch(Exception $exception)
+        {
+            $response->format = \yii\web\Response::FORMAT_JSON;
+            $response->statusCode = 500;
+            $response->data = ['message' => $exception->getMessage()];
+        }
+        return $response;
     }
 }
