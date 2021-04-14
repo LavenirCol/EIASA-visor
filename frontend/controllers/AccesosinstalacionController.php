@@ -15,6 +15,7 @@ use PHPExcel;
 use PHPExcel_IOFactory;
 use Vtiful\Kernel\Excel;
 use Fpdf\Fpdf;
+use yii\filters\AccessControl;
 
 /**
  * SabanaAccesosInstalacionController implements the CRUD actions for SabanaAccesosInstalacion model.
@@ -31,6 +32,17 @@ class AccesosinstalacionController extends Controller {
      */
     public function behaviors() {
         return [
+            'access' => [
+                'class' => AccessControl::className(),
+                'only' => ['upload'],
+                'rules' => [
+                    [
+                        'actions' => ['upload'],
+                        'allow' => true,
+                        'roles' => ['@'],
+                    ],
+                ],
+            ],
             'verbs' => [
                 'class' => VerbFilter::className(),
                 'actions' => [

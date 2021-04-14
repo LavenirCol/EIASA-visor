@@ -10,6 +10,7 @@ use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use app\models\Settings;
 use frontend\utils\ExcelUtils;
+use yii\filters\AccessControl;
 /**
  * SabanaReporteCambiosReemplazosController implements the CRUD actions for SabanaReporteCambiosReemplazos model.
  */
@@ -26,6 +27,17 @@ class SabanaReporteCambiosReemplazosController extends Controller
     public function behaviors()
     {        
         return [
+            'access' => [
+                'class' => AccessControl::className(),
+                'only' => ['upload'],
+                'rules' => [
+                    [
+                        'actions' => ['upload'],
+                        'allow' => true,
+                        'roles' => ['@'],
+                    ],
+                ],
+            ],
             'verbs' => [
                 'class' => VerbFilter::className(),
                 'actions' => [

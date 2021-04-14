@@ -12,12 +12,30 @@ use yii\base\Exception;
 //use Imagick;
 use tpmanc\imagick\Imagick;
 use Fpdf\Fpdf;
+use yii\filters\AccessControl;
 /**
  * Clase visor manager
  *
  * @author jcbobadi
  */
 class VisorController extends \yii\web\Controller {
+
+    public function behaviors()
+    {
+        return [
+            'access' => [
+                'class' => AccessControl::className(),
+                'only' => ['index', 'filemanager'],
+                'rules' => [
+                    [
+                        'actions' => ['index', 'filemanager'],
+                        'allow' => true,
+                        'roles' => ['@'],
+                    ],
+                ],
+            ],
+        ];
+    }
 
     public function beforeAction($action) {
         $this->enableCsrfValidation = false;

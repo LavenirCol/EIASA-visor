@@ -13,8 +13,26 @@ use yii\data\Pagination;
 use frontend\utils\ExcelUtils;
 use GuzzleHttp\Psr7\Query;
 use phpDocumentor\Reflection\Types\Object_;
+use yii\filters\AccessControl;
 
 class ReportsController extends \yii\web\Controller {
+
+    public function behaviors()
+    {
+        return [
+            'access' => [
+                'class' => AccessControl::className(),
+                'only' => ['index', 'inventarios', 'instalaciondash', 'operaciondash', 'cambiosreemplazos', 'pqrs', 'pqrsdash'],
+                'rules' => [
+                    [
+                        'actions' => ['index', 'inventarios', 'instalaciondash', 'operaciondash', 'cambiosreemplazos', 'pqrs', 'pqrsdash'],
+                        'allow' => true,
+                        'roles' => ['@'],
+                    ],
+                ],
+            ],
+        ];
+    }
 
     public function beforeAction($action) {
         $this->enableCsrfValidation = false;
