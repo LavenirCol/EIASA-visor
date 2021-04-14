@@ -34,10 +34,10 @@ class AccesosoperacionController extends Controller {
         return [
             'access' => [
                 'class' => AccessControl::className(),
-                'only' => ['upload'],
+                'only' => ['index', 'view', 'create', 'update', 'delete', 'upload'],
                 'rules' => [
                     [
-                        'actions' => ['upload'],
+                        'actions' => ['index', 'view', 'create', 'update', 'delete', 'upload'],
                         'allow' => true,
                         'roles' => ['@'],
                     ],

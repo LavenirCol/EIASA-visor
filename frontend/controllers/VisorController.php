@@ -25,10 +25,12 @@ class VisorController extends \yii\web\Controller {
         return [
             'access' => [
                 'class' => AccessControl::className(),
-                'only' => ['index', 'filemanager'],
+                'only' => ['index', 'filemanager', 'clientsserver', 'getfolders', 'createfolder', 'getfilesfolder', 'upload', 'getfile', 'renamefile', 'deletefile', 
+                            'renamefolder', 'deletefolder', 'getcontactsclient'],
                 'rules' => [
                     [
-                        'actions' => ['index', 'filemanager'],
+                        'actions' => ['index', 'filemanager', 'clientsserver', 'getfolders', 'createfolder', 'getfilesfolder', 'upload', 'getfile', 'renamefile', 'deletefile', 
+                        'renamefolder', 'deletefolder', 'getcontactsclient'],
                         'allow' => true,
                         'roles' => ['@'],
                     ],

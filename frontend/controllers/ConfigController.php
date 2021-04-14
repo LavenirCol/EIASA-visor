@@ -23,10 +23,10 @@ class ConfigController extends Controller
         return [
             'access' => [
                 'class' => AccessControl::className(),
-                'only' => ['index'],
+                'only' => ['index', 'edit', 'updateconfigtickets'],
                 'rules' => [
                     [
-                        'actions' => ['index'],
+                        'actions' => ['index', 'edit', 'updateconfigtickets'],
                         'allow' => true,
                         'roles' => ['@'],
                     ],

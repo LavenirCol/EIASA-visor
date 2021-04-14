@@ -22,10 +22,14 @@ class ReportsController extends \yii\web\Controller {
         return [
             'access' => [
                 'class' => AccessControl::className(),
-                'only' => ['index', 'inventarios', 'instalaciondash', 'operaciondash', 'cambiosreemplazos', 'pqrs', 'pqrsdash'],
+                'only' => ['index', 'inventarios', 'instalacion', 'operacion', 'ticketsseverity', 'ticketsdays', 'ticketsprocess', 'ticketsgroups', 'instalaciondash', 
+                            'operaciondash', 'cambiosreemplazos', 'pqrs', 'pqrsdash', 'instalaciondetails', 'operaciondashserver', 'operaciondetails', 'instalaciondashserver',
+                            'inventariosserver', 'operaciondetailsserve', 'cambiosreemplazosserver', 'pqrsserver'],
                 'rules' => [
                     [
-                        'actions' => ['index', 'inventarios', 'instalaciondash', 'operaciondash', 'cambiosreemplazos', 'pqrs', 'pqrsdash'],
+                        'actions' => ['index', 'inventarios', 'instalacion', 'operacion', 'ticketsseverity', 'ticketsdays', 'ticketsprocess', 'ticketsgroups', 'instalaciondash', 
+                                    'operaciondash', 'cambiosreemplazos', 'pqrs', 'pqrsdash', 'instalaciondetails', 'operaciondashserver', 'operaciondetails', 'instalaciondashserver',
+                                    'inventariosserver', 'operaciondetailsserve', 'cambiosreemplazosserver', 'pqrsserver'],
                         'allow' => true,
                         'roles' => ['@'],
                     ],
