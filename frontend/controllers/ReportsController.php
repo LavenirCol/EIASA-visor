@@ -11,11 +11,14 @@ use yii\helpers\Url;
 use \yii\db;
 use yii\data\Pagination;
 use frontend\utils\ExcelUtils;
-use GuzzleHttp\Psr7\Query;
+use yii\filters\VerbFilter;
+use \yii\db\Query;
+use yii\web\Controller;
 use phpDocumentor\Reflection\Types\Object_;
 use yii\filters\AccessControl;
 
-class ReportsController extends \yii\web\Controller {
+class ReportsController extends Controller {
+   
 
     public function behaviors()
     {
@@ -39,7 +42,7 @@ class ReportsController extends \yii\web\Controller {
     }
 
     public function beforeAction($action) {
-        $this->enableCsrfValidation = false;
+        
         return parent::beforeAction($action);
     }
 
@@ -100,15 +103,26 @@ class ReportsController extends \yii\web\Controller {
     }
 
     public function actionPqrsdash() {
-        $connection = Yii::$app->getDb();
-        $sql = "SELECT distinct c.state FROM tickets t inner join client c on t.fk_soc = c.idClient order by 1";
-        $deptos = $connection->createCommand($sql)->queryAll();
-        $sql = "SELECT distinct c.town FROM tickets t inner join client c on t.fk_soc = c.idClient order by 1";
-        $mpios = $connection->createCommand($sql)->queryAll();
+
+        $deptosList = (new \yii\db\Query())
+        ->select(['state'])
+        ->from('tickets')
+        ->innerJoin('client', 'tickets.fk_soc = client.idClient')
+        ->distinct()
+        ->orderBy(['state' => SORT_ASC])
+        ->all();
+
+        $mpiosList = (new \yii\db\Query())
+        ->select(['town'])
+        ->from('tickets')
+        ->innerJoin('client', 'tickets.fk_soc = client.idClient')
+        ->distinct()
+        ->orderBy(['state' => SORT_ASC])
+        ->all();
  
         return $this->render('pqrsdash', [
-                    'deptos' => $deptos,
-                    'mpios' => $mpios
+                    'deptos' => $deptosList,
+                    'mpios' => $mpiosList
         ]);
     }
 
@@ -325,21 +339,24 @@ class ReportsController extends \yii\web\Controller {
     public function actionInstalaciondetails() {
         $request = Yii::$app->request;
         $dane = $request->get('dane');
-        $connection = Yii::$app->getDb();
-
-        $sql = "SELECT distinct Departamento as city FROM sabana_reporte_instalacion h WHERE CONCAT(Dane_Departamento,Dane_Municipio) = '$dane' limit 1";
-        $deptos = $connection->createCommand($sql)->queryAll();
-
-        $sql = "SELECT distinct Municipio as district FROM sabana_reporte_instalacion h WHERE CONCAT(Dane_Departamento,Dane_Municipio) = '$dane' limit 1";
-        $mpios = $connection->createCommand($sql)->queryAll();
-
-        $sql = "SELECT h.* FROM sabana_reporte_instalacion h WHERE CONCAT(Dane_Departamento,Dane_Municipio) = '$dane' ";
-        $insts = $connection->createCommand($sql)->queryAll();
-        $municipio = (isset($insts[0]['Departamento'],$insts[0]['Municipio'])) ? ($insts[0]['Departamento'] . ' - ' . $insts[0]['Municipio']) : '';
+        $deptosList = (new \yii\db\Query())
+        ->select(['city' => 'Departamento'])
+        ->from('sabana_reporte_instalacion')
+        ->where(['=','CONCAT(Dane_Departamento,Dane_Municipio)', $dane])
+        ->distinct()
+        ->orderBy(['city' => SORT_ASC])
+        ->all();
+        $mpiosList = (new \yii\db\Query())
+        ->select(['district' => 'Municipio'])
+        ->from('sabana_reporte_instalacion')
+        ->where(['=','CONCAT(Dane_Departamento,Dane_Municipio)', $dane])
+        ->distinct()
+        ->orderBy(['district' => SORT_ASC])
+        ->all();        
+        $municipio = (isset($insts[0]['Departamento'],$insts[0]['Municipio'])) ? ($insts[0]['Departamento'] . ' - ' . $insts[0]['Municipio']) : '';        
         return $this->render('instalaciondetails', array(
-                    'deptos' => $deptos,
-                    'mpios' => $mpios,
-                    'insts' => $insts,
+                    'deptos' => $deptosList,
+                    'mpios' => $mpiosList,                   
                     'municipio' => $municipio));
     }
 
@@ -491,21 +508,29 @@ class ReportsController extends \yii\web\Controller {
 
     public function actionOperaciondetails() {
         $request = Yii::$app->request;
-        $dane = $request->get('dane');
-        $connection = Yii::$app->getDb();
-
-        $sql = "SELECT distinct Departamento as city FROM sabana_reporte_operacion h WHERE CONCAT(Dane_Departamento,Dane_Municipio) = '$dane' limit 1";
-        $deptos = $connection->createCommand($sql)->queryAll();
-
-        $sql = "SELECT distinct Municipio as district FROM sabana_reporte_operacion h WHERE CONCAT(Dane_Departamento,Dane_Municipio) = '$dane' limit 1";
-        $mpios = $connection->createCommand($sql)->queryAll();
-
-        $sql = "SELECT h.* FROM sabana_reporte_operacion h WHERE CONCAT(Dane_Departamento,Dane_Municipio) = '$dane' limit 1 ";
-        $insts = $connection->createCommand($sql)->queryAll();
+        $dane = $request->get('dane');        
+        $deptosList = (new \yii\db\Query())
+        ->select(['city' => 'Departamento'])
+        ->from('sabana_reporte_operacion')
+        ->where(['=','CONCAT(Dane_Departamento,Dane_Municipio)', $dane])
+        ->distinct()
+        ->orderBy(['city' => SORT_ASC])
+        ->all();
+        $mpiosList = (new \yii\db\Query())
+        ->select(['district' => 'Municipio'])
+        ->from('sabana_reporte_operacion')
+        ->where(['=','CONCAT(Dane_Departamento,Dane_Municipio)', $dane])
+        ->distinct()
+        ->orderBy(['district' => SORT_ASC])
+        ->all();        
+        $insts = (new \yii\db\Query())        
+        ->from('sabana_reporte_operacion')
+        ->where(['=','CONCAT(Dane_Departamento,Dane_Municipio)', $dane])        
+        ->all();
         $municipio = $insts[0]['Departamento'] . ' - ' . $insts[0]['Municipio'];
         return $this->render('operaciondetails', array(
-                    'deptos' => $deptos,
-                    'mpios' => $mpios,
+                    'deptos' => $deptosList,
+                    'mpios' => $mpiosList,
                     'insts' => $insts,
                     'municipio' => $municipio));
     }
@@ -840,27 +865,38 @@ class ReportsController extends \yii\web\Controller {
                     `hstask`.`datecreate`,
                     `hstask`.`dateupdate`
                 FROM `hstask` where 1=1 ";
-
-        $data = Yii::$app->db->createCommand($sql)->queryAll();
-
-        $totalData = count($data);
+        $queryTask = new Query();
+        $queryTask->from('hstask')
+        ->select(['uuid',
+        'reference',
+        'template',
+        'address',
+        'city',
+        'district',
+        'code',
+        'lat',
+        'lng',
+        'status',
+        'pdf',
+        'datecreate',
+        'dateupdate']);        
+        $totalData = $queryTask->count();
         $totalFiltered = $totalData;
-
-        if (!empty($requestData['search']['value'])) {
-            $sql .= " AND ( uuid LIKE '" . $requestData['search']['value'] . "%' ";
-            $sql .= " OR reference LIKE '" . $requestData['search']['value'] . "%'";
-            $sql .= " OR address LIKE '" . $requestData['search']['value'] . "%'";
-            $sql .= " OR city LIKE '" . $requestData['search']['value'] . "%'";
-            $sql .= " OR district LIKE '" . $requestData['search']['value'] . "%')";
+        if (!empty($requestData['search']['value'])){
+            $queryTask->where(['LIKE','uuid', $requestData['search']['value'] . "%'", false ])
+            ->where(['LIKE','reference', $requestData['search']['value'] . "%'", false])
+            ->where(['LIKE','address', $requestData['search']['value'] . "%'", false])
+            ->where(['LIKE','city', $requestData['search']['value'] . "%'", false])
+            ->where(['LIKE','district', $requestData['search']['value'] . "%'", false]);
+        }        
+        $totalFiltered = $queryTask->count();
+        if (empty($requestData['export'])){
+            $order =  ($requestData['order'][0]['dir'] == 'asc') ?  SORT_ASC : SORT_DESC;
+            $queryTask->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
+            $queryTask->offset($requestData['start']);
+            $queryTask->limit($requestData['length']);
         }
-        $data = Yii::$app->db->createCommand($sql)->queryAll();
-        $totalFiltered = count($data);
-
-        $sql .= " ORDER BY " . $columns[$requestData['order'][0]['column']] . "   " . $requestData['order'][0]['dir'] . "  LIMIT " . $requestData['start'] . " ," .
-                $requestData['length'] . "   ";
-
-        $result = Yii::$app->db->createCommand($sql)->queryAll();
-
+        $result = $queryTask->all();
         $data = array();
         foreach ($result as $key => $row) {
             $nestedData = array();
@@ -880,14 +916,24 @@ class ReportsController extends \yii\web\Controller {
             $data[] = $nestedData;
         }
 
-        $json_data = array(
-            "draw" => intval($requestData['draw']),
-            "recordsTotal" => intval($totalData),
-            "recordsFiltered" => intval($totalFiltered),
-            "data" => $data   // total data array
-        );
-
-        echo json_encode($json_data);
+        if (!empty($requestData['export'])) {
+            if ($requestData['export'] == 'csv') {                    
+               $header = ['uuid', 'Referencia', 'Plantilla', 'Dirección', 'Ciudad', 'Departamento', 'Código', 'Latitud', 'Longitud', 'Estado', 'PDF', 'Fecha_Creación', 'Fecha Actualización']; 
+               $excel = new ExcelUtils();
+               $excel->export("Reporte_Instalacion.xlsx",$header,$data);
+            }                
+        } else {
+            ob_start();
+            ob_start('ob_gzhandler');
+            $json_data = array(
+                "draw" => intval($requestData['draw']),
+                "recordsTotal" => intval($totalData),
+                "recordsFiltered" => intval($totalFiltered),
+                "data" => $data   // total data array
+            );
+            echo json_encode($json_data);
+            ob_end_flush();
+        }        
     }
 
     public function actionOperaciondetailsserver() {

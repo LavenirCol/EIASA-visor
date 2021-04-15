@@ -37,11 +37,11 @@ use yii\bootstrap\ActiveForm;
                         <div class="col-lg-5">
                             <?php $form = ActiveForm::begin(['id' => 'form-signup']); ?>
 
-                                <?= $form->field($model, 'username')->textInput(['autofocus' => true])->label('Nombre de Usuario')  ?>
+                                <?= $form->field($model, 'username')->textInput(['autofocus' => true, 'autocomplete' => 'off'])->label('Nombre de Usuario')  ?>
 
                                 <?= $form->field($model, 'email')->label('Email')  ?>
 
-                                <?= $form->field($model, 'password')->passwordInput()->label('Contraseña')  ?>
+                                <?= $form->field($model, 'password')->passwordInput(['autocomplete' => 'off'])->label('Contraseña')  ?>
 
                             <div class="form-group">
                                 <label class="label-form">Perfil</label>

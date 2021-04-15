@@ -104,6 +104,7 @@ $(document).ready(function(){
         {
             var paging = false;
         }
+        var _csrf =  $('#form-token').val();
         if($(datatable).length === 0){ return; }
         $(datatable).DataTable({            
             'paging': paging,
@@ -135,7 +136,7 @@ $(document).ready(function(){
                     text: 'PDF',
                     action: function ( e, dt, node, config ) {
                         
-                        if(datatable === "#dataTableOperaciondetails" || datatable === "#dataTableInstalaciondetails" || datatable === "#dataTableCambiosReemplazos" || datatable === '#dataTablePqrs'){
+                        if(datatable === "#dataTableInstalacion" || datatable === "#dataTableOperaciondetails" || datatable === "#dataTableInstalaciondetails" || datatable === "#dataTableCambiosReemplazos" || datatable === '#dataTablePqrs'){
                             window.alert("Funcion no soportada en sabana de datos")
                         }else{
                             var url = baseurl + ajaxcall;
@@ -165,6 +166,7 @@ $(document).ready(function(){
                     d.factories = $('#factories').val();
                     d.models = $('#models').val();
                     d.daneCodeFilter = $('#daneCodeFilter').val();
+                    d._csrf = _csrf;
                 }
             },
             "fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) 
