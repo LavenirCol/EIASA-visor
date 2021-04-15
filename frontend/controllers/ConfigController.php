@@ -8,7 +8,8 @@ use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use app\models\Settings;
 use app\models\Tickets;
-use Exception;
+use yii\filters\AccessControl;
+use yii\base\Exception;
 
 class ConfigController extends Controller
 {
@@ -20,6 +21,17 @@ class ConfigController extends Controller
     {
         
         return [
+            'access' => [
+                'class' => AccessControl::className(),
+                'only' => ['index', 'edit', 'updateconfigtickets'],
+                'rules' => [
+                    [
+                        'actions' => ['index', 'edit', 'updateconfigtickets'],
+                        'allow' => true,
+                        'roles' => ['@'],
+                    ],
+                ],
+            ],
             'verbs' => [
                 'class' => VerbFilter::className(),
                 'actions' => [

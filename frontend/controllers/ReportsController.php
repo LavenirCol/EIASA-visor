@@ -15,10 +15,33 @@ use yii\filters\VerbFilter;
 use \yii\db\Query;
 use yii\web\Controller;
 use phpDocumentor\Reflection\Types\Object_;
+use yii\filters\AccessControl;
 
 class ReportsController extends Controller {
    
-    public function beforeAction($action){
+
+    public function behaviors()
+    {
+        return [
+            'access' => [
+                'class' => AccessControl::className(),
+                'only' => ['index', 'inventarios', 'instalacion', 'operacion', 'ticketsseverity', 'ticketsdays', 'ticketsprocess', 'ticketsgroups', 'instalaciondash', 
+                            'operaciondash', 'cambiosreemplazos', 'pqrs', 'pqrsdash', 'instalaciondetails', 'operaciondashserver', 'operaciondetails', 'instalaciondashserver',
+                            'inventariosserver', 'operaciondetailsserve', 'cambiosreemplazosserver', 'pqrsserver'],
+                'rules' => [
+                    [
+                        'actions' => ['index', 'inventarios', 'instalacion', 'operacion', 'ticketsseverity', 'ticketsdays', 'ticketsprocess', 'ticketsgroups', 'instalaciondash', 
+                                    'operaciondash', 'cambiosreemplazos', 'pqrs', 'pqrsdash', 'instalaciondetails', 'operaciondashserver', 'operaciondetails', 'instalaciondashserver',
+                                    'inventariosserver', 'operaciondetailsserve', 'cambiosreemplazosserver', 'pqrsserver'],
+                        'allow' => true,
+                        'roles' => ['@'],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    public function beforeAction($action) {
         
         return parent::beforeAction($action);
     }
@@ -1708,8 +1731,11 @@ class ReportsController extends Controller {
                 $nestedData[] =  $history;
                 $nestedData[] =  $author;
                 $nestedData[] =  $status;
-                $nestedData[] = "";
-                $nestedData[] = $this->getDocumentTicketList($row['ref']);
+                if(empty($requestData['export']))
+                {
+                    $nestedData[] = "";
+                    $nestedData[] = $this->getDocumentTicketList($row['ref']);
+                }
                 $data[] = $nestedData;
             }
 
