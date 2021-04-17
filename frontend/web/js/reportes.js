@@ -226,7 +226,7 @@ function previewFile(url, extensionFile)
     else
     {
         $.fancybox.open({
-            'src': 'http://docs.google.com/gview?url='+ url +'&embedded=true',
+            'src': 'https://docs.google.com/gview?url='+ url +'&embedded=true',
             'type': 'iframe'
         });
     }   

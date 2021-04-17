@@ -117,7 +117,7 @@ class ReportsController extends Controller {
         ->from('tickets')
         ->innerJoin('client', 'tickets.fk_soc = client.idClient')
         ->distinct()
-        ->orderBy(['state' => SORT_ASC])
+        ->orderBy(['town' => SORT_ASC])
         ->all();
  
         return $this->render('pqrsdash', [
@@ -1784,7 +1784,7 @@ class ReportsController extends Controller {
             $extensionFile = pathinfo($document->name, PATHINFO_EXTENSION);
             $iconStyle = $this->getIconStyle($extensionFile, $keyurlbase, $document->iddocument);
             $htmlDocument .=  
-            '<div class="col-xs-6 col-sm-4 col-md-3 colfile" data-iddocument="'.$document->iddocument.'" onClick="previewFile(\''.$keyurlbase->value.'/visor/getfile?id='.$document->iddocument.'\',\''.$extensionFile.'\' )">
+            '<div class="col-xs-6 col-sm-4 col-md-6 colfile" data-iddocument="'.$document->iddocument.'" onClick="previewFile(\''.$keyurlbase->value.'/visor/getfile?id='.$document->iddocument.'\',\''.$extensionFile.'\' )">
              <div class="card card-file">
               <div class="dropdown-file">
                 <a href="" class="dropdown-link" data-toggle="dropdown"><i data-feather="more-vertical"></i></a>
