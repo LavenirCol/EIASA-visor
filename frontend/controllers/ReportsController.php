@@ -170,6 +170,45 @@ class ReportsController extends Controller {
             $nestedData[] = $row["conteo"];
             $data[] = $nestedData;
         }
+
+        if (!empty($requestData['export']))
+        {   
+            $header = ['Grupo', 'Tipo', 'Prioridad', 'Cantidad'];         
+            if ($requestData['export'] == 'csv') {                
+                $excel = new ExcelUtils();
+                $excel->export("Detalle Tickets.xlsx",$header,$data);                   
+             }
+             else
+             {
+                $pdf = new Fpdf();
+                /* Data loading */
+                $pdf->AddPage('L', 'Legal');
+                $pdf->SetFont('Courier', 'B', 12);
+                /* Column widths */
+                $w = array(60, 140, 40, 40);
+                /* Header */
+                for ($index = 0; $index < count($header); $index++){
+                    $pdf->Cell($w[$index], 7, utf8_decode($header[$index]), 1, 0, 'C');
+                }
+                $pdf->Ln();
+                /* Data */
+                $pdf->SetFont('Courier', '', 10);
+                foreach ($data as $row) {
+                    for ($index = 0; $index < 4; $index++){
+                        if($index > 2)
+                        {
+                            $pdf->Cell($w[$index], 6, utf8_decode($row[$index]), 1,0,'R');
+                        }else{
+                            $pdf->Cell($w[$index], 6, utf8_decode($row[$index]), 1,0,'L');
+                        }                            
+                    }
+                    $pdf->Ln();
+                }
+                /* Closing line */
+                $pdf->Cell(array_sum($w), 0, '', 'T');
+                $pdf->Output('D', 'Dashboard Instalación.pdf', true);
+             }
+        }
     
 
         ob_start();
