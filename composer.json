@@ -22,7 +22,8 @@
         "viest/php-ext-xlswriter-ide-helper": "dev-master",
         "phpoffice/phpexcel": "dev-master",
         "phpoffice/phpspreadsheet": "^1.17",
-        "php-amqplib/php-amqplib": "^3.0"
+        "php-amqplib/php-amqplib": "^3.0",
+        "phpseclib/phpseclib": "3.0.7"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",

@@ -128,6 +128,7 @@ $(document).ready(function(){
                         url = url + '&factories='+$('#factories').val();
                         url = url + '&models='+$('#models').val();
                         url = url + '&daneCodeFilter='+$('#daneCodeFilter').val();
+                        url = url + '&oltCodeFilter='+$('#oltCodeFilter').val();
                         url = url + '&export=csv';
                         window.open(url);
                     }
@@ -146,6 +147,7 @@ $(document).ready(function(){
                             url = url + '&factories='+$('#factories').val();
                             url = url + '&models='+$('#models').val();
                             url = url + '&daneCodeFilter='+$('#daneCodeFilter').val();
+                            url = url + '&oltCodeFilter='+$('#oltCodeFilter').val();                            
                             url = url + '&export=pdf';
                             window.open(url);
                         }
@@ -166,6 +168,7 @@ $(document).ready(function(){
                     d.factories = $('#factories').val();
                     d.models = $('#models').val();
                     d.daneCodeFilter = $('#daneCodeFilter').val();
+                    d.oltCodeFilter = $('#oltCodeFilter').val();
                     d._csrf = _csrf;
                 }
             },
@@ -182,6 +185,11 @@ $(document).ready(function(){
                     }); 
                 }
                 
+//                if(datatable === "#dataTableComportamientoReddash")
+//                {
+//                    console.log(aData);
+//                    $('td:eq(9)', nRow).html( "<button class='btn btn-sm btn-primary btntrafic' >Tráfico</button>" );
+//                }
                 return nRow; 
             },           
         });        
@@ -199,6 +207,17 @@ $(document).ready(function(){
         {
             return [{className: "dt-body-center", targets: [3,4,5,6,7,8]}];
         }
+        else if(datatable === "#dataTableComportamientoReddash")
+        {
+            return [ {
+                "targets": -1,
+                "data": null,
+                "defaultContent": "<button class='btn btn-sm btn-primary btntrafic' onclick='showgraphic($(this))' >Tráfico</button>"
+            } , {
+                "targets": 14,
+                "visible": false
+            }];
+        }
 
         return null;
     }   
@@ -213,6 +232,7 @@ $(document).ready(function(){
     makeserverprocessing('#dataTablePqrs','/reports/pqrsserver');
     makeserverprocessing('#dataTableClientes','/visor/clientsserver');
     makeserverprocessing('#dataTableDetailsTickets','/reports/ticketsseverity');
+    makeserverprocessing('#dataTableComportamientoReddash','/reports/comportamientoredserver');
 });
 
 function previewFile(url, extensionFile)
@@ -230,4 +250,14 @@ function previewFile(url, extensionFile)
             'type': 'iframe'
         });
     }   
+}
+
+function showgraphic(btn){
+    var table = $('#dataTableComportamientoReddash').DataTable();
+
+    var tr = $(btn).closest('tr').parents('tr');
+    var prevtr = tr.prev('tr')[0];
+    var data = table.row(prevtr).data();
+    //console.log(data);
+    window.location.href = '/reports/comportamientoredgraph?ont=' +data[14] + '&sp=' +data[9]; //vpi
 }

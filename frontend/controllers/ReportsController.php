@@ -1939,4 +1939,245 @@ class ReportsController extends Controller {
         return $daysDifference . " días. ". (($isExportData)? ucwords($flagColor) :  "<img src='" . Url::base(true) . "/img/bandera_" . $flagColor . ".png' alt='' width='16'/>");
     }
 
+    public function actionComportamientoreddash() {
+        
+        $deptos = (new \yii\db\Query())
+        ->select(['Departamento' => 'Departamento'])
+        ->from('avances_metas_instalacion')
+        ->distinct()
+        ->orderBy(['Departamento' => SORT_ASC])
+        ->all();
+               
+        $daneCodeList = (new \yii\db\Query())
+        ->select(['daneCode' => 'DANE'])
+        ->from('avances_metas_instalacion')
+        ->distinct()
+        ->orderBy(['daneCode' => SORT_ASC])
+        ->all();
+       
+        $oltsCodeList = (new \yii\db\Query())
+        ->select(['id' => 'ID', 'poblacion' => 'POBLACION'])
+        ->from('trafico_olts')
+        ->where(['=','activo', '1'])
+        ->all();
+
+        return $this->render('comportamientoreddash', [
+            'deptos' => $deptos,
+            'daneCodeList' => $daneCodeList,
+            'oltsCodeList' => $oltsCodeList
+        ]);        
+    }
+    
+    public function actionComportamientoredserver() {
+
+        try {
+            $requestData = $_REQUEST;           
+            $columns = array(
+                0 => 'index',
+                1 => 'last_sn', //cliente
+                2 => 'vlan_id',
+                3 => 'port_type',
+                4 => 'frame',
+                5 => 'slot',
+                6 => 'port',
+                7 => 'vpi',
+                8 => 'last_state',
+                9 => 'last_sn',
+                10 => 'updated_at',
+            );
+
+            $oltCodeFilter = empty($requestData['oltCodeFilter']) ? '-1' : $requestData['oltCodeFilter'];  
+            $totalData = (new \yii\db\Query())->from('trafico_services_port')->where('id_olt = '.$oltCodeFilter)->count();
+            $totalFiltered = $totalData;
+
+            $dataReport = (new \yii\db\Query())
+            ->select(
+                [
+                    "index",
+                    "vlan_id",
+                    "port_type",
+                    "frame",
+                    "slot",
+                    "port",
+                    "vpi",
+                    "last_state",
+                    "last_sn",
+                    "updated_at",
+                    //cliente
+                    "Documento_cliente_acceso",
+                    "Dane_Departamento",
+                    "Departamento",
+                    "Dane_Municipio",
+                    "Municipio",
+                    "Dane_Mun_ID_Punto", //codigo de acceso
+                    "Documento_cliente_acceso",
+                    "Nombre_Cliente",
+                    "Telefono",
+                    "Celular",
+                    "Correo_Electronico",
+                    "Barrio",
+                    "Direccion"
+                ]
+            )
+            ->from('trafico_services_port')
+            ->leftJoin('sabana_reporte_instalacion','trafico_services_port.last_sn = sabana_reporte_instalacion.Serial_ONT');
+            if (!empty($requestData['search']['value'])){
+                $dataReport->Where(['LIKE', 'last_sn', $requestData['search']['value']."%", false])                
+                ->orWhere(['LIKE', 'index', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'last_state', $requestData['search']['value']."%", false]);  
+            }            
+                      
+            //if ($oltCodeFilter != '-1') {
+                $dataReport->andWhere(['=', 'id_olt', $oltCodeFilter]);
+            //}
+
+            if (empty($requestData['export'])){
+                $totalFiltered = $dataReport->count();
+                $order =  ($requestData['order'][0]['dir'] == 'asc') ?  SORT_ASC : SORT_DESC;                
+                $dataReport->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
+                $dataReport->offset($requestData['start']);
+                $dataReport->limit($requestData['length']);     
+            }            
+            $result = $dataReport->all();
+            $data = array();
+            foreach ($result as $key => $row) {
+                $nestedData = array();
+                $nestedData[] = $row["Departamento"];
+                $nestedData[] = $row["Municipio"];
+                $nestedData[] = $row["Dane_Departamento"].$row["Dane_Municipio"];
+                $nestedData[] = $row["Dane_Mun_ID_Punto"];//codigo de acceso
+                $nestedData[] = $row["Nombre_Cliente"];
+                $nestedData[] = $row["Documento_cliente_acceso"];
+                $nestedData[] = $row["Telefono"] ." " . $row["Celular"];
+                $nestedData[] = $row["Correo_Electronico"];
+                $nestedData[] = $row["Direccion"] ." " . $row["Barrio"];
+                $nestedData[] = $row['index'];
+                $nestedData[] = $row['last_sn'];
+                $nestedData[] = $row['vlan_id'];
+                $nestedData[] = $row['port_type'];
+                $nestedData[] = $row['frame'] . '/'. $row['slot'] . '/'. $row['port'];
+                $nestedData[] = $row['vpi'];
+                $nestedData[] = $row['last_state'];
+                $nestedData[] = $row['updated_at'];
+                $data[] = $nestedData;
+            }
+
+            if (!empty($requestData['export'])) {
+                if ($requestData['export'] == 'csv') {
+                   $header = ['DANE', 'Departamento', 'Municipio', 'Meta', 'Beneficiarios Instalados', 'Meta Tiempo en Servicio','Tiempo en Servicio','Avance']; 
+                   $excel = new ExcelUtils();
+                   $excel->export("Dashboard Operación.xlsx",$header,$data);                   
+                }
+                if ($requestData['export'] == 'pdf') {
+                    $pdf = new Fpdf();
+                    /* Column headings */
+                    $header = array('DANE', 'Departamento', 'Municipio', 'Meta', 'Beneficiarios Instalados', 'Meta Tiempo en Servicio','Tiempo en Servicio','Avance');
+                    /* Data loading */
+                    $pdf->AddPage('L', 'Legal');
+                    $pdf->SetFont('Courier', 'B', 10);
+                    /* Column widths */
+                    $w = array(30, 40, 60, 20, 60, 60, 40, 30);
+                    /* Header */
+                    for ($index = 0; $index < count($header); $index++){
+                        $pdf->Cell($w[$index], 7, utf8_decode($header[$index]), 1, 0, 'C');
+                    }
+                    $pdf->Ln();
+                    /* Data */
+                    $pdf->SetFont('Courier', '', 10);
+                    foreach ($data as $row) {
+                        for ($index = 0; $index < 8; $index++){
+                            if($index > 2)
+                            {
+                                $pdf->Cell($w[$index], 6, utf8_decode($row[$index]), 1,0,'R');
+                            }else{
+                                $pdf->Cell($w[$index], 6, utf8_decode($row[$index]), 1,0,'L');
+                            }                            
+                        }
+                        $pdf->Ln();
+                    }
+                    /* Closing line */
+                    $pdf->Cell(array_sum($w), 0, '', 'T');
+                    $pdf->Output('D', 'Dashboard Operación.pdf', true);
+                }
+            } else {
+
+                $json_data = array(
+                    "draw" => intval($requestData['draw']),
+                    "recordsTotal" => intval($totalData),
+                    "recordsFiltered" => intval($totalFiltered),
+                    "data" => $data   // total data array
+                );
+
+                return json_encode($json_data);
+            }
+        }catch (\Exception $ex){
+            $returndata = ['error' => $ex->getMessage()];
+            return json_encode($returndata);
+        }
+    }
+    
+    public function actionComportamientoredgraph() {
+        $requestData = $_REQUEST; 
+        
+        $service = (new \yii\db\Query())
+        ->select('*')
+        ->from('trafico_services_port')
+        ->where(['index' => $requestData['sp'],'vpi' => $requestData['ont'] ])
+        ->one();
+              
+        $olt = (new \yii\db\Query())
+        ->select('*')
+        ->from('trafico_olts')
+        ->where(['id' => $service['id_olt']])
+        ->one();
+                
+        // TODO: FILTRO en consulta
+        $down = (new \yii\db\Query())
+        ->select(['timestamp' => 'UNIX_TIMESTAMP(created_at)*1000', 'downstream'])
+        ->from('trafico_services_history')
+        ->where(['ont_id' => $requestData['ont'], 'service_port' => $requestData['sp']])
+        ->all();
+        
+        $up = (new \yii\db\Query())
+        ->select(['timestamp' => 'UNIX_TIMESTAMP(created_at)*1000', 'upstream'])
+        ->from('trafico_services_history')
+        ->where(['ont_id' => $requestData['ont'], 'service_port' => $requestData['sp']])
+        ->all();
+        
+        return $this->render('comportamientoredgraph', [
+            'olt' => $olt,
+            'service' => $service,
+            'down' => $down,
+            'up' => $up
+        ]);        
+    }
+    
+    public function actionComportamientoredtotalgraph() {
+        $requestData = $_REQUEST; 
+        
+        $olt = (new \yii\db\Query())
+        ->select('*')
+        ->from('trafico_olts')
+        ->where(['id' => $requestData['olt']])
+        ->one();
+                
+        // TODO: FILTRO en consulta
+        $down = (new \yii\db\Query())
+        ->select(['timestamp' => 'UNIX_TIMESTAMP(created_at)*1000', 'downstream'])
+        ->from('trafico_olt_history')
+        ->where(['olt_id' => $requestData['olt']])
+        ->all();
+        
+        $up = (new \yii\db\Query())
+        ->select(['timestamp' => 'UNIX_TIMESTAMP(created_at)*1000', 'upstream'])
+        ->from('trafico_olt_history')
+        ->where(['olt_id' => $requestData['olt']])
+        ->all();
+        
+        return $this->render('comportamientoredtotalgraph', [
+            'olt' => $olt,
+            'down' => $down,
+            'up' => $up
+        ]);        
+    }
 }
