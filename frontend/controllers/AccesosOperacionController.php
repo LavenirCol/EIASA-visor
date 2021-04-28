@@ -110,7 +110,7 @@ class AccesosoperacionController extends Controller {
                             $newrec->Region = $rowData[4];
                             $newrec->Dane_Departamento = str_pad(strval($rowData[5]), 2, "0", STR_PAD_LEFT);
                             $newrec->Departamento = $rowData[6];
-                            $newrec->Dane_Municipio = str_pad(strval($rowData[7]), 3, "0", STR_PAD_LEFT);
+                            $newrec->Dane_Municipio = str_pad(strval($rowData[7]), 5, "0", STR_PAD_LEFT);
                             $newrec->Municipio = $rowData[8];
                             $newrec->Barrio = $rowData[9];
                             $newrec->Direccion = $rowData[10];
