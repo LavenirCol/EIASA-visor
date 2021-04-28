@@ -1981,7 +1981,6 @@ class ReportsController extends Controller {
                 5 => 'slot',
                 6 => 'port',
                 7 => 'vpi',
-                8 => 'last_state',
                 9 => 'last_sn',
                 10 => 'updated_at',
             );
@@ -2000,7 +1999,6 @@ class ReportsController extends Controller {
                     "slot",
                     "port",
                     "vpi",
-                    "last_state",
                     "last_sn",
                     "updated_at",
                     //cliente
@@ -2020,7 +2018,7 @@ class ReportsController extends Controller {
                 ]
             )
             ->from('trafico_services_port')
-            ->leftJoin('sabana_reporte_instalacion','trafico_services_port.last_sn = sabana_reporte_instalacion.Serial_ONT');
+            ->leftJoin('sabana_reporte_operacion','trafico_services_port.last_sn = sabana_reporte_operacion.Serial_ONT');
             if (!empty($requestData['search']['value'])){
                 $dataReport->Where(['LIKE', 'last_sn', $requestData['search']['value']."%", false])                
                 ->orWhere(['LIKE', 'index', $requestData['search']['value']."%", false])
@@ -2057,7 +2055,6 @@ class ReportsController extends Controller {
                 $nestedData[] = $row['port_type'];
                 $nestedData[] = $row['frame'] . '/'. $row['slot'] . '/'. $row['port'];
                 $nestedData[] = $row['vpi'];
-                $nestedData[] = $row['last_state'];
                 $nestedData[] = $row['updated_at'];
                 $data[] = $nestedData;
             }
@@ -2143,7 +2140,7 @@ class ReportsController extends Controller {
         ->from('trafico_services_history')
         ->where(['ont_id' => $requestData['ont'], 'service_port' => $requestData['sp']])
         ->all();
-        
+         
         return $this->render('comportamientoredgraph', [
             'olt' => $olt,
             'service' => $service,
@@ -2173,11 +2170,40 @@ class ReportsController extends Controller {
         ->from('trafico_olt_history')
         ->where(['olt_id' => $requestData['olt']])
         ->all();
+                    
+        $uso = (new \yii\db\Query())
+        ->select(['timestamp' => 'UNIX_TIMESTAMP(created_at)*1000', 'ROUND(((upstream + downstream)*100) / '. $olt['bandwidth'] .',2) as uso'])
+        ->from('trafico_olt_history')
+        ->where(['olt_id' => $requestData['olt']])
+        ->all();
         
         return $this->render('comportamientoredtotalgraph', [
             'olt' => $olt,
             'down' => $down,
-            'up' => $up
+            'up' => $up,
+            'uso' => $uso
         ]);        
     }
+    
+    public function actionComportamientoredothergraph() {
+        $requestData = $_REQUEST; 
+        
+        $olt = (new \yii\db\Query())
+        ->select('*')
+        ->from('trafico_olts')
+        ->where(['id' => $requestData['olt']])
+        ->one();
+                
+        // TODO: FILTRO en consulta
+        $status = (new \yii\db\Query())
+        ->select(['timestamp' => 'UNIX_TIMESTAMP(created_at)*1000', 'status'])
+        ->from('trafico_olt_status_history')
+        ->where(['olt_id' => $requestData['olt']])
+        ->all();       
+        
+        return $this->render('comportamientoredothergraph', [
+            'olt' => $olt,
+            'status' => $status
+        ]);        
+    }    
 }

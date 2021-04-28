@@ -54,7 +54,8 @@ use \yii\helpers\Url;
                     <button type="clear" class="btn btn-secondary btn-sm mt-2" style="width:100%">Borrar</button>
                 </div>
                 <div class="col-lg-2">
-                    <button type="button" class="btn btn-primary btn-sm" id="btnshowtotalgraphic" style="width:100%">Tráfico Total</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="btnshowtotalgraphic" style="width:100%">Gráfica Tráfico</button><br>
+                    <button type="button" class="btn btn-primary btn-sm mt-2" id="btnshowothergraphic" style="width:100%">Otras Gráficas</button>
                 </div>
             </div>  
         </div>
@@ -82,7 +83,6 @@ use \yii\helpers\Url;
                             <th>Port Type</th>
                             <th>F / S / P</th>
                             <th>Vpi</th>
-                            <th>Estado</th>
                             <th>Actualizado</th>
                             <th></th>
                         </tr>
@@ -105,5 +105,13 @@ $this->registerJs("
             window.location.href = '/reports/comportamientoredtotalgraph?olt='+ olt; //olt
         }
     });
+    $('#btnshowothergraphic').click(function(){
+        var olt = $('#oltCodeFilter').val();
+        if(olt == '-1'){
+            window.alert('Debe seleccionar una OLT para consultar');
+        }else{
+            window.location.href = '/reports/comportamientoredothergraph?olt='+ olt; //olt
+        }
+    });    
 ", View::POS_END, 'totalgrpah');
 ?>

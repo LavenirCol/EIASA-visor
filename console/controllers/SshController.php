@@ -22,6 +22,7 @@ use app\models\TraficoOlts;
 use app\models\TraficoServicesPort;
 use app\models\TraficoServicesHistory;
 use app\models\TraficoOltHistory;
+use app\models\TraficoOltStatusHistory;
 use common\models\RabbitMQ;
 use console\controllers\ComponentSSH;
 use Exception;
@@ -43,46 +44,108 @@ class SshController extends Controller {
         return parent::beforeAction($action);
     }
 
-    public function actionExec() {
+    /// Accion que procesa puertos de servicio
+
+    public function actionExecport() {
 
         // consulta OLT's en estado activo
         $olts = TraficoOlts::find()->where(['activo' => 1])->orderBy('id')->all();
 
-        echo "Procesando olts (" . sizeof($olts) . ")\n";
+        echo date("Y-m-d H:i:s")." - "."Procesando olts (" . sizeof($olts) . ")\n";
         foreach ($olts as $olt) {
-            echo "Procesando olt (" . $olt['id'] . " - " . $olt['poblacion'] . ") \n";
+            echo date("Y-m-d H:i:s")." - "."Procesando olt (" . $olt['id'] . " - " . $olt['poblacion'] . ") \n";
 
-            //procesa services port
-            $this->processServicePort($olt);
-
-            // consulta copnfiguracion seriales
-            $this->processServicePortConfig($olt);
-
+            if($this->ping($olt['wan_olt'])){
+                //procesa services port
+                $this->processServicePort($olt);
+            }else{
+                echo 'OLT sin conexion';
+            }
+            
         }
     }
+
+    /// Accion que procesa trafico global OLT
 
     public function actionExecolt() {
 
         // consulta OLT's en estado activo
         $olts = TraficoOlts::find()->where(['activo' => 1])->orderBy('id')->all();
 
-        echo "Procesando olts (" . sizeof($olts) . ")\n";
+        echo date("Y-m-d H:i:s")." - "."Procesando olts (" . sizeof($olts) . ")\n";
         foreach ($olts as $olt) {
-            echo "Procesando olt (" . $olt['id'] . " - " . $olt['poblacion'] . ") \n";
+            echo date("Y-m-d H:i:s")." - "."Procesando olt (" . $olt['id'] . " - " . $olt['poblacion'] . ") \n";
 
-            //procesa trafico global OLT
-            $this->processOltTraffic($olt);
-
+            if($this->ping($olt['wan_olt'])){
+                //procesa trafico global OLT
+                $this->processOltTraffic($olt);
+            }else{
+                echo 'OLT sin conexion';
+            }            
         }
     }
+
+    /// Accion que procesa detalle de configuracion de puerto
+
+    public function actionExecportconfig() {
+
+        // consulta OLT's en estado activo
+        $olts = TraficoOlts::find()->where(['activo' => 1])->orderBy('id')->all();
+
+        echo date("Y-m-d H:i:s")." - "."Procesando olts (" . sizeof($olts) . ")\n";
+        foreach ($olts as $olt) {
+            echo date("Y-m-d H:i:s")." - "."Procesando olt (" . $olt['id'] . " - " . $olt['poblacion'] . ") \n";
+
+            if($this->ping($olt['wan_olt'])){
+                // execute external action
+                $cmd = 'cd /var/www/html && sudo /usr/bin/php yii ssh/execportconfigdetail ' . $olt['id'];
+                $outputfile = 'sshportconfig_' . $olt['id'] . '.log';
+                $pidfile = 'sshportconfigpid_' . $olt['id'] . '.log';
+                exec(sprintf("%s > %s 2>&1 & echo $! >> %s", $cmd, $outputfile, $pidfile));
+            }else{
+                echo 'OLT sin conexion';
+            }
+        }
+    }
+
+    /// Accion qu eprocesa el detalle de una OLT
+    public function actionExecportconfigdetail($oltid) {
+        // consulta OLT's en estado activo
+        $olt = TraficoOlts::find()->where(['id' => $oltid])->one();
+        echo date("Y-m-d H:i:s")." - "."Procesando detalle olt (" . $olt['id'] . " - " . $olt['poblacion'] . ") \n";
+        // consulta copnfiguracion seriales
+        $this->processServicePortConfig($olt);
+    }
     
+    /// Accion que procesa los estados de coenxion de cada OLT
+    public function actionExecoltstatus() {
+
+        // consulta OLT's en estado activo
+        $olts = TraficoOlts::find()->where(['activo' => 1])->orderBy('id')->all();
+
+        echo date("Y-m-d H:i:s")." - "."Procesando olts (" . sizeof($olts) . ")\n";
+        foreach ($olts as $olt) {
+            echo date("Y-m-d H:i:s")." - "."Procesando olt (" . $olt['id'] . " - " . $olt['poblacion'] . ") \n";
+
+            //if($this->ping($olt['wan_olt'])){
+                // consulta copnfiguracion seriales
+                $this->processOltStatus($olt);
+            //}else{
+            //    echo 'OLT sin conexion';
+            //}           
+        }
+    }
+
+    /// Consulta puertos de servicio por cada OLT
     public function processServicePort($olt) {
 
+        $onlypattern = array('gpon');
+        
         // conecta ssh        
         $this->makesshaction('open', $olt);
 
         // consulta puertos en servicio
-        $this->ssh->shellCmd(['display service-port all'], true);
+        $this->ssh->shellCmd(['display service-port all'], true, $onlypattern);
         //$idx = 1;
         while (str_contains($this->ssh->getLastOutput(), '---- More') == true) {
             $this->ssh->shellCmd([' '], true);
@@ -95,7 +158,7 @@ class SshController extends Controller {
         }
         //procesa puertos en servicio
         $output = $this->ssh->getOutput();
-
+        
         try {
 
             foreach ($output as $line) {
@@ -106,8 +169,8 @@ class SshController extends Controller {
 
                 $index = $linearr[0];
                 $current_state = $linearr[13];
-
-                $service = TraficoServicesPort::find()->where(['index' => $index,'id_olt' => $olt['id']])->one();
+                
+                $service = TraficoServicesPort::find()->where(['index' => $index, 'id_olt' => $olt['id']])->one();
 
                 if (isset($service)) {
                     $service->last_state = $current_state;
@@ -123,7 +186,7 @@ class SshController extends Controller {
                     $newservice->frame = $linearr[4];
                     $newservice->slot = $linearr[5];
                     $newservice->port = $linearr[6];
-                    $newservice->vpi = $linearr[7];
+                    $newservice->vpi = $linearr[7];//
                     $newservice->vci = $linearr[8];
                     $newservice->flow_type = $linearr[9];
                     $newservice->flow_para = $linearr[10];
@@ -134,7 +197,7 @@ class SshController extends Controller {
                     $newservice->save();
                 }
             }
-        } catch (Exception $ex) {
+        } catch (\Exception $ex) {
             echo $ex->getMessage();
         }
 
@@ -142,8 +205,9 @@ class SshController extends Controller {
         $this->makesshaction('close', $olt);
     }
 
+    /// Consulta detalle de puertos de servicio por OLT
     public function processServicePortConfig($olt) {
-        $onlypattern = array('display current-configuration ont','sn-auth','display traffic', '                ');
+        $onlypattern = array('display current-configuration ont', 'sn-auth', 'display traffic', '                ');
         // conecta ssh        
         $this->makesshaction('open', $olt);
 
@@ -161,26 +225,26 @@ class SshController extends Controller {
         //last cmd
         $cmd = sprintf('display traffic service-port %s', 0);
         $this->ssh->shellCmd([$cmd], true, $onlypattern);
-        
+
         $results = array_unique($this->ssh->getOutput());
         $output = array_values($results);
-        var_dump($output);
-        
+        //var_dump($output);
+
         foreach ($services as $service) {
-            try{
+            try {
                 $cmd = sprintf('display current-configuration ont %s/%s/%s %s', $service->frame, $service->slot, $service->port, $service->vpi);
-                $linecmd = array_search($cmd,$output,true);
-                $sn_auth = str_replace('"','',explode(' ',$output[$linecmd+1])[5]);          
-                $port = explode(' ',$output[$linecmd+3])[0];
-                $ups = explode(' ',$output[$linecmd+3])[1];
-                $down = explode(' ',$output[$linecmd+3])[2];
+                $linecmd = array_search($cmd, $output, true);
+                $sn_auth = str_replace('"', '', explode(' ', $output[$linecmd + 1])[5]);
+                $port = explode(' ', $output[$linecmd + 3])[0];
+                $ups = explode(' ', $output[$linecmd + 3])[1];
+                $down = explode(' ', $output[$linecmd + 3])[2];
 
                 $service->last_sn = $sn_auth;
                 $service->updated_at = date("Y-m-d H:i:s");
                 $service->save();
 
                 $newserviceh = new TraficoServicesHistory();
-                $newserviceh->service_port = $port;
+                $newserviceh->service_port = $service->index;
                 $newserviceh->ont_id = $service->vpi;
                 $newserviceh->state = $service->last_state;
                 $newserviceh->sn = $sn_auth;
@@ -188,15 +252,16 @@ class SshController extends Controller {
                 $newserviceh->upstream = $ups;
                 $newserviceh->created_at = $service->updated_at;
                 $newserviceh->save();
-            }catch(Exception $ex){
+            } catch (Exception $ex) {
                 echo $ex->getMessage();
             }
         }
-        
+
         // cierra ssh        
         $this->makesshaction('close', $olt);
     }
 
+    /// Consulta trafico total de OLT
     public function processOltTraffic($olt) {
 
         $onlypattern = array('common');
@@ -208,9 +273,9 @@ class SshController extends Controller {
         $output = $this->ssh->getOutput();
         // cierra ssh        
         $this->makesshaction('close', $olt);
-        
+
         try {
-           
+
             foreach ($output as $line) {
 
                 $line = str_replace("  ", " ", $line);
@@ -218,15 +283,15 @@ class SshController extends Controller {
 
                 $vlan = $linearr[0];
                 $serv_port = $linearr[4];
-                
+
                 if (isset($serv_port)) {
-                    if(is_numeric($serv_port) === false){
+                    if (is_numeric($serv_port) === false) {
                         continue;
                     }
-                    if(intval($serv_port)  === 0){
+                    if (intval($serv_port) === 0) {
                         continue;
                     }
-                    
+
                     // ejecuta comando de trafico                    
                     $onlypatternt = array('%');
                     // conecta ssh        
@@ -237,7 +302,7 @@ class SshController extends Controller {
                     $outputt = $this->ssh->getOutput();
                     // cierra ssh        
                     $this->makesshaction('close', $olt);
-        
+
                     foreach ($outputt as $linet) {
                         $linet = str_replace("  ", " ", $linet);
                         $linetarr = explode(' ', $linet);
@@ -258,10 +323,25 @@ class SshController extends Controller {
         } catch (Exception $ex) {
             echo $ex->getMessage();
         }
-
-
     }
-    
+
+    /// Consulta stado de red de cada OLT con ping
+    public function processOltStatus($olt) {
+
+        try {
+            $status = $this->ping($olt['wan_olt']);
+            $newolth = new TraficoOltStatusHistory();
+            $newolth->olt_id = $olt['id'];
+            $newolth->status = $status ? 1 : 0;
+            $newolth->created_at = date("Y-m-d H:i:s");
+            $newolth->save();
+        } catch (Exception $ex) {
+            echo $ex->getMessage();
+        }
+    }
+
+    /// HELPERS
+    /// ejecuta acciones comunes de SSH
     public function makesshaction($action, $olt) {
 
         switch ($action) {
@@ -281,6 +361,27 @@ class SshController extends Controller {
                     break;
                 }
         }
+    }
+
+    // funciones de ping para garficas de equipos centrales y alimentacion electrica
+    public function myOS() {
+        if (strtoupper(substr(PHP_OS, 0, 3)) === (chr(87) . chr(73) . chr(78)))
+            return true;
+
+        return false;
+    }
+
+    // ejecuta ping
+    public function ping($ip_addr) {
+        if ($this->myOS()) {
+            if (!exec("ping -n 1 -w 1 " . $ip_addr . " 2>NUL > NUL && (echo 0) || (echo 1)"))
+                return true;
+        } else {
+            if (!exec("ping -q -c1 " . $ip_addr . " >/dev/null 2>&1 ; echo $?"))
+                return true;
+        }
+
+        return false;
     }
 
 }

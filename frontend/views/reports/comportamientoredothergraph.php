@@ -4,9 +4,7 @@
 use \yii\web\View;
 use \yii\helpers\Url;
 
-$this->registerJs("var down = " . json_encode(array('data' => array_map('array_values', $down)), JSON_NUMERIC_CHECK) . ";", View::POS_END, 'down');
-$this->registerJs("var up = " . json_encode(array('data' => array_map('array_values', $up)), JSON_NUMERIC_CHECK) . ";", View::POS_END, 'up');
-$this->registerJs("var uso = " . json_encode(array('data' => array_map('array_values', $uso)), JSON_NUMERIC_CHECK) . ";", View::POS_END, 'uso');
+$this->registerJs("var estados = " . json_encode(array('data' => array_map('array_values', $status)), JSON_NUMERIC_CHECK) . ";", View::POS_END, 'down');
 ?>
 <script>
     var title = 'Comportamiento de Red Total OLT';
@@ -23,7 +21,7 @@ $this->registerJs("var uso = " . json_encode(array('data' => array_map('array_va
                         <li class="breadcrumb-item active" aria-current="page">Tráfico de Cliente</li>
                     </ol>
                 </nav>
-                <h4 class="mg-b-0">Tráfico Total OLT</h4>
+                <h4 class="mg-b-0">Gráficas OLT</h4>
 
             </div>
         </div>
@@ -84,7 +82,7 @@ $this->registerJs("var uso = " . json_encode(array('data' => array_map('array_va
 </div>
 <?php
 $this->registerJs("
-   var startDate = new Date(down.data[down.data.length - 1][0]), // Get year of last data point
+   var startDate = new Date(estados.data[estados.data.length - 1][0]), // Get year of last data point
         minRate = 1,
         maxRate = 0,
         startPeriod,
@@ -132,37 +130,22 @@ $this->registerJs("
         },
 
         title: {
-            text: 'Tráfico Total OLT'
+            text: 'Equipos centrales'
         },
         legend:{
           enabled:true
         },
         yAxis: {
             title: {
-                text: 'Kilobytes'
+                text: 'On/Off'
             },
-            max : '". $olt['bandwidth'] . "',
-            plotLines: [{
-                value: '". $olt['bandwidth'] . "',
-                color: 'green',
-                dashStyle: 'shortdash',
-                width: 2,
-                label: {
-                    text: 'Ancho de banda asignado'
-                }
-            }]
         },
 
         series: [{
             type: 'area',
-            name: 'DownStream',
+            name: 'Estado',
             color:'#7F1973',
-            data: down.data
-        },
-        {
-            type: 'area',
-            name: 'Upstream',
-            data: up.data
+            data: estados.data
         }]
     });
     
@@ -204,32 +187,22 @@ $this->registerJs("
         },
 
         title: {
-            text: 'Porcentaje de uso total OLT'
+            text: 'Alimentación Eléctrica'
         },
         legend:{
           enabled:true
         },
         yAxis: {
             title: {
-                text: '%'
-            },
-            max : '110',
-            plotLines: [{
-                value: '100',
-                color: 'green',
-                dashStyle: 'shortdash',
-                width: 2,
-                label: {
-                    text: 'Ancho de banda asignado'
-                }
-            }]
+                text: 'On/Off'
+            }
         },
 
         series: [{
             type: 'area',
-            name: 'Porcentaje de uso',
+            name: 'Estado',
             color:'#7F1973',
-            data: uso.data
+            data: estados.data
         }]
     });
 ", View::POS_END, 'graph');

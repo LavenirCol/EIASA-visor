@@ -132,11 +132,19 @@ class ComponentSSH {
             $out = ''; //. PHP_EOL;
             settype($out, 'string');
             fwrite($this->shellStream, "$cmd"."\n" . PHP_EOL);
-            sleep(1);
+            
+            if($cmd == " " || str_contains($cmd,"display")){
+                sleep(1);
+            }else{
+                usleep(200000);
+            }
 
             while ($line = fgets($this->shellStream)) {
                 $this->lastLog = $line;
                 //$this->logAction($line);
+                if($cmd == " " || $cmd == "display service-port all" || $cmd == "display vlan all" || str_contains($cmd,"display traffic vlan")){               
+                    usleep(5000);
+                }
                 //sleep ( 1 );
                 if ($setlog == true && strlen($line) > 1 && $this->contains($line, $this->bloqued) == false) {
                     
@@ -224,7 +232,7 @@ class ComponentSSH {
     }
 
     public function logAction($strlog) {
-        echo $strlog . PHP_EOL;
+        echo date("Y-m-d H:i:s")." - ".$strlog . PHP_EOL;
     }
 
     public function openStream() {

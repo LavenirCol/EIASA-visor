@@ -41,7 +41,6 @@ class TraficoServicesPort extends \yii\db\ActiveRecord
             [['index'], 'required'],
             [['index', 'frame', 'slot', 'port', 'vpi', 'vci', 'rx', 'tx', 'created_at'], 'integer'],
             [['vlan_id', 'vlan_attr', 'port_type', 'flow_type', 'flow_para'], 'string', 'max' => 45],
-            [['index'], 'unique'],
         ];
     }
 
