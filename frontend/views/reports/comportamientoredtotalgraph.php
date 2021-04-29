@@ -56,6 +56,9 @@ $this->registerJs("var uso = " . json_encode(array('data' => array_map('array_va
                 </div>
             </div>  
         </div>
+        <div>
+            <input id="form-token" type="hidden" name="<?= Yii::$app->request->csrfParam ?>" value="<?= Yii::$app->request->csrfToken ?>"/>
+        </div>
     </form>
     <div class="container pd-x-0 pd-lg-x-10 pd-xl-x-0 bd bd-2 rounded-10">
         <div class="row">
@@ -77,9 +80,6 @@ $this->registerJs("var uso = " . json_encode(array('data' => array_map('array_va
 
             </div>
         </div>
-    </div>    
-    <div>
-        <input id="form-token" type="hidden" name="<?= Yii::$app->request->csrfParam ?>" value="<?= Yii::$app->request->csrfToken ?>"/>
     </div>
 </div>
 <?php

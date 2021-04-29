@@ -82,6 +82,9 @@
                 </div>
             </div>  
         </div>
+        <div>
+            <input id="form-token" type="hidden" name="<?=Yii::$app->request->csrfParam?>" value="<?=Yii::$app->request->csrfToken?>"/>
+        </div>
     </form>
     <div class="container pd-x-0 pd-lg-x-10 pd-xl-x-0 mt-3">              
       <div class="row">
@@ -112,8 +115,5 @@
             </table>
           </div>
       </div>
-    </div>
-    <div>
-        <input id="form-token" type="hidden" name="<?=Yii::$app->request->csrfParam?>" value="<?=Yii::$app->request->csrfToken?>"/>
     </div>
 </div>
