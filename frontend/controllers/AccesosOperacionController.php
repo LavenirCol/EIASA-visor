@@ -126,7 +126,7 @@ class AccesosoperacionController extends Controller {
                             $newrec->Nombre_Proyecto_VIP = $rowData[20];
                             $newrec->Velocidad_Contratada_Downstream = $rowData[21];
                             $newrec->Meta = $rowData[22];
-                            $newrec->Fecha_max_de_cumplimiento_de_meta = $rowData[23];
+                            $newrec->Fecha_max_de_cumplimiento_de_meta = is_numeric($rowData[23]) ? gmdate("d/m/Y", intval(($rowData[23] - 25569) * 86400)) : '';
                             $newrec->Tipo_Solucion_UM_Operatividad = $rowData[24];
                             $newrec->Operador_Prestante = $rowData[25];
                             $newrec->IP = $rowData[26];
@@ -173,7 +173,7 @@ class AccesosoperacionController extends Controller {
                         if ($i > 0) {
                             $sql = "SELECT count(*) as cantidad
                                 FROM sabana_reporte_operacion s 
-                                WHERE CONCAT(Dane_Departamento,Dane_Municipio) = '" . str_pad(strval($rowData[0]), 5, "0", STR_PAD_LEFT) . "'";
+                                WHERE Dane_Municipio = '" . str_pad(strval($rowData[0]), 5, "0", STR_PAD_LEFT) . "'";
 
                             $conteo = Yii::$app->db->createCommand($sql)->queryOne();
                             $meta = (float) ($rowData[3]);

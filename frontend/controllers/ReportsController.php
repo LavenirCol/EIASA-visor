@@ -1922,8 +1922,8 @@ class ReportsController extends Controller {
         if (isset($date)) {
             if ($date !== '') {                
                 $CheckInX = explode("/", $date);
-                $initialTime = mktime(0, 0, 0, $CheckInX[1], $CheckInX[0], $CheckInX[2]);
-                $finalTime = time();
+                $finalTime = mktime(0, 0, 0, $CheckInX[1], $CheckInX[0], $CheckInX[2]);
+                 $initialTime = time();
                 $daysDifference = ceil(($finalTime - $initialTime) / (3600 * 24));
             }
         }
