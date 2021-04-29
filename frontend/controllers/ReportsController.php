@@ -206,7 +206,7 @@ class ReportsController extends Controller {
                 }
                 /* Closing line */
                 $pdf->Cell(array_sum($w), 0, '', 'T');
-                $pdf->Output('D', 'Dashboard Instalación.pdf', true);
+                $pdf->Output('D', 'Detalle Tickets.pdf', true);
              }
         }
     
