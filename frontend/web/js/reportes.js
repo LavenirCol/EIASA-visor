@@ -45,13 +45,8 @@ $(document).ready(function(){
         'buttons': [{
                 extend: 'excel',
                 title: (typeof title === 'undefined' ?'Datos Exportados': title)
-            },
-            {
-                extend: 'pdf',
-                title: (typeof title === 'undefined' ?'Datos Exportados': title),
-                orientation: 'landscape',
-                pageSize: 'TABLOID'
-            }],        
+            }
+            ],        
         responsive: {
             details: {
                 type: 'column',
@@ -76,12 +71,6 @@ $(document).ready(function(){
         'buttons': [{
                 extend: 'excel',
                 title: (typeof title === 'undefined' ?'Datos Exportados': title)
-            },
-            {
-                extend: 'pdf',
-                title: (typeof title === 'undefined' ?'Datos Exportados': title),
-                orientation: 'landscape',
-                pageSize: 'TABLOID'
             }],        
         responsive: {
             details: {
@@ -133,26 +122,6 @@ $(document).ready(function(){
                         window.open(url);
                     }
                 },
-                {
-                    text: 'PDF',
-                    action: function ( e, dt, node, config ) {
-                        
-                        if(datatable === "#dataTableInstalacion" || datatable === "#dataTableOperaciondetails" || datatable === "#dataTableInstalaciondetails" || datatable === "#dataTableCambiosReemplazos" || datatable === '#dataTablePqrs'){
-                            window.alert("Funcion no soportada en sabana de datos")
-                        }else{
-                            var url = baseurl + ajaxcall;
-                            url = url + '?dptos='+$('#dptos').val();
-                            url = url + '&mpios='+$('#mpios').val();
-                            url = url + '&materials='+$('#materials').val();
-                            url = url + '&factories='+$('#factories').val();
-                            url = url + '&models='+$('#models').val();
-                            url = url + '&daneCodeFilter='+$('#daneCodeFilter').val();
-                            url = url + '&oltCodeFilter='+$('#oltCodeFilter').val();                            
-                            url = url + '&export=pdf';
-                            window.open(url);
-                        }
-                    }
-                }                
             ],
             "ajax": {
                 url: baseurl + ajaxcall,
@@ -184,12 +153,6 @@ $(document).ready(function(){
                         } 
                     }); 
                 }
-                
-//                if(datatable === "#dataTableComportamientoReddash")
-//                {
-//                    console.log(aData);
-//                    $('td:eq(9)', nRow).html( "<button class='btn btn-sm btn-primary btntrafic' >Tráfico</button>" );
-//                }
                 return nRow; 
             },           
         });        
@@ -258,6 +221,5 @@ function showgraphic(btn){
     var tr = $(btn).closest('tr').parents('tr');
     var prevtr = tr.prev('tr')[0];
     var data = table.row(prevtr).data();
-    //console.log(data);
-    window.location.href = '/reports/comportamientoredgraph?ont=' +data[14] + '&sp=' +data[9]; //vpi
+    window.location.href = '/reports/comportamientoredgraph?ont=' +data[14] + '&sp=' +data[9];
 }
