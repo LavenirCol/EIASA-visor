@@ -339,21 +339,22 @@ class ReportsController extends Controller {
     public function actionInstalaciondetails() {
         $request = Yii::$app->request;
         $dane = $request->get('dane');
+        $where = ['=','Dane_Municipio', $dane];
         $deptosList = (new \yii\db\Query())
         ->select(['city' => 'Departamento'])
         ->from('sabana_reporte_instalacion')
-        ->where(['=','CONCAT(Dane_Departamento,Dane_Municipio)', $dane])
+        ->where($where)
         ->distinct()
         ->orderBy(['city' => SORT_ASC])
         ->all();
         $mpiosList = (new \yii\db\Query())
         ->select(['district' => 'Municipio'])
         ->from('sabana_reporte_instalacion')
-        ->where(['=','CONCAT(Dane_Departamento,Dane_Municipio)', $dane])
+        ->where($where)
         ->distinct()
         ->orderBy(['district' => SORT_ASC])
         ->all();        
-        $municipio = (isset($insts[0]['Departamento'],$insts[0]['Municipio'])) ? ($insts[0]['Departamento'] . ' - ' . $insts[0]['Municipio']) : '';        
+        $municipio = (isset($insts[0]['Municipio'])) ? $insts[0]['Municipio'] : '';
         return $this->render('instalaciondetails', array(
                     'deptos' => $deptosList,
                     'mpios' => $mpiosList,                   
