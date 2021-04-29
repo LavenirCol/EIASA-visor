@@ -547,24 +547,25 @@ class ReportsController extends Controller {
 
     public function actionOperaciondetails() {
         $request = Yii::$app->request;
-        $dane = $request->get('dane');        
+        $dane = $request->get('dane');
+        $where = ['=','Dane_Municipio', $dane];
         $deptosList = (new \yii\db\Query())
         ->select(['city' => 'Departamento'])
         ->from('sabana_reporte_operacion')
-        ->where(['=','CONCAT(Dane_Departamento,Dane_Municipio)', $dane])
+        ->where($where)
         ->distinct()
         ->orderBy(['city' => SORT_ASC])
         ->all();
         $mpiosList = (new \yii\db\Query())
         ->select(['district' => 'Municipio'])
         ->from('sabana_reporte_operacion')
-        ->where(['=','CONCAT(Dane_Departamento,Dane_Municipio)', $dane])
+        ->where($where)
         ->distinct()
         ->orderBy(['district' => SORT_ASC])
         ->all();        
         $insts = (new \yii\db\Query())        
         ->from('sabana_reporte_operacion')
-        ->where(['=','CONCAT(Dane_Departamento,Dane_Municipio)', $dane])        
+        ->where($where)        
         ->all();
         $municipio = $insts[0]['Departamento'] . ' - ' . $insts[0]['Municipio'];
         return $this->render('operaciondetails', array(
@@ -1960,8 +1961,8 @@ class ReportsController extends Controller {
         if (isset($date)) {
             if ($date !== '') {                
                 $CheckInX = explode("/", $date);
-                $initialTime = mktime(0, 0, 0, $CheckInX[1], $CheckInX[0], $CheckInX[2]);
-                $finalTime = time();
+                $finalTime = mktime(0, 0, 0, $CheckInX[1], $CheckInX[0], $CheckInX[2]);
+                 $initialTime = time();
                 $daysDifference = ceil(($finalTime - $initialTime) / (3600 * 24));
             }
         }
