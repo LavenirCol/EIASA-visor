@@ -2069,9 +2069,9 @@ class ReportsController extends Controller {
                 ->orWhere(['LIKE', 'last_state', $requestData['search']['value']."%", false]);  
             }            
                       
-            //if ($oltCodeFilter != '-1') {
+            if (empty($requestData['export']) && $oltCodeFilter != '-1') {
                 $dataReport->andWhere(['=', 'id_olt', $oltCodeFilter]);
-            //}
+            }
 
             if (empty($requestData['export'])){
                 $totalFiltered = $dataReport->count();
@@ -2086,7 +2086,7 @@ class ReportsController extends Controller {
                 $nestedData = array();
                 $nestedData[] = $row["Departamento"];
                 $nestedData[] = $row["Municipio"];
-                $nestedData[] = $row["Dane_Departamento"].$row["Dane_Municipio"];
+                $nestedData[] = $row["Dane_Municipio"];
                 $nestedData[] = $row["Dane_Mun_ID_Punto"];//codigo de acceso
                 $nestedData[] = $row["Nombre_Cliente"];
                 $nestedData[] = $row["Documento_cliente_acceso"];
@@ -2100,7 +2100,9 @@ class ReportsController extends Controller {
                 $nestedData[] = $row['frame'] . '/'. $row['slot'] . '/'. $row['port'];
                 $nestedData[] = $row['vpi'];
                 $nestedData[] = $row['updated_at'];
-                $nestedData[] = "<a class='btn btn-sm btn-primary' href='/reports/comportamientoredgraph?ont=".$row['vpi']."&sp=".$row['index']."&sn=".$row['last_sn']."' >Tráfico</a>";
+                if (empty($requestData['export'])){
+                    $nestedData[] = "<a class='btn btn-sm btn-primary' href='/reports/comportamientoredgraph?ont=".$row['vpi']."&sp=".$row['index']."&sn=".$row['last_sn']."' >Tráfico</a>";
+                }
                 $data[] = $nestedData;
             }
 

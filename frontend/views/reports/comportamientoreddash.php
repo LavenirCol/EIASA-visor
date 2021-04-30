@@ -1,5 +1,6 @@
 <?php
 /* @var $this yii\web\View */
+
 use \yii\web\View;
 use \yii\helpers\Url;
 ?>
@@ -18,7 +19,19 @@ use \yii\helpers\Url;
                     </ol>
                 </nav>
                 <h4 class="mg-b-0">Comportamiento de Red</h4>
-  
+                <br>
+                <nav>
+                    <ol class="breadcrumb breadcrumb-style1 mg-b-10">
+                        <li>
+                            <a href="#" onclick="window.open('<?php echo Url::toRoute('reports/comportamientoredserver'); ?>?export=csv');" class="btn btn-sm btn-primary">Descargar Todo</a> 
+                        </li>
+                        <li style="width:100px;"></li>
+                        <li>        
+                        </li>
+                        <li>
+                        </li>
+                    </ol>
+                </nav> 
             </div>
         </div>
     </div><!-- container -->
@@ -34,21 +47,21 @@ use \yii\helpers\Url;
                         <option value="-1" selected="selected">--Seleccione--</option>
                         <?php foreach ($deptos as $depto) { ?>
                             <option value="<?php echo $depto['Departamento']; ?>" ><?php echo $depto['Departamento']; ?></option>
-                        <?php } ?>
+<?php } ?>
                     </select>
                 </div>
                 <div class="col-lg-2">
                     <label class="label-form" label-for="deptos">Municipio / OLT</label>
                     <select class="custom-select" id="oltCodeFilter" name="oltCodeFilter">
                         <option value="-1">--Seleccione--</option>
-                        <?php foreach ($oltsCodeList as $oltCodeItem){ ?>
+                        <?php foreach ($oltsCodeList as $oltCodeItem) { ?>
                             <option value="<?php echo $oltCodeItem['id']; ?>"><?php echo $oltCodeItem['poblacion']; ?></option>
-                        <?php } ?>
+<?php } ?>
                     </select>
                 </div>                
                 <div class="col-lg-2"></div>
                 <div class="col-lg-2"></div>
-                
+
                 <div class="col-lg-2">
                     <button type="button" class="btn btn-primary btn-sm" id="btnsearch" style="width:100%">Buscar</button><br>
                     <button type="clear" class="btn btn-secondary btn-sm mt-2" style="width:100%">Borrar</button>
@@ -60,7 +73,7 @@ use \yii\helpers\Url;
             </div>  
         </div>
         <div>
-            <input id="form-token" type="hidden" name="<?=Yii::$app->request->csrfParam?>" value="<?=Yii::$app->request->csrfToken?>"/>
+            <input id="form-token" type="hidden" name="<?= Yii::$app->request->csrfParam ?>" value="<?= Yii::$app->request->csrfToken ?>"/>
         </div>
     </form>
     <div class="container pd-x-0 pd-lg-x-10 pd-xl-x-0">
