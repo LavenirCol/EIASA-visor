@@ -142,8 +142,8 @@ class ComponentSSH {
             while ($line = fgets($this->shellStream)) {
                 $this->lastLog = $line;
                 //$this->logAction($line);
-                if($cmd == " " || $cmd == "display service-port all" || $cmd == "display vlan all" || str_contains($cmd,"display traffic vlan")){               
-                    usleep(5000);
+                if($cmd == " " || str_contains($cmd,"display")){               
+                    usleep(80000);
                 }
                 //sleep ( 1 );
                 if ($setlog == true && strlen($line) > 1 && $this->contains($line, $this->bloqued) == false) {

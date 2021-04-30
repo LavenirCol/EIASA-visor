@@ -51,17 +51,16 @@ class SshController extends Controller {
         // consulta OLT's en estado activo
         $olts = TraficoOlts::find()->where(['activo' => 1])->orderBy('id')->all();
 
-        echo date("Y-m-d H:i:s")." - "."Procesando olts (" . sizeof($olts) . ")\n";
+        echo date("Y-m-d H:i:s") . " - " . "Procesando olts (" . sizeof($olts) . ")\n";
         foreach ($olts as $olt) {
-            echo date("Y-m-d H:i:s")." - "."Procesando olt (" . $olt['id'] . " - " . $olt['poblacion'] . ") \n";
+            echo date("Y-m-d H:i:s") . " - " . "Procesando olt (" . $olt['id'] . " - " . $olt['poblacion'] . ") \n";
 
-            if($this->ping($olt['wan_olt'])){
+            if ($this->ping($olt['wan_olt'])) {
                 //procesa services port
                 $this->processServicePort($olt);
-            }else{
+            } else {
                 echo 'OLT sin conexion';
             }
-            
         }
     }
 
@@ -72,16 +71,16 @@ class SshController extends Controller {
         // consulta OLT's en estado activo
         $olts = TraficoOlts::find()->where(['activo' => 1])->orderBy('id')->all();
 
-        echo date("Y-m-d H:i:s")." - "."Procesando olts (" . sizeof($olts) . ")\n";
+        echo date("Y-m-d H:i:s") . " - " . "Procesando olts (" . sizeof($olts) . ")\n";
         foreach ($olts as $olt) {
-            echo date("Y-m-d H:i:s")." - "."Procesando olt (" . $olt['id'] . " - " . $olt['poblacion'] . ") \n";
+            echo date("Y-m-d H:i:s") . " - " . "Procesando olt (" . $olt['id'] . " - " . $olt['poblacion'] . ") \n";
 
-            if($this->ping($olt['wan_olt'])){
+            if ($this->ping($olt['wan_olt'])) {
                 //procesa trafico global OLT
                 $this->processOltTraffic($olt);
-            }else{
+            } else {
                 echo 'OLT sin conexion';
-            }            
+            }
         }
     }
 
@@ -92,17 +91,26 @@ class SshController extends Controller {
         // consulta OLT's en estado activo
         $olts = TraficoOlts::find()->where(['activo' => 1])->orderBy('id')->all();
 
-        echo date("Y-m-d H:i:s")." - "."Procesando olts (" . sizeof($olts) . ")\n";
+        echo date("Y-m-d H:i:s") . " - " . "Procesando olts (" . sizeof($olts) . ")\n";
         foreach ($olts as $olt) {
-            echo date("Y-m-d H:i:s")." - "."Procesando olt (" . $olt['id'] . " - " . $olt['poblacion'] . ") \n";
+            echo date("Y-m-d H:i:s") . " - " . "Procesando olt (" . $olt['id'] . " - " . $olt['poblacion'] . ") \n";
 
-            if($this->ping($olt['wan_olt'])){
+            if ($this->ping($olt['wan_olt'])) {
                 // execute external action
-                $cmd = 'cd /var/www/html && sudo /usr/bin/php yii ssh/execportconfigdetail ' . $olt['id'];
-                $outputfile = 'sshportconfig_' . $olt['id'] . '.log';
-                $pidfile = 'sshportconfigpid_' . $olt['id'] . '.log';
-                exec(sprintf("%s > %s 2>&1 & echo $! >> %s", $cmd, $outputfile, $pidfile));
-            }else{
+                if ($this->myOS()) {
+                    //windows - desarrollo
+                    $cmd = 'cd D:\wamp32\www\wwweiasa && yii ssh/execportconfigdetail ' . $olt['id'];
+                    $outputfile = 'sshportconfig_' . $olt['id'] . '.log';
+                    $pidfile = 'sshportconfigpid_' . $olt['id'] . '.log';
+                    exec(sprintf("%s > %s 2>&1 & echo $! >> %s", $cmd, $outputfile, $pidfile));
+                } else {
+                    //linux
+                    $cmd = 'cd /var/www/html && sudo /usr/bin/php yii ssh/execportconfigdetail ' . $olt['id'];
+                    $outputfile = 'sshportconfig_' . $olt['id'] . '_`date +\%Y-\%m-\%d_\%H:\%M:\%S`.log';
+                    $pidfile = 'sshportconfigpid_' . $olt['id'] . '_`date +\%Y-\%m-\%d_\%H:\%M:\%S`.log';
+                    exec(sprintf("%s > %s 2>&1 & echo $! >> %s", $cmd, $outputfile, $pidfile));
+                }
+            } else {
                 echo 'OLT sin conexion';
             }
         }
@@ -112,24 +120,24 @@ class SshController extends Controller {
     public function actionExecportconfigdetail($oltid) {
         // consulta OLT's en estado activo
         $olt = TraficoOlts::find()->where(['id' => $oltid])->one();
-        echo date("Y-m-d H:i:s")." - "."Procesando detalle olt (" . $olt['id'] . " - " . $olt['poblacion'] . ") \n";
+        echo date("Y-m-d H:i:s") . " - " . "Procesando detalle olt (" . $olt['id'] . " - " . $olt['poblacion'] . ") \n";
         // consulta copnfiguracion seriales
         $this->processServicePortConfig($olt);
     }
-    
+
     /// Accion que procesa los estados de coenxion de cada OLT
     public function actionExecoltstatus() {
 
         // consulta OLT's en estado activo
         $olts = TraficoOlts::find()->where(['activo' => 1])->orderBy('id')->all();
 
-        echo date("Y-m-d H:i:s")." - "."Procesando olts (" . sizeof($olts) . ")\n";
+        echo date("Y-m-d H:i:s") . " - " . "Procesando olts (" . sizeof($olts) . ")\n";
         foreach ($olts as $olt) {
-            echo date("Y-m-d H:i:s")." - "."Procesando olt (" . $olt['id'] . " - " . $olt['poblacion'] . ") \n";
+            echo date("Y-m-d H:i:s") . " - " . "Procesando olt (" . $olt['id'] . " - " . $olt['poblacion'] . ") \n";
 
             //if($this->ping($olt['wan_olt'])){
-                // consulta copnfiguracion seriales
-                $this->processOltStatus($olt);
+            // consulta copnfiguracion seriales
+            $this->processOltStatus($olt);
             //}else{
             //    echo 'OLT sin conexion';
             //}           
@@ -140,7 +148,7 @@ class SshController extends Controller {
     public function processServicePort($olt) {
 
         $onlypattern = array('gpon');
-        
+
         // conecta ssh        
         $this->makesshaction('open', $olt);
 
@@ -158,7 +166,7 @@ class SshController extends Controller {
         }
         //procesa puertos en servicio
         $output = $this->ssh->getOutput();
-        
+
         try {
 
             foreach ($output as $line) {
@@ -169,7 +177,7 @@ class SshController extends Controller {
 
                 $index = $linearr[0];
                 $current_state = $linearr[13];
-                
+
                 $service = TraficoServicesPort::find()->where(['index' => $index, 'id_olt' => $olt['id']])->one();
 
                 if (isset($service)) {
@@ -186,7 +194,7 @@ class SshController extends Controller {
                     $newservice->frame = $linearr[4];
                     $newservice->slot = $linearr[5];
                     $newservice->port = $linearr[6];
-                    $newservice->vpi = $linearr[7];//
+                    $newservice->vpi = $linearr[7]; //
                     $newservice->vci = $linearr[8];
                     $newservice->flow_type = $linearr[9];
                     $newservice->flow_para = $linearr[10];
@@ -208,57 +216,64 @@ class SshController extends Controller {
     /// Consulta detalle de puertos de servicio por OLT
     public function processServicePortConfig($olt) {
         $onlypattern = array('display current-configuration ont', 'sn-auth', 'display traffic', '                ');
-        // conecta ssh        
-        $this->makesshaction('open', $olt);
 
+        // fetch 10 services at a time
         // consulta puertos en servicio en bd
-        $services = TraficoServicesPort::find()->where(['id_olt' => $olt['id']])->orderby('index')->all();//->limit(15)->all();
-        foreach ($services as $service) {
-            //consulta seriales            
-            $cmd = sprintf('display current-configuration ont %s/%s/%s %s', $service->frame, $service->slot, $service->port, $service->vpi);
-            $this->ssh->shellCmd([$cmd], true, $onlypattern);
-            //consulta trafico
-            $cmd = sprintf('display traffic service-port %s', $service->index);
-            $this->ssh->shellCmd([$cmd], true, $onlypattern);
-        }
+        foreach (TraficoServicesPort::find()->where(['id_olt' => $olt['id']])->orderby('index')->batch(10) as $services) {
+            
+            //TODO:new thread
+            echo date("Y-m-d H:i:s")." - Procesando (" . $olt['id'] . ") services ".sizeof($services) . PHP_EOL;
+            // conecta ssh        
+            $this->makesshaction('open', $olt);
 
-        //last cmd
-        $cmd = sprintf('display traffic service-port %s', 0);
-        $this->ssh->shellCmd([$cmd], true, $onlypattern);
-
-        $results = array_unique($this->ssh->getOutput());
-        $output = array_values($results);
-        //var_dump($output);
-
-        foreach ($services as $service) {
-            try {
+            // consulta puertos en servicio en bd
+            foreach ($services as $service) {
+                //consulta seriales            
                 $cmd = sprintf('display current-configuration ont %s/%s/%s %s', $service->frame, $service->slot, $service->port, $service->vpi);
-                $linecmd = array_search($cmd, $output, true);
-                $sn_auth = str_replace('"', '', explode(' ', $output[$linecmd + 1])[5]);
-                $port = explode(' ', $output[$linecmd + 3])[0];
-                $ups = explode(' ', $output[$linecmd + 3])[1];
-                $down = explode(' ', $output[$linecmd + 3])[2];
+                $this->ssh->shellCmd([$cmd], true, $onlypattern);
+                //consulta trafico
+                $cmd = sprintf('display traffic service-port %s', $service->index);
+                $this->ssh->shellCmd([$cmd], true, $onlypattern);
+            }
 
-                $service->last_sn = $sn_auth;
-                $service->updated_at = date("Y-m-d H:i:s");
-                $service->save();
+            //last cmd
+            $cmd = sprintf('display traffic service-port %s', 0);
+            $this->ssh->shellCmd([$cmd], true, $onlypattern);
 
-                $newserviceh = new TraficoServicesHistory();
-                $newserviceh->service_port = $service->index;
-                $newserviceh->ont_id = $service->vpi;
-                $newserviceh->state = $service->last_state;
-                $newserviceh->sn = $sn_auth;
-                $newserviceh->downstream = $down;
-                $newserviceh->upstream = $ups;
-                $newserviceh->created_at = $service->updated_at;
-                $newserviceh->save();
-            } catch (Exception $ex) {
-                echo $ex->getMessage();
+            $results = array_unique($this->ssh->getOutput());
+            $output = array_values($results);
+            //var_dump($output);
+            // cierra ssh        
+            $this->makesshaction('close', $olt);
+
+            //procesa output
+            foreach ($services as $service) {
+                try {
+                    $cmd = sprintf('display current-configuration ont %s/%s/%s %s', $service->frame, $service->slot, $service->port, $service->vpi);
+                    $linecmd = array_search($cmd, $output, true);                    
+                    $sn_auth = str_replace('"', '', explode(' ', $output[$linecmd + 1])[5]);
+                    $port = explode(' ', $output[$linecmd + 3])[0];
+                    $ups = explode(' ', $output[$linecmd + 3])[1];
+                    $down = explode(' ', $output[$linecmd + 3])[2];
+
+                    $service->last_sn = $sn_auth;
+                    $service->updated_at = date("Y-m-d H:i:s");
+                    $service->save();
+
+                    $newserviceh = new TraficoServicesHistory();
+                    $newserviceh->service_port = $service->index;
+                    $newserviceh->ont_id = $service->vpi;
+                    $newserviceh->state = $service->last_state;
+                    $newserviceh->sn = $sn_auth;
+                    $newserviceh->downstream = $down;
+                    $newserviceh->upstream = $ups;
+                    $newserviceh->created_at = $service->updated_at;
+                    $newserviceh->save();
+                } catch (Exception $ex) {
+                     echo date("Y-m-d H:i:s")." Error procesando service ".$service->index. " ". $ex->getMessage() . PHP_EOL;
+                }
             }
         }
-
-        // cierra ssh        
-        $this->makesshaction('close', $olt);
     }
 
     /// Consulta trafico total de OLT

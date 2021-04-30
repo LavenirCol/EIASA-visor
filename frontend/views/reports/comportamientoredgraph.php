@@ -44,8 +44,8 @@ $this->registerJs("var up = " . json_encode(array('data' => array_map('array_val
                                 <th>VLAN</th>
                                 <th>Port Type</th>
                                 <th>F / S / P</th>
-<!--                                <th>Vpi</th>-->
-                                <th>Estado</th>
+<!--                                <th>Vpi</th>
+                                <th>Estado</th>-->
                                 <th>Actualizado</th>
                             </tr>
                         </thead>
@@ -53,13 +53,13 @@ $this->registerJs("var up = " . json_encode(array('data' => array_map('array_val
                             <tr>
                                 <td><?php echo $olt['poblacion'];?></td>
                                 <td><?php echo $service['index'];?></td>
-                                <td>Cliente</td>
+                                <td><?php echo (isset($cliente)?$cliente['Nombre_Cliente']: '');?></td>
                                 <td><?php echo $service['last_sn'];?></td>
                                 <td><?php echo $service['vlan_id'];?></td>
                                 <td><?php echo $service['port_type'];?></td>
                                 <td><?php echo $service['frame'];?> / <?php echo $service['slot'];?> / <?php echo $service['port'];?></td>
-<!--                                <td><?php echo $service['vpi'];?></td>-->
-                                <td><?php echo $service['last_state'];?></td>
+<!--                                <td><?php echo $service['vpi'];?></td>
+                                <td><?php echo $service['last_state'];?></td>-->
                                 <td><?php echo $service['updated_at'];?></td>                                
                             </tr>
                         </tbody>

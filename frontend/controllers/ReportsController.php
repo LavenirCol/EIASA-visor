@@ -2063,6 +2063,9 @@ class ReportsController extends Controller {
             if (!empty($requestData['search']['value'])){
                 $dataReport->Where(['LIKE', 'last_sn', $requestData['search']['value']."%", false])                
                 ->orWhere(['LIKE', 'index', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Dane_Mun_ID_Punto', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Nombre_Cliente', $requestData['search']['value']."%", false])
+                ->orWhere(['LIKE', 'Documento_cliente_acceso', $requestData['search']['value']."%", false])
                 ->orWhere(['LIKE', 'last_state', $requestData['search']['value']."%", false]);  
             }            
                       
@@ -2097,46 +2100,47 @@ class ReportsController extends Controller {
                 $nestedData[] = $row['frame'] . '/'. $row['slot'] . '/'. $row['port'];
                 $nestedData[] = $row['vpi'];
                 $nestedData[] = $row['updated_at'];
+                $nestedData[] = "<a class='btn btn-sm btn-primary' href='/reports/comportamientoredgraph?ont=".$row['vpi']."&sp=".$row['index']."&sn=".$row['last_sn']."' >Tráfico</a>";
                 $data[] = $nestedData;
             }
 
             if (!empty($requestData['export'])) {
                 if ($requestData['export'] == 'csv') {
-                   $header = ['DANE', 'Departamento', 'Municipio', 'Meta', 'Beneficiarios Instalados', 'Meta Tiempo en Servicio','Tiempo en Servicio','Avance']; 
+                   $header = ['Departamento', 'Municipio', 'Codigo DANE', 'Codigo de Acceso', 'Nombre_Cliente','Documento','Telefonos', 'Email', 'Dieccion', 'Puerto servicio', 'Serial', 'VLAN','Tipo de Puerto', 'F/S/P','VPI', 'Actualizado']; 
                    $excel = new ExcelUtils();
-                   $excel->export("Dashboard Operación.xlsx",$header,$data);                   
+                   $excel->export("Comportamiento de Red.xlsx",$header,$data);                   
                 }
-                if ($requestData['export'] == 'pdf') {
-                    $pdf = new Fpdf();
-                    /* Column headings */
-                    $header = array('DANE', 'Departamento', 'Municipio', 'Meta', 'Beneficiarios Instalados', 'Meta Tiempo en Servicio','Tiempo en Servicio','Avance');
-                    /* Data loading */
-                    $pdf->AddPage('L', 'Legal');
-                    $pdf->SetFont('Courier', 'B', 10);
-                    /* Column widths */
-                    $w = array(30, 40, 60, 20, 60, 60, 40, 30);
-                    /* Header */
-                    for ($index = 0; $index < count($header); $index++){
-                        $pdf->Cell($w[$index], 7, utf8_decode($header[$index]), 1, 0, 'C');
-                    }
-                    $pdf->Ln();
-                    /* Data */
-                    $pdf->SetFont('Courier', '', 10);
-                    foreach ($data as $row) {
-                        for ($index = 0; $index < 8; $index++){
-                            if($index > 2)
-                            {
-                                $pdf->Cell($w[$index], 6, utf8_decode($row[$index]), 1,0,'R');
-                            }else{
-                                $pdf->Cell($w[$index], 6, utf8_decode($row[$index]), 1,0,'L');
-                            }                            
-                        }
-                        $pdf->Ln();
-                    }
-                    /* Closing line */
-                    $pdf->Cell(array_sum($w), 0, '', 'T');
-                    $pdf->Output('D', 'Dashboard Operación.pdf', true);
-                }
+//                if ($requestData['export'] == 'pdf') {
+//                    $pdf = new Fpdf();
+//                    /* Column headings */
+//                    $header = array('DANE', 'Departamento', 'Municipio', 'Meta', 'Beneficiarios Instalados', 'Meta Tiempo en Servicio','Tiempo en Servicio','Avance');
+//                    /* Data loading */
+//                    $pdf->AddPage('L', 'Legal');
+//                    $pdf->SetFont('Courier', 'B', 10);
+//                    /* Column widths */
+//                    $w = array(30, 40, 60, 20, 60, 60, 40, 30);
+//                    /* Header */
+//                    for ($index = 0; $index < count($header); $index++){
+//                        $pdf->Cell($w[$index], 7, utf8_decode($header[$index]), 1, 0, 'C');
+//                    }
+//                    $pdf->Ln();
+//                    /* Data */
+//                    $pdf->SetFont('Courier', '', 10);
+//                    foreach ($data as $row) {
+//                        for ($index = 0; $index < 8; $index++){
+//                            if($index > 2)
+//                            {
+//                                $pdf->Cell($w[$index], 6, utf8_decode($row[$index]), 1,0,'R');
+//                            }else{
+//                                $pdf->Cell($w[$index], 6, utf8_decode($row[$index]), 1,0,'L');
+//                            }                            
+//                        }
+//                        $pdf->Ln();
+//                    }
+//                    /* Closing line */
+//                    $pdf->Cell(array_sum($w), 0, '', 'T');
+//                    $pdf->Output('D', 'Dashboard Operación.pdf', true);
+//                }
             } else {
 
                 $json_data = array(
@@ -2160,7 +2164,13 @@ class ReportsController extends Controller {
         $service = (new \yii\db\Query())
         ->select('*')
         ->from('trafico_services_port')
-        ->where(['index' => $requestData['sp'],'vpi' => $requestData['ont'] ])
+        ->where(['index' => $requestData['sp'],'vpi' => $requestData['ont'],'last_sn' => $requestData['sn'] ])
+        ->one();
+        
+        $cliente = (new \yii\db\Query())
+        ->select('*')
+        ->from('sabana_reporte_operacion')
+        ->where(['Serial_ONT' => $requestData['sn']])
         ->one();
               
         $olt = (new \yii\db\Query())
@@ -2173,20 +2183,21 @@ class ReportsController extends Controller {
         $down = (new \yii\db\Query())
         ->select(['timestamp' => 'UNIX_TIMESTAMP(created_at)*1000', 'downstream'])
         ->from('trafico_services_history')
-        ->where(['ont_id' => $requestData['ont'], 'service_port' => $requestData['sp']])
+        ->where(['ont_id' => $requestData['ont'], 'service_port' => $requestData['sp'],'sn' => $requestData['sn']])
         ->all();
         
         $up = (new \yii\db\Query())
         ->select(['timestamp' => 'UNIX_TIMESTAMP(created_at)*1000', 'upstream'])
         ->from('trafico_services_history')
-        ->where(['ont_id' => $requestData['ont'], 'service_port' => $requestData['sp']])
+        ->where(['ont_id' => $requestData['ont'], 'service_port' => $requestData['sp'],'sn' => $requestData['sn']])
         ->all();
          
         return $this->render('comportamientoredgraph', [
             'olt' => $olt,
             'service' => $service,
             'down' => $down,
-            'up' => $up
+            'up' => $up,
+            'cliente' => $cliente
         ]);        
     }
     

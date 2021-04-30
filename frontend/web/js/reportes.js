@@ -173,10 +173,6 @@ $(document).ready(function(){
         else if(datatable === "#dataTableComportamientoReddash")
         {
             return [ {
-                "targets": -1,
-                "data": null,
-                "defaultContent": "<button class='btn btn-sm btn-primary btntrafic' onclick='showgraphic($(this))' >Tráfico</button>"
-            } , {
                 "targets": 14,
                 "visible": false
             }];
@@ -213,13 +209,4 @@ function previewFile(url, extensionFile)
             'type': 'iframe'
         });
     }   
-}
-
-function showgraphic(btn){
-    var table = $('#dataTableComportamientoReddash').DataTable();
-
-    var tr = $(btn).closest('tr').parents('tr');
-    var prevtr = tr.prev('tr')[0];
-    var data = table.row(prevtr).data();
-    window.location.href = '/reports/comportamientoredgraph?ont=' +data[14] + '&sp=' +data[9];
 }
