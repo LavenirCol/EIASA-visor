@@ -23,7 +23,7 @@ use \yii\helpers\Url;
                 <nav>
                     <ol class="breadcrumb breadcrumb-style1 mg-b-10">
                         <li>
-                            <a href="#" onclick="window.open('<?php echo Url::toRoute('reports/comportamientoredserver'); ?>?export=csv');" class="btn btn-sm btn-primary">Descargar Todo</a> 
+                            <a href="#" onclick="window.open('<?php echo Url::toRoute('reports/comportamientoredserver'); ?>?export=csv&exportall=1');" class="btn btn-sm btn-primary">Descargar Todo</a> 
                         </li>
                         <li style="width:100px;"></li>
                         <li>        

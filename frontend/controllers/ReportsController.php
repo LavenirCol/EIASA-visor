@@ -2069,7 +2069,7 @@ class ReportsController extends Controller {
                 ->orWhere(['LIKE', 'last_state', $requestData['search']['value']."%", false]);  
             }            
                       
-            if (empty($requestData['export'])){// && $oltCodeFilter != '-1') {
+            if (empty($requestData['exportall'])){// && $oltCodeFilter != '-1') {
                 $dataReport->andWhere(['=', 'id_olt', $oltCodeFilter]);
             }
 
