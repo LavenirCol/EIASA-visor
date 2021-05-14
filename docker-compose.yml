@@ -20,6 +20,8 @@ services:
     environment:
       SERVICE_NAME: app
       SERVICE_TAGS: dev
+      MYSQL_DATABASE: eiasa_visor
+      MYSQL_ROOT_PASSWORD: X0AhfRCK8GMeHfx2
   db:
     image: mariadb:latest
     container_name: VisorEiasaDB

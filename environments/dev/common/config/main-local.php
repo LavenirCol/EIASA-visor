@@ -1,11 +1,12 @@
 <?php
+
 return [
     'components' => [
         'db' => [
             'class' => 'yii\db\Connection',
-            'dsn' => 'mysql:host=localhost:3309;dbname=eiasa_visor',
+            'dsn' => 'mysql:host=db:3306;dbname='.$_ENV['MYSQL_DATABASE'],
             'username' => 'root',
-            'password' => '',
+            'password' => $_ENV['MYSQL_ROOT_PASSWORD'],
             'charset' => 'utf8',
         ],
         'mailer' => [
