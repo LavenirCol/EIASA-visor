@@ -12,16 +12,19 @@ services:
     volumes:
       - ./:/app/web
       - ./docker/apache/000-default.conf:/etc/apache2/sites-available/000-default.conf
-    networks:
-      - app-network-eiasa
-    ports:
-      - 20080:80
-      - 4431:443
+ #   networks:
+ #     - app-network-eiasa
+    expose:
+      - "80"
+      - "443"
     environment:
       SERVICE_NAME: app
       SERVICE_TAGS: dev
       MYSQL_DATABASE: eiasa_visor
       MYSQL_ROOT_PASSWORD: X0AhfRCK8GMeHfx2
+      VIRTUAL_HOST: visor.dev-apps.lavenirapps.co/
+      LETSENCRYPT_HOST: visor.dev-apps.lavenirapps.co/
+      LETSENCRYPT_EMAIL: ricardogonzalez@lavenir.com.co 
   db:
     image: mariadb:latest
     container_name: VisorEiasaDB
@@ -39,16 +42,16 @@ services:
       - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
     networks:
       - app-network-eiasa
-  rabbit:
-    image: rabbitmq:3-management
-    container_name: VisorRabbitMQ
-    restart: unless-stopped
-    tty: true
-    ports: 
-      - 15672:15672
-      - 5672:5672
-    networks:
-      - app-network-eiasa
+  # rabbit:
+  #   image: rabbitmq:3-management
+  #   container_name: VisorRabbitMQ
+  #   restart: unless-stopped
+  #   tty: true
+  #   ports: 
+  #     - 15672:15672
+  #     - 5672:5672
+  #   networks:
+  #     - app-network-eiasa
 #Docker Networks
 networks:
   app-network-eiasa:
