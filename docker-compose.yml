@@ -21,8 +21,8 @@ services:
       SERVICE_TAGS: dev
       MYSQL_DATABASE: eiasa_visor
       MYSQL_ROOT_PASSWORD: X0AhfRCK8GMeHfx2
-      VIRTUAL_HOST: visor.dev-apps.lavenirapps.co
-      LETSENCRYPT_HOST: visor.dev-apps.lavenirapps.co
+      VIRTUAL_HOST: "visor.dev-apps.lavenirapps.co"
+      LETSENCRYPT_HOST: "visor.dev-apps.lavenirapps.co"
       LETSENCRYPT_EMAIL: ricardogonzalez@lavenir.com.co
   db:
     image: mariadb:latest

@@ -4,7 +4,7 @@ return [
     'components' => [
         'db' => [
             'class' => 'yii\db\Connection',
-            'dsn' => 'mysql:host=db:3306;dbname='.$_ENV['MYSQL_DATABASE'],
+            'dsn' => 'mysql:host=localhost:3306;dbname='.$_ENV['MYSQL_DATABASE'],
             'username' => 'root',
             'password' => $_ENV['MYSQL_ROOT_PASSWORD'],
             'charset' => 'utf8',
