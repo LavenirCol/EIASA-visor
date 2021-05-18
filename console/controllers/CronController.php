@@ -20,6 +20,7 @@ use app\models\Hsstock;
 use app\models\Hstask;
 use common\models\RabbitMQ;
 use Exception;
+use yii\db\Query;
 
 class CronController extends Controller {
 
@@ -259,6 +260,30 @@ class CronController extends Controller {
         exit();
     }
 
+    public function actionSynconlytickets() {
+        echo "Inicio cron job \n"; // your logic for deleting old post goes here
+        //consulta clientes
+        $query = (new Query())
+            ->from('client')
+            ->orderBy('idClient');
+
+        foreach ($query->batch() as $clients) {
+            // $clients is an array of 100 or fewer rows from the client table
+                    
+            foreach ((array) $clients as $client) {
+                    echo "----------------------------------------\n";
+                    echo "Inicio Cliente " . date("Y-m-d H:i:s") . "\n";
+                    echo "Procesando. " . $client['name'] . "\n";
+                    // DELETE (table name, condition)
+                    Yii::$app->db->createCommand("DELETE FROM tickets where socid = ". $client['idClient'])->execute();
+                    $this->processtickets($client['idClient']);
+            }
+        }
+
+        // sincroniza archivos
+        echo "fin job synctickets...\n"; // your logic for deleting old post goes here        
+        exit();
+    }
     /*
      * Sincroniza clientes, contratos y crea folders sucriptores y facturacion
      */
