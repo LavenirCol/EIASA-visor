@@ -16,6 +16,8 @@ services:
     expose:
       - "80"
       - "443"
+    ports: 
+      - "20080:80"
     environment:
       SERVICE_NAME: app
       SERVICE_TAGS: dev

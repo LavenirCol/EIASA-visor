@@ -18,8 +18,10 @@ use app\models\Settings;
 use app\models\Tickets;
 use app\models\Hsstock;
 use app\models\Hstask;
+use app\models\SyncHistory;
 use common\models\RabbitMQ;
 use Exception;
+
 
 class CronController extends Controller {
 
@@ -782,9 +784,10 @@ class CronController extends Controller {
 
     function callAPIUmbrella($method, $entity, $data = false) {
         //prod
-        $url = 'https://megaya.lavenirapps.co/api/' . $entity;
+        //$url = 'https://megaya.lavenirapps.co/api/' . $entity;
         //dev
-        //$url = 'http://dev-umbrellav2.lavenirapps.co/web/api/' . $entity;
+        $url = 'https://dev-umbrellav2.lavenirapps.co/web/api/' . $entity;
+        //$url = 'http://172.22.0.2:81/web/api/' . $entity;
         $curl = curl_init();
         $httpheader = [];
 
@@ -813,14 +816,13 @@ class CronController extends Controller {
 
         // Authentication:
         curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-        curl_setopt($curl, CURLOPT_USERPWD, "visor:b6b9bb58d10c866a7ed07504e28ba831");
+        curl_setopt($curl, CURLOPT_USERPWD, "RosaClaro:Rosa123*");
 
         curl_setopt($curl, CURLOPT_URL, $url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($curl, CURLOPT_HTTPHEADER, $httpheader);
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
-
         $result = curl_exec($curl);
         if ($result === false) {
             $err = 'Curl error: ' . curl_error($curl);
@@ -1358,4 +1360,144 @@ class CronController extends Controller {
             echo $tickect->ref."\n";
         }
     }
+
+    function actionSyncClientClaro()
+    {
+
+        $lastSync = (new \yii\db\Query())        
+        ->from('sync_history')
+        ->where(['=','event','FINISH_SYNC'])
+        ->orderBy(['id' => SORT_DESC])
+        ->one();
+        $dateSync =  "";
+        $filter = new \stdClass();
+        $filter->page = 0;
+        $filter->lang = 'es';
+        $filter->datecreate  = ($lastSync)? $lastSync["event_date"] : "2021-01-01";
+        $filter->status = "*";
+        $filter->rows = 1000;
+        $tasks = json_decode($this->callAPIUmbrella("POST", "docsTask", json_encode($filter)), true);        
+        if ($tasks["code"] === '0') {
+            echo "procesando tasks error " . $tasks['error'] . " \n";
+            $syncHistory = new SyncHistory();
+            $syncHistory->event = "ERROR_SYNC";
+            $syncHistory->event_date = date("Y-m-d H:i:s");
+            $syncHistory->save();
+            exit;
+        }
+        echo "procesando tasks (" . sizeof($tasks["data"]) . ")\n";
+
+        foreach ((array) $tasks["data"] as $task) {            
+            $newtask = new Hstask();
+            $newtask->uuid = $task['id'];
+            $dateSync =  $task['datecreate'];
+            $newtask->datecreate = $task['datecreate'];
+            $newtask->dateupdate = $task['dateupdate'];
+            $newtask->reference = $task['id'];
+            $newtask->template = $task['template'];            
+            $newtask->status = $task['status'];
+            $newtask->pdf = $task['pdf'];            
+            if(isset($task['attached']))
+            {
+                echo "documentos ".$task['id']."\n";                
+                $index=0;
+                foreach($task['attached'] as $document)
+                {  
+                    
+                    try
+                    {
+                   
+                    if (isset($document["name"]))
+                    {  
+                        
+                         if($index == 0)
+                         {
+                             $index++;
+                             $folder = $this->Createfolder(1, 0, $task['id']);
+                             $module = Module::find()->where(['idmodule' => 1])->one();       
+                             $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
+                             $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+                             $fpath = $keyfolderraiz->value . '/' . $module->moduleName . '/' . $folder['data']->folderName. '/';
+                             $vpath = $keyurlbase->value . '/' . $module->moduleName . '/' . $folder['data']->folderName . '/';
+                             //Document::deleteAll(['level1name' => $task['id'], 'idFolder' => $folder['data']->idfolder]);
+                         }
+                         
+                         echo "\n".$document["name"]."\n";  
+                         $name = $document["name"];
+                         $names = explode('.', $name);
+                         $ext = end($names);                
+                         if ($ext !== 'odt' && $ext !== 'json') 
+                         {
+                             //$this->base64ToFile(($this->getContentDocument($document))->content, $fpath . $document->name);
+                             $newdocument = new Document();                    
+                             $newdocument->size = $document["size"];
+                             $newdocument->date = isset($document["date"]) ? gmdate("Y-m-d H:i:s", $document["date"]) : "";
+                             $newdocument->name = $document["name"];
+                             $newdocument->level1name = 1;
+                             $newdocument->iddocumentType = 3;
+                             $newdocument->idFolder = $folder['data']->idfolder;
+                             $newdocument->type = "";
+                             $newdocument->path = $fpath;
+                             $newdocument->fullname = $document["url"];
+                             $newdocument->relativename = $vpath . $document["name"];
+                             $newdocument->save(false);
+                         }
+                     }
+         
+         
+                    }catch(Exception $exc)
+                    {
+                        echo "Error ". $exc->getMessage();
+                    }
+                }
+            }
+
+            $currentclient = Client::find()->where(['=','code_client' , $task['id']])->one();
+            if (!isset($currentclient))
+            {
+                $newclient = new Client();                 
+                $newclient->code_client = $task['id'];  
+                $newclient->entity = 1;
+                $newclient->idprof1 = $task['id'];            
+                $newclient->state_id = 1;
+                $newclient->ref = $task['id'];
+                $newclient->country_id = 70;
+                $newclient->country_code = 'CO';
+                $newclient->country = 'Colombia';
+                $newclient->access_id ='';
+                $newclient->name = '';
+                $newclient->address = '';
+                $newclient->lat = '';
+                $newclient->lng = '';
+                $newclient->state = '';
+                $newclient->town = '';
+
+                if(count($task["location"]) > 0)
+                {
+                    
+                    $newclient->name = $task["location"]["title"];
+                    $newclient->address = $task["location"]["address"];
+                    $newclient->lat = $task["location"]["lat"];
+                    $newclient->lng = $task["location"]["lng"];
+                    $newclient->state = $task["location"]["district"];
+                    $newclient->town = $task["location"]["city"];
+                }
+                $newclient->save(false);
+            }
+            else
+            {
+                echo  $task['id']." Cliente encontrado \n";
+            }           
+            
+            $newtask->save(false);
+        }
+
+        $syncHistory = new SyncHistory();
+        $syncHistory->event = "FINISH_SYNC";
+        $syncHistory->event_date = $dateSync; 
+        $syncHistory->status = true; 
+        $syncHistory->created_at = date("Y-m-d H:i:s");   
+        $syncHistory->save(false);
+        
+    } 
 }
