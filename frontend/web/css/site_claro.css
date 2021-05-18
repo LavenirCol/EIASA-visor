@@ -140,3 +140,11 @@ a.desc:after {
     background-color: #a70514 !important;
     border-color: #a70514 !important;
 }
+
+.navbar-menu .nav-link:hover {
+    color: #fff  !important;
+}
+
+.navbar-menu .nav-link:hover svg{
+    color: #ff949d !important;
+}
