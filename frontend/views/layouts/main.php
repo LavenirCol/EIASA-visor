@@ -53,6 +53,10 @@ AppAsset::register($this);
         .table-condensed > tbody > tr > td, .table-condensed > tbody > tr > th, .table-condensed > tfoot > tr > td, .table-condensed > tfoot > tr > th, .table-condensed > thead > tr > td, .table-condensed > thead > tr > th {
             padding: 5px;
         }
+        
+        .df-logo img:first-child {
+            background-image: url('<?= Url::base(true);  ?>/img/MEGAYA-Logo-blanco.png');
+        }
     </style>
     <script>
         var baseurl = '<?= Url::base(true);  ?>'; 
@@ -64,11 +68,11 @@ AppAsset::register($this);
     <a href="" id="mainMenuOpen" class="burger-menu d-none"><i data-feather="menu"></i></a>
     <a href="" id="filemgrMenu" class="burger-menu d-lg-none"><i data-feather="arrow-left"></i></a>
     <div class="navbar-brand">
-        <a href="<?php echo Url::toRoute('site/index'); ?>" class="df-logo"><img width="100px" src="<?= Url::base(true);  ?>/img/MEGAYA-Logo-blanco.png"/></a>
+        <a href="<?php echo Url::toRoute('site/index'); ?>" class="df-logo"><img width="100px" src="<?= Url::base(true); ?>/img/logo-claro-blanco@3x.png"/></a>
     </div><!-- navbar-brand -->
     <div id="navbarMenu" class="navbar-menu-wrapper">
       <div class="navbar-menu-header">
-        <a href="<?php echo Url::toRoute('site/index'); ?>" class="df-logo"><img width="100px" src="<?= Url::base(true);  ?>/img/MEGAYA-Logo-blanco.png"/></a>
+        <a href="<?php echo Url::toRoute('site/index'); ?>" class="df-logo"><img width="100px" src="<?= Url::base(true); ?>/img/logo-claro-blanco@3x.png"/></a>
         <a id="mainMenuClose" href=""><i data-feather="x"></i></a>
       </div><!-- navbar-menu-header -->
       <ul class="nav navbar-menu">
