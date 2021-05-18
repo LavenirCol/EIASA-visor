@@ -135,7 +135,7 @@ AppAsset::register($this);
 
 <footer class="footer fixed-bottom">
     <div class="container">
-        <p class="pull-left">&copy; Sistema de Información Visor Claro <?= date('Y') ?></p>
+        <p class="pull-left">&copy; Sistema de Información - Centros Digitales <?= date('Y') ?></p>
 <!--        <p class="pull-left">&copy; <?= Html::encode(Yii::$app->name) ?> <?= date('Y') ?></p>-->
 <!--        <p class="pull-right"><?= Yii::powered() ?></p>-->
     </div>

@@ -2,7 +2,7 @@
 use \yii\helpers\Url;
 
 /* @var $this yii\web\View */
-$this->title = 'Sistema de Información Visor Claro';
+$this->title = 'Sistema de Información Centros Digitales';
 ?>
 <div class="content content-fixed bd-b pb-0">
   <div class="container pd-x-0 pd-lg-x-10 pd-xl-x-0">
