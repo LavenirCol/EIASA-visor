@@ -125,7 +125,7 @@ use \yii\helpers\Url;
                                     </div>
                                     <div class="col-md-6 text-center">
                                         <?php if (Yii::$app->user->identity->attributes['idProfile'] < 3) { ?>
-                                            <a href="<?php echo Url::toRoute('sabana-reporte-cambios-reemplazos/upload'); ?>" class="btn btn-primary btn-sm pull-right">Actualizar</a>
+                                            <a href="<?php echo Url::toRoute('trafico-olts/upload'); ?>" class="btn btn-primary btn-sm pull-right">Actualizar</a>
                                         <?php } ?>
                                     </div>
                                 </div>
