@@ -816,7 +816,7 @@ class CronController extends Controller {
 
         // Authentication:
         curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-        curl_setopt($curl, CURLOPT_USERPWD, "RosaClaro:Rosa123*");
+        curl_setopt($curl, CURLOPT_USERPWD, "RicardoCDigitales:123456");
 
         curl_setopt($curl, CURLOPT_URL, $url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
@@ -1396,7 +1396,47 @@ class CronController extends Controller {
             $newtask->reference = $task['id'];
             $newtask->template = $task['template'];            
             $newtask->status = $task['status'];
-            $newtask->pdf = $task['pdf'];            
+            $newtask->pdf = $task['pdf'];
+            
+            
+            $currentclient = Client::find()->where(['=','idClient' , $task["location"]["id"]])->one();
+            if (!isset($currentclient))
+            {
+                $newclient = new Client();
+                $newclient->idClient = $task["location"]["id"];
+                $newclient->code_client = $task['id'];  
+                $newclient->entity = 1;
+                $newclient->idprof1 = $task['id'];            
+                $newclient->state_id = 1;
+                $newclient->ref = $task['id'];
+                $newclient->country_id = 70;
+                $newclient->country_code = 'CO';
+                $newclient->country = 'Colombia';
+                $newclient->access_id ='';
+                $newclient->name = '';
+                $newclient->address = '';
+                $newclient->lat = '';
+                $newclient->lng = '';
+                $newclient->state = '';
+                $newclient->town = '';
+
+                if(count($task["location"]) > 0)
+                {                    
+                    $newclient->name = $task["location"]["title"];
+                    $newclient->address = $task["location"]["address"];
+                    $newclient->lat = $task["location"]["lat"];
+                    $newclient->lng = $task["location"]["lng"];
+                    $newclient->state = $task["location"]["district"];
+                    $newclient->town = $task["location"]["city"];
+                    $newtask->socid =  $task["location"]["id"];
+                }
+                $newclient->save(false);
+            }
+            else
+            {
+                echo  $task['id']." Cliente encontrado \n";
+            }
+
             if(isset($task['attached']))
             {
                 echo "documentos ".$task['id']."\n";                
@@ -1419,6 +1459,7 @@ class CronController extends Controller {
                              $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
                              $fpath = $keyfolderraiz->value . '/' . $module->moduleName . '/' . $folder['data']->folderName. '/';
                              $vpath = $keyurlbase->value . '/' . $module->moduleName . '/' . $folder['data']->folderName . '/';
+                             $newtask->idFolder = $folder['data']->idfolder;
                              //Document::deleteAll(['level1name' => $task['id'], 'idFolder' => $folder['data']->idfolder]);
                          }
                          
@@ -1452,42 +1493,7 @@ class CronController extends Controller {
                 }
             }
 
-            $currentclient = Client::find()->where(['=','code_client' , $task['id']])->one();
-            if (!isset($currentclient))
-            {
-                $newclient = new Client();                 
-                $newclient->code_client = $task['id'];  
-                $newclient->entity = 1;
-                $newclient->idprof1 = $task['id'];            
-                $newclient->state_id = 1;
-                $newclient->ref = $task['id'];
-                $newclient->country_id = 70;
-                $newclient->country_code = 'CO';
-                $newclient->country = 'Colombia';
-                $newclient->access_id ='';
-                $newclient->name = '';
-                $newclient->address = '';
-                $newclient->lat = '';
-                $newclient->lng = '';
-                $newclient->state = '';
-                $newclient->town = '';
-
-                if(count($task["location"]) > 0)
-                {
-                    
-                    $newclient->name = $task["location"]["title"];
-                    $newclient->address = $task["location"]["address"];
-                    $newclient->lat = $task["location"]["lat"];
-                    $newclient->lng = $task["location"]["lng"];
-                    $newclient->state = $task["location"]["district"];
-                    $newclient->town = $task["location"]["city"];
-                }
-                $newclient->save(false);
-            }
-            else
-            {
-                echo  $task['id']." Cliente encontrado \n";
-            }           
+                       
             
             $newtask->save(false);
         }

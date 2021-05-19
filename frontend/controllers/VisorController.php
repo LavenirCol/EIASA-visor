@@ -263,7 +263,7 @@ class VisorController extends \yii\web\Controller {
             
             $sql = $sql . " group by f.`idfolder`,  f.`folderName`,  f.`folderDefault`,  f.`idParentFolder`,  f.`folderCreationDate`,  f.`folderCreationUserId`,  f.`folderReadOnly`,  f.`idmodule`
             order by f.folderName";
-
+            
             $command = $connection->createCommand($sql);
             $folders = $command->queryAll();
 
@@ -557,10 +557,10 @@ class VisorController extends \yii\web\Controller {
         ob_end_flush();
         
         if($t == 'true'){
-            return Yii::$app->response->sendFile($file->path . '/' . $file->name);
+            return Yii::$app->response->sendFile($file->fullname);
             //return readfile($file->path . '/' . $file->name);
         }else{
-            return Yii::$app->response->sendFile($file->path . '/' . $file->name);
+            return Yii::$app->response->sendFile($file->fullname);
             //return readfile($file->path . '/' . $file->name);
         }        
     }
