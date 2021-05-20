@@ -164,7 +164,7 @@ function getFolders(idcliente) {
         type: 'POST',
         traditional: true,
         data: {idmodule: active_module, idfolder: active_folder, idcliente: idcliente},
-        url: baseurl + '/visor/getfolders'
+        url: '/visor/getfolders'
     }).then(function (result) {
         //console.log(result);
         $("#divfoldercontainer").show();
@@ -266,7 +266,7 @@ function getFilesFolder() {
         type: 'POST',
         traditional: true,
         data: {idfolder: active_folder},
-        url: baseurl + '/visor/getfilesfolder'
+        url: '/visor/getfilesfolder'
     }).then(function (result) {
         //console.log(result);
         processfiles(result, 0);
@@ -324,9 +324,9 @@ function processfiles(result, isfolder) {
                     || ext.indexOf('png') > -1) {
                 color = "";
                 fileicon = "";
-                filestyle = 'background-image: url(' + baseurl + '/visor/getfile?id=' + item.iddocument + '&t=true); filter: opacity(0.5);';
+                filestyle = 'background-image: url(/visor/getfile?id=' + item.iddocument + '&t=true); filter: opacity(0.5);';
             }else{
-                filepreview = '//docs.google.com/gview?url=' + baseurl + '/visor/getfile?id=' + item.iddocument + '&embedded=true';
+                filepreview = '//docs.google.com/gview?url=/visor/getfile?id=' + item.iddocument + '&embedded=true';
             }
 
             htmlf += filetemplate.replace('{{FILENAME}}', item.name)
@@ -337,7 +337,7 @@ function processfiles(result, isfolder) {
                     .replace('{{FILEDATE}}', item.date)
                     .replace('{{FILECOLOR}}', color)
                     .replace('{{FILESTYLE}}', filestyle)
-                    .replace('{{FILEDOWNLOAD}}', baseurl + '/visor/getfile?id=' + item.iddocument + '&d=true')
+                    .replace('{{FILEDOWNLOAD}}', '/visor/getfile?id=' + item.iddocument + '&d=true')
                     .replace('{{FILEPREVIEW}}', filepreview);
 
 
@@ -404,7 +404,7 @@ function addFolder() {
                 type: 'POST',
                 traditional: true,
                 data: {idmodule: active_module, idfolder: active_folder, foldername: foldername},
-                url: baseurl + '/visor/createfolder'
+                url: '/visor/createfolder'
             }).then(function (result) {
                 //console.log(result);
                 if (result.error !== '') {
@@ -474,7 +474,7 @@ function search() {
         type: 'POST',
         traditional: true,
         data: {term: term},
-        url: baseurl + '/visor/getfilessearch'
+        url: '/visor/getfilessearch'
     }).then(function (result) {
         //console.log(result);
         processfiles(result, 1);
@@ -499,7 +499,7 @@ function renamefolder(idfolder) {
                 type: 'POST',
                 traditional: true,
                 data: {idmodule: active_module, idfolder: idfolder, newname: newfoldername},
-                url: baseurl + '/visor/renamefolder'
+                url: '/visor/renamefolder'
             }).then(function (result) {
                 //console.log(result);
                 if (result.error !== '') {
@@ -542,7 +542,7 @@ function deletefolder(idfolder) {
                 type: 'POST',
                 traditional: true,
                 data: {idfolder: idfolder},
-                url: baseurl + '/visor/deletefolder'
+                url: '/visor/deletefolder'
             }).then(function (resultado) {
                 //console.log(result);
                 if (resultado.error !== '') {
@@ -581,7 +581,7 @@ function renamefile(iddocument) {
                 type: 'POST',
                 traditional: true,
                 data: {idmodule: active_module, idfolder: active_folder, idfile: iddocument, newname: newfilename},
-                url: baseurl + '/visor/renamefile'
+                url: '/visor/renamefile'
             }).then(function (result) {
                 //console.log(result);
                 if (result.error !== '') {
@@ -623,7 +623,7 @@ function deletefile(iddocument) {
                 type: 'POST',
                 traditional: true,
                 data: {idfile: iddocument},
-                url: baseurl + '/visor/deletefile'
+                url: '/visor/deletefile'
             }).then(function (resultado) {
                 //console.log(result);
                 if (resultado.error !== '') {
@@ -652,7 +652,7 @@ Dropzone.autoDiscover = false;
 $(document).ready(function () {
 
     var myDropzone = new Dropzone("#myDropzone", {
-        url: baseurl + "/visor/upload",
+        url: "/visor/upload",
         paramName: "file",
         autoProcessQueue: false,
         uploadMultiple: true, // uplaod files in a single request
