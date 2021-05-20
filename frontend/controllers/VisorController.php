@@ -263,6 +263,7 @@ class VisorController extends \yii\web\Controller {
             
             $sql = $sql . " group by f.`idfolder`,  f.`folderName`,  f.`folderDefault`,  f.`idParentFolder`,  f.`folderCreationDate`,  f.`folderCreationUserId`,  f.`folderReadOnly`,  f.`idmodule`
             order by f.folderName";
+            
 
             $command = $connection->createCommand($sql);
             $folders = $command->queryAll();
@@ -388,7 +389,6 @@ class VisorController extends \yii\web\Controller {
                     FROM document
                     where idFolder = $idfolder
                     order by `document`.`name`";
-
             $command = $connection->createCommand($sql);
             $files = $command->queryAll();
             
@@ -532,37 +532,29 @@ class VisorController extends \yii\web\Controller {
             echo "error"; 
     }
     
-    public function actionGetfile($id, $d = false, $t = false){  
-        //$id= 20;
+    public function actionGetfile($id, $d = false, $t = false){
         $file=  Document::find()->where(['iddocument' => $id])->one();
         if ($file === null) {
              throw new NotFoundHttpException(Yii::t('app', 'El archivo no existe'));
         }
         ob_start();
         ob_start('ob_gzhandler');
-        
-        header('Content-Description: EIASA Visor File Transfer');
+        header('Content-Description: Claro Visor File Transfer');
         header('Content-Type: '. $file->type);
         header('Expires: 0');
         header('Cache-Control: must-revalidate');
         header('Pragma: public');
         header('Content-Length: ' . $file->size);            
         header('Content-Disposition: inline; filename="'.$file->name.'"');
-        
         if($d === 'true')
         {
             header('Content-Disposition: attachment; filename="'.$file->name.'"');
         }
         
         ob_end_flush();
-        
-        if($t == 'true'){
-            return Yii::$app->response->sendFile($file->path . '/' . $file->name);
-            //return readfile($file->path . '/' . $file->name);
-        }else{
-            return Yii::$app->response->sendFile($file->path . '/' . $file->name);
-            //return readfile($file->path . '/' . $file->name);
-        }        
+        $client = new \GuzzleHttp\Client();
+        $response = $client->request('GET', $file->fullname);            
+        return Yii::$app->response->sendContentAsFile($response->getBody(),$file->name);
     }
     
     
