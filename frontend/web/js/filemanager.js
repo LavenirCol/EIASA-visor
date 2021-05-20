@@ -324,9 +324,10 @@ function processfiles(result, isfolder) {
                     || ext.indexOf('png') > -1) {
                 color = "";
                 fileicon = "";
+                console.log(baseurl);
                 filestyle = 'background-image: url(/visor/getfile?id=' + item.iddocument + '&t=true); filter: opacity(0.5);';
             }else{
-                filepreview = '//docs.google.com/gview?url=/visor/getfile?id=' + item.iddocument + '&embedded=true';
+                filepreview = '//docs.google.com/gview?url=' + baseurl + '/visor/getfile?id=' + item.iddocument + '&embedded=true';
             }
 
             htmlf += filetemplate.replace('{{FILENAME}}', item.name)
