@@ -104,13 +104,11 @@ class CronController extends Controller {
                 $returndata = ['data' => '', 'error' => 'El nombre de la carpeta tiene carácteres no válidos'];
                 return $returndata;
             }
-
-            //verifica si ya extiste
             $existefolder = Folder::find()->where(['idmodule' => $idmodule,
                         'idParentFolder' => $idparentfolder,
                         'LOWER(folderName)' => $foldername])->exists();
-
             if ($existefolder) {
+                echo $foldername." existe \n";
                 $currentfolder = Folder::find()->where(['idmodule' => $idmodule,
                             'idParentFolder' => $idparentfolder,
                             'LOWER(folderName)' => $foldername])->one();
@@ -1446,14 +1444,14 @@ class CronController extends Controller {
                     
                     try
                     {
-                   
+                        echo $document["name"]."\n";
                     if (isset($document["name"]))
                     {  
                         
                          if($index == 0)
                          {
                              $index++;
-                             $folder = $this->Createfolder(1, 0, $task['id']);
+                             $folder = $this->Createfolder(1, 0, $task['template']);                            
                              $module = Module::find()->where(['idmodule' => 1])->one();       
                              $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
                              $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
@@ -1505,5 +1503,5 @@ class CronController extends Controller {
         $syncHistory->created_at = date("Y-m-d H:i:s");   
         $syncHistory->save(false);
         
-    } 
+    }
 }
