@@ -1402,7 +1402,8 @@ class CronController extends Controller {
         }
         echo "procesando tasks (" . sizeof($tasks["data"]) . ")\n";
 
-        foreach ((array) $tasks["data"] as $task) {            
+        foreach ((array) $tasks["data"] as $task) 
+        {            
             $newtask = new Hstask();
             $newtask->uuid = $task['id'];
             $dateSync =  $task['datecreate'];
@@ -1455,7 +1456,8 @@ class CronController extends Controller {
 
             $folder = $this->Createfolder(1, 0, $task['id']." - ".$task['template']);
             $newtask->idFolder = $folder['data']->idfolder;
-            if(count($task["process"])>0){
+            if(count($task["process"])>0)
+            {
                 $processList = $task["process"];
                 foreach($processList as $process) 
                 {
@@ -1483,7 +1485,7 @@ class CronController extends Controller {
                         }
                     }
                 }
-             }
+            }
             //PDF
             $folderPFD = $this->Createfolder(1, $folder['data']->idfolder, $task['id']." - Documentos de Instalación");
             $namePDF = $newtask->pdf;
@@ -1511,33 +1513,31 @@ class CronController extends Controller {
                 $index=0;
 
                 foreach($task['attached'] as $document)
-                {  
-                    
+                {                   
                     try
                     {
-                        echo $index." - ". $document["name"]."\n";
+                        
                         if (isset($document["name"]))
-                        { 
-                         
-                         echo "\n".$document["name"]."\n";  
-                         $name = $document["name"];
-                         $names = explode('.', $name);
-                         $ext = end($names);                
-                         if ($ext !== 'odt' && $ext !== 'json') 
-                         {
-                             $newdocument = new Document();                    
-                             $newdocument->size = $document["size"];
-                             $newdocument->date = isset($document["date"]) ? gmdate("Y-m-d H:i:s", $document["date"]) : "";
-                             $newdocument->name = $document["name"];
-                             $newdocument->level1name = 1;
-                             $newdocument->iddocumentType = 3;
-                             $newdocument->idFolder = $folder['data']->idfolder;
-                             $newdocument->type = "";
-                             $newdocument->path = $document["url"];
-                             $newdocument->fullname = $document["url"];
-                             $newdocument->relativename = $document["name"];
-                             $newdocument->save(false);
-                         }
+                        {
+                            $name = $document["name"];
+                            $names = explode('.', $name);
+                            $ext = end($names);                
+                            if ($ext !== 'odt' && $ext !== 'json') 
+                            {
+                                $newdocument = new Document();                    
+                                $newdocument->size = $document["size"];
+                                $newdocument->date = isset($document["date"]) ? gmdate("Y-m-d H:i:s", $document["date"]) : "";
+                                $newdocument->name = $document["name"];
+                                $newdocument->level1name = 1;
+                                $newdocument->iddocumentType = 3;
+                                $newdocument->idFolder = $folder['data']->idfolder;
+                                $newdocument->type = "";
+                                $newdocument->path = $document["url"];
+                                $newdocument->fullname = $document["url"];
+                                $newdocument->relativename = $document["name"];
+                                $newdocument->save(false);
+                                echo "Se guarda documento ".$document["name"]."\n";
+                            }
                      }
          
          
