@@ -184,7 +184,7 @@ use \yii\helpers\Url;
             <div id="divtablasuscriptores" style="width:100%; display:none">
                 <div class="toast" id="cardclient" role="alert" aria-live="assertive" aria-atomic="true" style=" display:none; opacity: 1;max-width: 100%; width:100%">
                     <div class="toast-header">
-                      <h6 class="tx-inverse tx-14 mg-b-0 mg-r-auto">Suscriptor</h6>
+                      <h6 class="tx-inverse tx-14 mg-b-0 mg-r-auto">Centro Digital</h6>
 <!--                      <small>11 mins ago</small>-->
                       <button type="button" class="ml-2 mb-1 close tx-normal" data-dismiss="toast" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
@@ -192,22 +192,29 @@ use \yii\helpers\Url;
                     </div>
                     <div class="toast-body">
                         <div class="row">
-                            <div class="col-md-2"><small><b>Código Acceso</b></small><br><small id="data-1"></small></div>
-                            <div class="col-md-3">
-                                <small><b>Cédula</b></small><br><small id="data-2"></small>
-                                <br>
-                                <small><b>Nombres</b></small><br><small id="data-3"></small>
+                            <div class="col-md-2">                                
+                                <small><b>Id</b></small><br><small id="data-1"></small>
+                                
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-3">
+                                <small><b>Nombre</b></small><br><small id="data-2"></small>                                
+                                <br>
+                                <small><b>Código Dane</b></small><br><small id="data-3"></small>
+                            </div>
+                            <div class="col-md-2">                               
                                 <small><b>Departamento</b></small><br><small id="data-4"></small>
                                 <br>
                                 <small><b>Municipio</b></small><br><small id="data-5"></small>
                             </div>
-                            <div class="col-md-2"><small><b>Dirección</b></small><br><small id="data-6"></small></div>
-                            <div class="col-md-3">
-                                <small><b>Teléfono</b></small><br><small id="data-7"></small>
+                            <div class="col-md-2">
+                                <small><b>Dirección</b></small><br><small id="data-6"></small>
                                 <br>
+                                <small><b>Teléfono</b></small><br><small id="data-7"></small>
+                            </div>
+                            <div class="col-md-3">
                                 <small><b>Correo</b></small><br><small id="data-8"></small>
+                                <br>
+                                <small><b>Coordenadas</b></small><br><small id="data-9"></small>
                             </div>
                         </div>
                         <div class="row"><div class="col-md-12"><button class="btn btn-sm btn-primary" style="padding:5px 7px;font-size: 10px;" id="btnclosecard"><< Atrás</button></div></div>
@@ -219,15 +226,16 @@ use \yii\helpers\Url;
                     <thead>
                         <tr>
 <!--                            <th>Código Cliente</th>-->
-                            <th></th>
-                            <th>Código Acceso</th>
-                            <th>Cédula</th>
-                            <th>Nombres</th>
+                            <th></th>                            
+                            <th>Id</th>
+                            <th>Nombre</th>
+                            <th>Código Dane</th>
                             <th>Departamento</th>
                             <th>Municipio</th>
                             <th>Dirección</th>
                             <th>Teléfono</th>
                             <th>Correo</th>
+                            <th>Coordenadas</th>
                         </tr>
                     </thead>
                     <tbody>                        

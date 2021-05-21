@@ -121,12 +121,7 @@ class CronController extends Controller {
 
             //varifica directorio raiz
             $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
-            $root_path = $keyfolderraiz->value;
-            if (!@is_dir($root_path)) {
-
-                $returndata = ['data' => '', 'error' => 'Directorio raíz no encontrado! ' . $root_path];
-                return $returndata;
-            }
+            $root_path = $keyfolderraiz->value;           
 
             //crear en disco path
             $fpath = "";
@@ -141,14 +136,11 @@ class CronController extends Controller {
             $modulo = Module::find()->where(['idmodule' => $idmodule])->one();
             $fpath = $root_path . '/' . $modulo->moduleName . '/' . $fpath . $foldername;
 
-            $rights = 0777;
+           
             $dirs = explode('/', $fpath);
             $dir = '';
             foreach ($dirs as $part) {
-                $dir .= $part . '/';
-                if (!is_dir($dir) && strlen($dir) > 0) {
-                    mkdir($dir, $rights);
-                }
+                $dir .= $part . '/';                
             }
 
             //crear en base de datos
@@ -1419,72 +1411,93 @@ class CronController extends Controller {
             $newtask->reference = $task['id'];
             $newtask->template = $task['template'];            
             $newtask->status = $task['status'];
-            $newtask->pdf = $task['pdf'];
-            
-            
-            $currentclient = Client::find()->where(['=','idClient' , $task["location"]["id"]])->one();
+            $newtask->pdf = $task['pdf'];            
+            $umbrellaClient = $task["client"];
+            $currentclient = Client::find()->where(['=','idClient' , $umbrellaClient["account_id"]])->one();
+            $newtask->socid =  $umbrellaClient["account_id"];
             if (!isset($currentclient))
             {
+                $umbrellaCityAndDistrict = (count($umbrellaClient["cityAndDistrict"]) > 0)? $umbrellaClient["cityAndDistrict"][0] : null;
                 $newclient = new Client();
-                $newclient->idClient = $task["location"]["id"];
-                $newclient->code_client = $task['id'];  
+                $newclient->idClient = $umbrellaClient["account_id"];
+                $newclient->code_client = $umbrellaClient["account_id"];  
                 $newclient->entity = 1;
                 $newclient->idprof1 = $task['id'];            
                 $newclient->state_id = 1;
                 $newclient->ref = $task['id'];
+                
                 $newclient->country_id = 70;
                 $newclient->country_code = 'CO';
                 $newclient->country = 'Colombia';
-                $newclient->access_id ='';
-                $newclient->name = '';
-                $newclient->address = '';
+                $newclient->access_id = $umbrellaClient["account_id"];
+                $newclient->name = $umbrellaClient["account"];
+                $newclient->address = isset($umbrellaClient["address"])? $umbrellaClient["address"]["address"] : '';
                 $newclient->lat = '';
                 $newclient->lng = '';
-                $newclient->state = '';
-                $newclient->town = '';
+                $newclient->email = (count($umbrellaClient["emailList"]) > 0)? $umbrellaClient["emailList"][0]["email"] : '';
+                $newclient->phone = (count($umbrellaClient["phoneList"]) > 0)? $umbrellaClient["phoneList"][0]["phone"] : '';
+                $newclient->state_code = isset($umbrellaCityAndDistrict)? $umbrellaCityAndDistrict["districtCode"] : '';
+                $newclient->state = isset($umbrellaCityAndDistrict)? $umbrellaCityAndDistrict["districtName"] : '';
+                $newclient->town = isset($umbrellaCityAndDistrict)? $umbrellaCityAndDistrict["cityName"] : '';
 
                 if(count($task["location"]) > 0)
-                {                    
-                    $newclient->name = $task["location"]["title"];
-                    $newclient->address = $task["location"]["address"];
+                {                       
                     $newclient->lat = $task["location"]["lat"];
-                    $newclient->lng = $task["location"]["lng"];
-                    $newclient->state = $task["location"]["district"];
-                    $newclient->town = $task["location"]["city"];
-                    $newtask->socid =  $task["location"]["id"];
-                }
+                    $newclient->lng = $task["location"]["lng"];                 
+                    
+                }                
                 $newclient->save(false);
             }
             else
-            {
-                echo  $task['id']." Cliente encontrado \n";
+            {            
+                echo  " Cliente encontrado ".$umbrellaClient["account_id"]."\n";
             }
+
+            $folder = $this->Createfolder(1, 0, $task['id']." - ".$task['template']);
+            $newtask->idFolder = $folder['data']->idfolder;
+            if(count($task["process"])>0){
+                $processList = $task["process"];
+                foreach($processList as $process) 
+                {
+                    $folderProcess = $this->Createfolder(1, $folder['data']->idfolder, $process['name']);
+                    foreach($process['attached'] as $documentProcess)
+                    {
+                        echo "\n".$documentProcess["name"]."\n";  
+                        $nameProcess = $documentProcess["name"];
+                        $nameProcess = explode('.', $nameProcess);
+                        $extProcess = end($nameProcess);                
+                        if ($extProcess !== 'odt' && $extProcess !== 'json') 
+                        {
+                            $newdocument = new Document();                    
+                            $newdocument->size = $documentProcess["size"];
+                            $newdocument->date = isset($documentProcess["date"]) ? gmdate("Y-m-d H:i:s", $documentProcess["date"]) : "";
+                            $newdocument->name = $documentProcess["name"];
+                            $newdocument->level1name = 1;
+                            $newdocument->iddocumentType = 3;
+                            $newdocument->idFolder = $folderProcess['data']->idfolder;
+                            $newdocument->type = "";
+                            $newdocument->path = $documentProcess["url"];
+                            $newdocument->fullname = $documentProcess["url"];
+                            $newdocument->relativename = $documentProcess["name"];
+                            $newdocument->save(false);
+                        }
+                    }
+                }
+             }
 
             if(isset($task['attached']))
             {
-                echo "documentos ".$task['id']."\n";                
+                echo "procesando (".count($task['attached']).") documentos para ".$task['id']."\n";                
                 $index=0;
+
                 foreach($task['attached'] as $document)
                 {  
                     
                     try
                     {
-                        echo $document["name"]."\n";
-                    if (isset($document["name"]))
-                    {  
-                        
-                         if($index == 0)
-                         {
-                             $index++;
-                             $folder = $this->Createfolder(1, 0, $task['template']);                            
-                             $module = Module::find()->where(['idmodule' => 1])->one();       
-                             $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
-                             $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
-                             $fpath = $keyfolderraiz->value . '/' . $module->moduleName . '/' . $folder['data']->folderName. '/';
-                             $vpath = $keyurlbase->value . '/' . $module->moduleName . '/' . $folder['data']->folderName . '/';
-                             $newtask->idFolder = $folder['data']->idfolder;
-                             //Document::deleteAll(['level1name' => $task['id'], 'idFolder' => $folder['data']->idfolder]);
-                         }
+                        echo $index." - ". $document["name"]."\n";
+                        if (isset($document["name"]))
+                        { 
                          
                          echo "\n".$document["name"]."\n";  
                          $name = $document["name"];
@@ -1492,7 +1505,6 @@ class CronController extends Controller {
                          $ext = end($names);                
                          if ($ext !== 'odt' && $ext !== 'json') 
                          {
-                             //$this->base64ToFile(($this->getContentDocument($document))->content, $fpath . $document->name);
                              $newdocument = new Document();                    
                              $newdocument->size = $document["size"];
                              $newdocument->date = isset($document["date"]) ? gmdate("Y-m-d H:i:s", $document["date"]) : "";
@@ -1501,9 +1513,9 @@ class CronController extends Controller {
                              $newdocument->iddocumentType = 3;
                              $newdocument->idFolder = $folder['data']->idfolder;
                              $newdocument->type = "";
-                             $newdocument->path = $fpath;
+                             $newdocument->path = $document["url"];
                              $newdocument->fullname = $document["url"];
-                             $newdocument->relativename = $vpath . $document["name"];
+                             $newdocument->relativename = $document["name"];
                              $newdocument->save(false);
                          }
                      }

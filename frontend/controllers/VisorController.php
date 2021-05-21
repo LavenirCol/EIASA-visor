@@ -120,24 +120,23 @@ class VisorController extends \yii\web\Controller {
 
                 $sql .= " ORDER BY " . $columns[$requestData['order'][0]['column']] . "   " . $requestData['order'][0]['dir'] . "  LIMIT " . $requestData['start'] . " ," .
                         $requestData['length'] . "   ";
-            }
-
+            }            
             $result = Yii::$app->db->createCommand($sql)->queryAll();
             $data = array();
             foreach ($result as $key => $row) {
                 try
                 {
                 $nestedData = array();
-                $nestedData[] = '<button class="btn btn-primary btn-sm selectsuscriptor" style="padding: 5px;font-size: 10px;margin-top: 5px;" data-idcliente="'. $row["idClient"].'" >Seleccionar</button>';
-                $nestedData[] = $row["access_id"];
-                $nestedData[] = $row["idprof1"];
+                if (empty($requestData['export'])) {$nestedData[] = '<button class="btn btn-primary btn-sm selectsuscriptor" style="padding: 5px;font-size: 10px;margin-top: 5px;" data-idcliente="'. $row["idClient"].'" >Seleccionar</button>';}
+                $nestedData[] = $row["idClient"];
                 $nestedData[] = $row["name"];
-                $nestedData[] = $row["state"];
+                $nestedData[] = $row["state_code"];                
                 $nestedData[] = $row["town"];
+                $nestedData[] = $row["state"];
                 $nestedData[] = $row["address"];
                 $nestedData[] = $row["phone"];
                 $nestedData[] = $row["email"] == null ? '' : $row["email"];
-
+                $nestedData[] = (isset($row['lat']) && isset($row['lng']))? ($row['lat']) . ','. $row['lng'] :'';
                 $data[] = $nestedData;
                 }catch(Exception $ex1)
                 {
@@ -153,7 +152,7 @@ class VisorController extends \yii\web\Controller {
                     header('Content-Disposition: attachment; filename=ClientesExport.csv');
                     $output = fopen('php://output', 'w');
                     fwrite($output, "\xEF\xBB\xBF");
-                    fputcsv($output, ['', 'access_id', 'Cédula', 'Nombre', 'Departamento', 'Municipio', 'Barrio / Dirección', 'Teléfono', 'Email'], ';');
+                    fputcsv($output, ['Id', 'Nombre', 'Código Dane', 'Departamento', 'Municipio', 'Dirección', 'Teléfono', 'Email', 'Coordenadas'], ';');
                     foreach ($data as $key => $value) {
                         fputcsv($output, $value, ';');
                     }
@@ -176,7 +175,7 @@ class VisorController extends \yii\web\Controller {
                     $pdf->Ln();
                     /* Data */
                     foreach ($data as $row) {
-                        for ($i = 0; $i < 7; $i++) {
+                        for ($i = 1; $i < 7; $i++) {
                             $pdf->Cell($w[$i], 6, utf8_decode($row[$i]), 'LR');
                         }
 
@@ -221,7 +220,7 @@ class VisorController extends \yii\web\Controller {
             $idparentfolder = $input['idfolder'];
             $idcliente = $input['idcliente'];
             //$folders = Folder::find()->where(['idmodule' => $idmodule, 'idParentFolder' => $idparentfolder])->orderBy('folderName')->all();
-            if((int)$idmodule === 1 || (int)$idmodule === 2){ // suscriptores -facturacion
+            if((int)$idmodule === 2){ // suscriptores -facturacion
                 if((int)$idcliente === 0)
                 {
                     $idparentfolder = -1;
@@ -246,16 +245,17 @@ class VisorController extends \yii\web\Controller {
                   WHEN ABS(sum(d.size)) < 1099511627776 THEN CONCAT( ROUND( (sum(d.size)/1073741824), 2 ), ' GB' )
                 END as size
                FROM folder f
-            left join document d on f.idfolder = d.idFolder 
-            where f.idmodule = $idmodule and idParentFolder = $idparentfolder ";
+            left join document d on f.idfolder = d.idFolder"; 
+            
             
             if((int)$idcliente > 0 && (int)$idmodule === 1 ) //suscriptores
             {
-                $sql = $sql . " and (d.idfolder in ( select idFolder from contract co where co.fk_soc = '$idcliente' )";
-                $sql = $sql . " or d.idfolder in ( select idFolder from proposal pr where pr.socid = '$idcliente' )";
-                $sql = $sql . " or d.idfolder in ( select idFolder from hstask pr where pr.socid = '$idcliente' ))";
+                $sql .= " inner join hstask t on t.idFolder = f.idFolder and t.socid =  '$idcliente' ";
+               // $sql = $sql . " and (d.idfolder in ( select idFolder from contract co where co.fk_soc = '$idcliente' )";
+               // $sql = $sql . " or d.idfolder in ( select idFolder from proposal pr where pr.socid = '$idcliente' )";
+               // $sql = $sql . " or d.idfolder in ( select idFolder from hstask pr where pr.socid = '$idcliente' ))";
             }
-            
+            $sql .= " where f.idmodule = $idmodule and idParentFolder = $idparentfolder ";
             if((int)$idcliente > 0 && (int)$idmodule === 2 ) // facturacion
             {
                 $sql = $sql . " and d.idfolder in ( select idFolder from invoices inv where inv.socid = '$idcliente' )";
@@ -263,7 +263,7 @@ class VisorController extends \yii\web\Controller {
             
             $sql = $sql . " group by f.`idfolder`,  f.`folderName`,  f.`folderDefault`,  f.`idParentFolder`,  f.`folderCreationDate`,  f.`folderCreationUserId`,  f.`folderReadOnly`,  f.`idmodule`
             order by f.folderName";
-            
+            //echo $sql;exit;
 
             $command = $connection->createCommand($sql);
             $folders = $command->queryAll();
@@ -306,11 +306,11 @@ class VisorController extends \yii\web\Controller {
                 //varifica directorio raiz
                 $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
                 $root_path = $keyfolderraiz->value;
-                if (!@is_dir($root_path)) {
+                // if (!@is_dir($root_path)) {
 
-                    $returndata = ['data' => '', 'error' => 'Directorio raíz no encontrado! '.$root_path];
-                    return $this->result($returndata);
-                }
+                //     $returndata = ['data' => '', 'error' => 'Directorio raíz no encontrado! '.$root_path];
+                //     return $this->result($returndata);
+                // }
                     
                 //crear en disco path
                 $fpath = "";
@@ -331,7 +331,7 @@ class VisorController extends \yii\web\Controller {
                 foreach ($dirs as $part) {
                     $dir.=$part.'/';
                     if (!is_dir($dir) && strlen($dir)>0){
-                        mkdir($dir, $rights);
+                      //  mkdir($dir, $rights);
                     }
                 }
 

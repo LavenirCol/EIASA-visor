@@ -115,7 +115,7 @@ $(document).ready(function () {
 
                 var d = table.row( row ).data();
                 console.log(d);
-                for (var i = 1; i<=8; i++){
+                for (var i = 1; i<=9; i++){
                     $("#data-"+i).html(d[i]);
                 }
                 
