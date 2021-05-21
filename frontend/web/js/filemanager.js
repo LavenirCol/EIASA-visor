@@ -286,7 +286,7 @@ function processfiles(result, isfolder) {
         var htmlf = "";
         $.each(result.data, function (idx, item) {
 
-            var ext = item.name.slice((item.name.lastIndexOf(".") - 1 >>> 0) + 2);
+            var ext = item.name.slice((item.name.lastIndexOf(".") - 1 >>> 0) + 2).toLowerCase();
             var filestyle = "";
             var fileicon = "fa-file";
             var color = "tx-teal";

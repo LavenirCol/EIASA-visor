@@ -469,35 +469,24 @@ class VisorController extends \yii\web\Controller {
                   $idpfolder = $pfolder->idParentFolder;
                 } while ($idpfolder > 0);
                 $vpath = Url::base(true). '/' . $modulo->moduleName. '/' . $fpath. $foldername;
-                $fpath = $root_path . '/' . $modulo->moduleName. '/' . $fpath . $foldername;
+                $fpath =  $modulo->moduleName. '/' . $fpath . $foldername;
             }else{
                 $vpath = Url::base(true). '/' . $modulo->moduleName. '/' . $fpath. $foldername;
-                $fpath = $root_path . '/' . $modulo->moduleName. '/' . $fpath . $foldername;
-            }
-            
-            $rights=0777;
-            $dirs = explode('/', $fpath);
-            $dir='';
-            foreach ($dirs as $part) {
-                $dir.=$part.'/';
-                if (!is_dir($dir) && strlen($dir)>0){
-                    mkdir($dir, $rights);
-                }
-            }
+                $fpath =  $modulo->moduleName. '/' . $fpath . $foldername;
+            }         
+           
 
             foreach($_FILES['file']['tmp_name'] as $key => $value) {
-                $tempFile = $_FILES['file']['tmp_name'][$key];
-                $targetFile =  $fpath.'/'. $_FILES['file']['name'][$key];
-                //var_dump($targetFile);exit;
-                move_uploaded_file($tempFile,$targetFile);
-                
-                // adicionar FILE a BD
+                $nameFileInS3 = strtolower(uniqid().$_FILES['file']['name'][$key]);
+                $targetFile =  $root_path.$fpath."/".$nameFileInS3;
+                $s3 = Yii::$app->get('s3');
+                $result = $s3->commands()->upload($targetFile, $_FILES['file']['tmp_name'][$key])->execute();
                 $newdocument = new Document();
                 $newdocument->name= $_FILES['file']['name'][$key];
                 $newdocument->path= $fpath;
                 $newdocument->level1name= 0;
                 $newdocument->relativename= $vpath .'/'. $_FILES['file']['name'][$key];
-                $newdocument->fullname= $_FILES['file']['name'][$key];
+                $newdocument->fullname= $result["ObjectURL"];
                 $newdocument->date= date("Y-m-d H:i:s");
                 $newdocument->size= $_FILES['file']['size'][$key];
                 $newdocument->type= $_FILES['file']['type'][$key];
@@ -505,8 +494,6 @@ class VisorController extends \yii\web\Controller {
                 $newdocument->idFolder = $idfolder;
                 $newdocument->fileUploadedUserId = Yii::$app->user->id;
                 $newdocument->save(false);
-                
-                //$this->createimage(154,120,$destination,'s',$type);
             }
  
             $returndata = ['data' => ''. $targetFile, 'error' => ''];
