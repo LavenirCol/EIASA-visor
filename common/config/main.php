@@ -9,15 +9,6 @@ return [
         'cache' => [
             'class' => 'yii\caching\FileCache',
         ],
-        's3' => [
-            'class' => 'bpsys\yii2\aws\s3\Service',
-            'credentials' => [
-                'key' => '',
-                'secret' => '',
-            ],
-            'region' => '',
-            'defaultBucket' => '',
-            'defaultAcl' => ''
-        ]
+        
     ],
 ];
