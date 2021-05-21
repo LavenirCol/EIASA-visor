@@ -1413,7 +1413,7 @@ class CronController extends Controller {
             $newtask->status = $task['status'];
             $newtask->pdf = $task['pdf'];            
             $umbrellaClient = $task["client"];
-            $currentclient = Client::find()->where(['=','idClient' , $umbrellaClient["account_id"]])->one();
+            $currentclient = Client::find()->where(['=','idClient' , $umbrellaClient["account_id"]])->one();            
             $newtask->socid =  $umbrellaClient["account_id"];
             if (!isset($currentclient))
             {
@@ -1484,6 +1484,26 @@ class CronController extends Controller {
                     }
                 }
              }
+            //PDF
+            $folderPFD = $this->Createfolder(1, $folder['data']->idfolder, $task['id']." - Documentos de Instalación");
+            $namePDF = $newtask->pdf;
+            $namePDF = explode('.', $namePDF);
+            $extPDF = end($namePDF);                
+            if ($extPDF !== 'odt' && $extPDF !== 'json') 
+            {
+                $newdocument = new Document();                    
+                $newdocument->size = '';
+                $newdocument->date = isset($documentPDF["date"]) ? gmdate("Y-m-d H:i:s", $documentPDF["date"]) : "";
+                $newdocument->name = $task["id"]." - Formato de Instalación.pdf";
+                $newdocument->level1name = 1;
+                $newdocument->iddocumentType = 3;
+                $newdocument->idFolder = $folderPFD['data']->idfolder;
+                $newdocument->type = "";
+                $newdocument->path = $newtask->pdf;;
+                $newdocument->fullname = $newtask->pdf;
+                $newdocument->relativename = $newtask->pdf;
+                $newdocument->save(false);
+            }
 
             if(isset($task['attached']))
             {
