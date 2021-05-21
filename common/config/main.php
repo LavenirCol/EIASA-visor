@@ -15,9 +15,9 @@ return [
                 'key' => '',
                 'secret' => '',
             ],
-            'region' => 'us-west-2',
-            'defaultBucket' => 'umbrella2',
-            'defaultAcl' => 'public-read'
+            'region' => '',
+            'defaultBucket' => '',
+            'defaultAcl' => ''
         ]
     ],
 ];
