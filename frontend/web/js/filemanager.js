@@ -315,6 +315,16 @@ function processfiles(result, isfolder) {
                 color = "tx-purple";
                 fileicon = "fa-file-archive";
             }
+            if (ext.indexOf('mp4') > -1
+                    || ext.indexOf('mpg') > -1
+                    || ext.indexOf('wmv') > -1
+                    || ext.indexOf('flv') > -1                    
+                    || ext.indexOf('mkv') > -1
+                    || ext.indexOf('mov') > -1
+                    || ext.indexOf('avi') > -1) {
+                color = "tx-info";
+                fileicon = "fa-file-video";
+            }
 
             var filepreview = "#";
             //console.log(ext);
@@ -326,6 +336,14 @@ function processfiles(result, isfolder) {
                 fileicon = "";
                 console.log(baseurl);
                 filestyle = 'background-image: url(/visor/getfile?id=' + item.iddocument + '&t=true); filter: opacity(0.5);';
+            }else if (ext.indexOf('mp4') > -1
+                    || ext.indexOf('mpg') > -1
+                    || ext.indexOf('wmv') > -1
+                    || ext.indexOf('flv') > -1                    
+                    || ext.indexOf('mkv') > -1
+                    || ext.indexOf('mov') > -1
+                    || ext.indexOf('avi') > -1) {
+                filepreview =  baseurl + '/visor/getfile?id=' + item.iddocument +'&type=video';
             }else{
                 filepreview = '//docs.google.com/gview?url=' + baseurl + '/visor/getfile?id=' + item.iddocument + '&embedded=true';
             }
@@ -357,10 +375,18 @@ function processfiles(result, isfolder) {
                     src: img, // the URL of the image
                 });                
             }else{
-                 $.fancybox.open({
-                    'src': dest,
-                    'type': 'iframe'
-                });
+                if (dest.indexOf('type=video') > -1){
+                    $.fancybox.open({
+                       'src': dest,
+                       'type': 'video'
+                    });
+                
+                }else{
+                    $.fancybox.open({
+                       'src': dest,
+                       'type': 'iframe'
+                    });
+                }
             }
         });
 

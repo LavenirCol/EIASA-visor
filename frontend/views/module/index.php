@@ -33,7 +33,7 @@ $this->params['breadcrumbs'][] = $this->title;
         <div class="user-index">
 
             <p>
-                <?= Html::a(Yii::t('app', 'Nuevo Módulo'), ['create'], ['class' => 'btn btn-success']) ?>
+                <?= Html::a(Yii::t('app', 'Nuevo Módulo'), ['create'], ['class' => 'btn btn-primary']) ?>
             </p>
 
             <table class="table table-condensed table-striped dataTable" style="width:100%">

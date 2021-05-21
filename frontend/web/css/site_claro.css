@@ -148,3 +148,19 @@ a.desc:after {
 .navbar-menu .nav-link:hover svg{
     color: #ff949d !important;
 }
+
+.nav-sidebar .nav-link.active svg{
+     color: #ef382b !important;
+}
+
+.media-folder > svg{
+    color: #ef382b !important;
+}
+
+.nav-sidebar .nav-link.active{
+    color: #ef382b !important;
+}
+
+.progress-bar{
+    background-color: #ef382b !important;
+}
