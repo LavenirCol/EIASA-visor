@@ -119,11 +119,11 @@
       </div>
     </div>
 </div>
-<>
+<style>
     .swal2-content{
         text-align: justify !important;
     }
-</>
+</style>
 <?php 
     $this->registerJs(
         "

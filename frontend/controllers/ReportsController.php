@@ -1693,91 +1693,96 @@ class ReportsController extends Controller {
                 $queryTickets->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
                 $queryTickets->offset($requestData['start']);
                 $queryTickets->limit($requestData['length']);
-            }            
-            $result = $queryTickets->all();
-            $data = array();
-            foreach ($result as $key => $row) {
-                $nestedData = array();
-                $nestedData[] = $row['state'];
-                $nestedData[] = $row['town'];
-                $nestedData[] = $row['daneCode'];
-                $nestedData[] = $row['access_id'];
-                $nestedData[] = $row['name'];
-                $nestedData[] = $row['ref'];
-                $nestedData[] = $row['category_label'];
-                $nestedData[] = $row['type_label'];
-                $nestedData[] = $row['severity_label'];
-                $nestedData[] = $row['subject'];
-                $nestedData[] = $this->formatdate(date('Y-m-d', $row['datec']) . ' 00:00:00');
+            }           
 
-                //calculo fecha limite
-                $next5WD = "";
-                if (isset($row['datec'])) {
-                    $holidayDates = array(
-                        '2020-08-17',
-                        '2020-10-12',
-                        '2020-11-02',
-                        '2020-11-16',
-                        '2020-12-08',
-                        '2020-12-25',
-                        '2021-01-01',
-                        '2021-01-11',
-                        '2021-03-22',
-                        '2021-04-01',
-                        '2021-04-02',
-                        '2021-05-01',
-                        '2021-05-17',
-                        '2021-06-03',
-                        '2021-06-14',
-                        '2021-07-05',
-                        '2021-07-20',
-                        '2021-08-07',
-                        '2021-08-16',
-                        '2021-10-18',
-                        '2021-11-01',
-                        '2021-11-15',
-                        '2021-12-08',
-                        '2021-12-25',
-                    );
+            // $rows is an array of 100 or fewer rows from tickets table
+            foreach ($queryTickets->batch() as $result) {
+                //$result = $queryTickets->all();
+                $data = array();
+                foreach ($result as $key => $row) {
+                    $nestedData = array();
+                    $nestedData[] = $row['state'];
+                    $nestedData[] = $row['town'];
+                    $nestedData[] = $row['daneCode'];
+                    $nestedData[] = $row['access_id'];
+                    $nestedData[] = $row['name'];
+                    $nestedData[] = $row['ref'];
+                    $nestedData[] = $row['category_label'];
+                    $nestedData[] = $row['type_label'];
+                    $nestedData[] = $row['severity_label'];
+                    $nestedData[] = $row['subject'];
+                    $nestedData[] = $this->formatdate(date('Y-m-d', $row['datec']) . ' 00:00:00');
 
-                    $count5WD = 0;                    
-                    $temp = strtotime(date('Y-m-d', $row['datec']) . ' 00:00:00');
-                    while ($count5WD < 15) {
-                        $next1WD = strtotime('+1 weekday', $temp);
-                        $next1WDDate = date('Y-m-d', $next1WD);
-                        if (!in_array($next1WDDate, $holidayDates)) {
-                            $count5WD++;
+                    //calculo fecha limite
+                    $next5WD = "";
+                    if (isset($row['datec'])) {
+                        $holidayDates = array(
+                            '2020-08-17',
+                            '2020-10-12',
+                            '2020-11-02',
+                            '2020-11-16',
+                            '2020-12-08',
+                            '2020-12-25',
+                            '2021-01-01',
+                            '2021-01-11',
+                            '2021-03-22',
+                            '2021-04-01',
+                            '2021-04-02',
+                            '2021-05-01',
+                            '2021-05-17',
+                            '2021-06-03',
+                            '2021-06-14',
+                            '2021-07-05',
+                            '2021-07-20',
+                            '2021-08-07',
+                            '2021-08-16',
+                            '2021-10-18',
+                            '2021-11-01',
+                            '2021-11-15',
+                            '2021-12-08',
+                            '2021-12-25',
+                        );
+
+                        $count5WD = 0;                    
+                        $temp = strtotime(date('Y-m-d', $row['datec']) . ' 00:00:00');
+                        while ($count5WD < 15) {
+                            $next1WD = strtotime('+1 weekday', $temp);
+                            $next1WDDate = date('Y-m-d', $next1WD);
+                            if (!in_array($next1WDDate, $holidayDates)) {
+                                $count5WD++;
+                            }
+                            $temp = $next1WD;
                         }
-                        $temp = $next1WD;
+                        $next5WD = date("d/m/Y", $temp);
                     }
-                    $next5WD = date("d/m/Y", $temp);
+                    $nestedData[] = $this->formatdate($next5WD);
+                    $nestedData[] = ($row['date_close'] !== '')?$this->formatdate(date('Y-m-d', $row['date_close']) . ' 00:00:00'):'';
+                    $nestedData[] = 'Call Center';
+                    // Datos Cliente
+                    $nestedData[] = $row['idprof1'];
+                    $nestedData[] = $row['phone'];
+                    $nestedData[] = $row['email'];
+                    $nestedData[] = $row['address'];
+                    $nestedData[] = isset($row['lat'],$row['lng'])? $row['lat'].", ".$row['lng'] : '';
+                    $nestedData[] = $row['message'];
+                    $author ="";
+                    $status = "";
+                    $isExportData = !empty($requestData['export']);
+                    $arrayMessage = (array)json_decode($row['messages']);
+                    $history = $this->getHistoryFromMessageTicket($arrayMessage , $isExportData);     
+                    $author = $this->getAuthorFromMessageTicket($arrayMessage);
+                    $status = $row['status'];
+                    $nestedData[] =  $history;
+                    $nestedData[] =  $author;
+                    $nestedData[] =  $status;
+                    if(empty($requestData['export']))
+                    {
+                        $nestedData[] = "";
+                        $nestedData[] = $this->getDocumentTicketList($row['ref']);
+                    }
+                    $data[] = $nestedData;
                 }
-                $nestedData[] = $this->formatdate($next5WD);
-                $nestedData[] = ($row['date_close'] !== '')?$this->formatdate(date('Y-m-d', $row['date_close']) . ' 00:00:00'):'';
-                $nestedData[] = 'Call Center';
-                // Datos Cliente
-                $nestedData[] = $row['idprof1'];
-                $nestedData[] = $row['phone'];
-                $nestedData[] = $row['email'];
-                $nestedData[] = $row['address'];
-                $nestedData[] = isset($row['lat'],$row['lng'])? $row['lat'].", ".$row['lng'] : '';
-                $nestedData[] = $row['message'];
-                $author ="";
-                $status = "";
-                $isExportData = !empty($requestData['export']);
-                $arrayMessage = (array)json_decode($row['messages']);
-                $history = $this->getHistoryFromMessageTicket($arrayMessage , $isExportData);     
-                $author = $this->getAuthorFromMessageTicket($arrayMessage);
-                $status = $row['status'];
-                $nestedData[] =  $history;
-                $nestedData[] =  $author;
-                $nestedData[] =  $status;
-                if(empty($requestData['export']))
-                {
-                    $nestedData[] = "";
-                    $nestedData[] = $this->getDocumentTicketList($row['ref']);
-                }
-                $data[] = $nestedData;
+
             }
 
             if (!empty($requestData['export'])) {
