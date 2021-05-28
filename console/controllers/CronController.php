@@ -1389,7 +1389,7 @@ class CronController extends Controller {
         $filter->page = 0;
         $filter->lang = 'es';
         $filter->datecreate  = ($lastSync)? $lastSync["event_date"] : "2021-01-01";
-        $filter->status = "*";
+        $filter->status = "443";
         $filter->rows = 1000;
         $tasks = json_decode($this->callAPIUmbrella("POST", "docsTask", json_encode($filter)), true);        
         if ($tasks["code"] === '0') {
