@@ -9,6 +9,9 @@ use frontend\assets\AppAsset;
 use common\widgets\Alert;
 use yii\helpers\Url;
 
+//TODO:traer de config
+$modomantenimiento = false;
+
 AppAsset::register($this);
 ?>
 <?php $this->beginPage() ?>
@@ -126,7 +129,13 @@ AppAsset::register($this);
         'links' => isset($this->params['breadcrumbs']) ? $this->params['breadcrumbs'] : [],
     ]) ?>
     <?= Alert::widget() ?>
+<?php if($modomantenimiento){ ?>
+    <div class="alert alert-danger" role="alert" style="position: absolute;width: 100%;top: 70px;">
+        <h3><i data-feather="settings" style="width:80px; height: 80px;"></i>  El sitio se encuentra en ventana de mantenimiento, por favor reintente luego.</h3>
+    </div>
+<?php } else { ?>
     <?= $content ?>
+<?php } ?>
 <!--</div>-->
 
 <footer class="footer fixed-bottom">

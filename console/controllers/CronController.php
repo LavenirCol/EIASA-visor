@@ -201,7 +201,7 @@ class CronController extends Controller {
         echo "Consultando Clientes...\n"; // your logic for deleting old post goes here
         //ciclos
         $limit = 100;
-        $cycles = 280; // 28000 clientes aprox
+        $cycles = 400; // 40000 clientes aprox
         for ($i = 0; $i <= $cycles; $i++) {
             $this->syncClients($limit, $i);
         }
@@ -307,7 +307,7 @@ class CronController extends Controller {
             foreach ((array) $clientSearch as $client) {
                 echo "----------------------------------------\n";
                 echo "Inicio Cliente " . date("Y-m-d H:i:s") . "\n";
-                echo "Procesando. " . $client['name'] . "\n";
+                echo "Procesando. ". $client['idprof6'] . ' - ' . $client['name'] . "\n";
                 $currentclient = Client::find()->where(['idClient' => $client['id']])->one();
                 if (!isset($currentclient)) {
                     //Cliente nuevo
@@ -897,6 +897,34 @@ class CronController extends Controller {
         exit();
     }
 
+    public function actionSyncnetworknew() {
+        echo "Inicio cron job network nuevos clientes \n"; // your logic for deleting old post goes here
+
+        //verifica directorio raiz
+        $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+        $this->root_path = $keyfolderraiz->value;
+        //varifica urlbase raiz
+        $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
+        $this->root_vpath = $keyurlbase->value;        // modulo suscriptores
+        //modulo suscriptores
+        $this->modulosusc = Module::find()->where(['idmodule' => $this->idmodulesusc])->one();
+        // modulo facturacion
+        $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
+
+        $this->syncInventory();
+        $this->syncTasks();
+
+        // sincroniza archivos instalacion
+        echo "Sincronizando Archivos Instalacion...\n"; // your logic for deleting old post goes here        
+        $this->syncInstalationfiles();
+
+        // sincroniza archivos instalacion
+        echo "Descargando Archivos Instalacion...\n"; // your logic for deleting old post goes here        
+        $this->syncDownloadInstalationfiles();
+
+        exit();
+    }
+    
     public function actionSyncinventory() {
         echo "Inicio cron job iventario \n"; // your logic for deleting old post goes here
 
@@ -954,28 +982,54 @@ class CronController extends Controller {
             echo "procesando inventario pagina ($i) (" . sizeof($inventories["data"]) . ")\n";
 
             foreach ((array) $inventories["data"] as $inv) {
-                // crea inventario
-                $newinv = new Hsstock();
-                $newinv->id = $inv['id'];
-                $newinv->pid = $inv['pid'];
-                $newinv->uuid = $inv['uuid'];
-                $newinv->name = $inv['name'];
-                $newinv->factory = $inv['factory'];
-                $newinv->model = $inv['model'];
-                $newinv->datecreate = $inv['datecreate'];
-                $newinv->sku = $inv['sku'];
-                $newinv->health_reg = $inv['health_reg'];
-                $newinv->quantity = $inv['quantity'];
-                $newinv->measure = $inv['measure'];
-                $newinv->location = $inv['location'];
-                $newinv->city = $inv['city'];
-                $newinv->city_code = $inv['city_code'];
-                $newinv->district = $inv['district'];
-                $newinv->district_code = $inv['district_code'];
-                $newinv->lat = $inv['lat'];
-                $newinv->lng = $inv['lng'];
+                $currenthstock = Hsstock::find()->where(['id' => $inv['id'],'uuid' => $inv['uuid']])->one();
+                if (!isset($currenthstock)) {
+                    // crea inventario
+                    $newinv = new Hsstock();
+                    $newinv->id = $inv['id'];
+                    $newinv->pid = $inv['pid'];
+                    $newinv->uuid = $inv['uuid'];
+                    $newinv->name = $inv['name'];
+                    $newinv->factory = $inv['factory'];
+                    $newinv->model = $inv['model'];
+                    $newinv->datecreate = $inv['datecreate'];
+                    $newinv->sku = $inv['sku'];
+                    $newinv->health_reg = $inv['health_reg'];
+                    $newinv->quantity = $inv['quantity'];
+                    $newinv->measure = $inv['measure'];
+                    $newinv->location = $inv['location'];
+                    $newinv->city = $inv['city'];
+                    $newinv->city_code = $inv['city_code'];
+                    $newinv->district = $inv['district'];
+                    $newinv->district_code = $inv['district_code'];
+                    $newinv->lat = $inv['lat'];
+                    $newinv->lng = $inv['lng'];
 
-                $newinv->save(false);
+                    $newinv->save(false);
+                } else {
+                    //Actualiza inventario
+                    $currenthstock->id = $inv['id'];
+                    $currenthstock->pid = $inv['pid'];
+                    $currenthstock->uuid = $inv['uuid'];
+                    $currenthstock->name = $inv['name'];
+                    $currenthstock->factory = $inv['factory'];
+                    $currenthstock->model = $inv['model'];
+                    $currenthstock->datecreate = $inv['datecreate'];
+                    $currenthstock->sku = $inv['sku'];
+                    $currenthstock->health_reg = $inv['health_reg'];
+                    $currenthstock->quantity = $inv['quantity'];
+                    $currenthstock->measure = $inv['measure'];
+                    $currenthstock->location = $inv['location'];
+                    $currenthstock->city = $inv['city'];
+                    $currenthstock->city_code = $inv['city_code'];
+                    $currenthstock->district = $inv['district'];
+                    $currenthstock->district_code = $inv['district_code'];
+                    $currenthstock->lat = $inv['lat'];
+                    $currenthstock->lng = $inv['lng'];
+
+                    $currenthstock->save(false);
+                }
+                
             }
         }
 
@@ -1029,22 +1083,41 @@ class CronController extends Controller {
             echo "procesando tasks pagina ($i) (" . sizeof($tasks["data"]) . ")\n";
 
             foreach ((array) $tasks["data"] as $task) {
-                // crea task
-                $newtask = new Hstask();
-                $newtask->uuid = $task['uuid'];
-                $newtask->datecreate = $task['datecreate'];
-                $newtask->dateupdate = $task['dateupdate'];
-                $newtask->reference = $task['reference'];
-                $newtask->template = $task['template'];
-                $newtask->address = $task['address'];
-                $newtask->city = $task['city'];
-                $newtask->district = $task['district'];
-                $newtask->code = $task['code'];
-                $newtask->status = $task['status'];
-                $newtask->pdf = $task['pdf'];
-                $newtask->account = $task['account'];
-                $newtask->account_id = $task['account_id'];
-                $newtask->save(false);
+                $currenthstask = Hstask::find()->where(['uuid' => $task['uuid']])->one();
+                if (!isset($currenthstask)) {
+                    // crea task
+                    $newtask = new Hstask();
+                    $newtask->uuid = $task['uuid'];
+                    $newtask->datecreate = $task['datecreate'];
+                    $newtask->dateupdate = $task['dateupdate'];
+                    $newtask->reference = $task['reference'];
+                    $newtask->template = $task['template'];
+                    $newtask->address = $task['address'];
+                    $newtask->city = $task['city'];
+                    $newtask->district = $task['district'];
+                    $newtask->code = $task['code'];
+                    $newtask->status = $task['status'];
+                    $newtask->pdf = $task['pdf'];
+                    $newtask->account = $task['account'];
+                    $newtask->account_id = $task['account_id'];
+                    $newtask->save(false);
+                }else{
+                    // actualiza task
+                    $currenthstask->uuid = $task['uuid'];
+                    $currenthstask->datecreate = $task['datecreate'];
+                    $currenthstask->dateupdate = $task['dateupdate'];
+                    $currenthstask->reference = $task['reference'];
+                    $currenthstask->template = $task['template'];
+                    $currenthstask->address = $task['address'];
+                    $currenthstask->city = $task['city'];
+                    $currenthstask->district = $task['district'];
+                    $currenthstask->code = $task['code'];
+                    $currenthstask->status = $task['status'];
+                    $currenthstask->pdf = $task['pdf'];
+                    $currenthstask->account = $task['account'];
+                    $currenthstask->account_id = $task['account_id'];
+                    $currenthstask->save(false);
+                }
             }
         }
 
