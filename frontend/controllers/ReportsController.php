@@ -1693,12 +1693,10 @@ class ReportsController extends Controller {
                 $queryTickets->orderBy([$columns[$requestData['order'][0]['column']] => $order]);
                 $queryTickets->offset($requestData['start']);
                 $queryTickets->limit($requestData['length']);
-            }           
-
+            }            
+            $data = array();
             // $rows is an array of 100 or fewer rows from tickets table
-            foreach ($queryTickets->batch() as $result) {
-                //$result = $queryTickets->all();
-                $data = array();
+            foreach ($queryTickets->batch() as $result) {                
                 foreach ($result as $key => $row) {
                     $nestedData = array();
                     $nestedData[] = $row['state'];
