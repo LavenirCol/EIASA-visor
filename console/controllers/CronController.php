@@ -1456,4 +1456,24 @@ class CronController extends Controller {
             echo $tickect->ref."\n";
         }
     }
+
+    function actionSyncClient()
+    {
+        $clientList = Client::find()->where(['=','sync', 1])->all();
+        $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+        
+        foreach($clientList as $client)
+        {
+            echo $client->name." - ";
+            $task = Hstask::find()->andWhere(['=', 'account_id', $client->idprof1])->one();
+            $document = Document::find()->where(["=", 'level1name', $task->uuid])->one();
+            if(isset($task))echo $task->pdf;
+            $client_http = new \GuzzleHttp\Client();
+            $response = $client_http->request('GET', $task->pdf);
+            $file = fopen($document->fullname, "wb");
+            fwrite($file, (string) $response->getBody()->getContents());
+            fclose($file);
+            echo $keyfolderraiz["value"]. $client->idprof1.".pdf"."\n";
+        }
+    }
 }
