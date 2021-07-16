@@ -140,7 +140,13 @@ $this->registerJs("
                 text: 'On/Off'
             },
         },
-
+        plotOptions :{
+            area:{
+                dataGrouping:{
+                    enabled:false
+                }
+            }        	
+        },
         series: [{
             type: 'area',
             name: 'Estado',
@@ -197,7 +203,13 @@ $this->registerJs("
                 text: 'On/Off'
             }
         },
-
+        plotOptions :{
+            area:{
+                dataGrouping:{
+                    enabled:false
+                }
+            }        	
+        },
         series: [{
             type: 'area',
             name: 'Estado',

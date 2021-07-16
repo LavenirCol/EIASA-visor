@@ -1709,7 +1709,19 @@ class ReportsController extends Controller {
                     $nestedData[] = $row['type_label'];
                     $nestedData[] = $row['severity_label'];
                     $nestedData[] = $row['subject'];
-                    $nestedData[] = $this->formatdate(date('Y-m-d', $row['datec']) . ' 00:00:00');
+                    $dateTime = new \DateTime();
+                    $dateTime->setTimestamp($row['datec'])->modify('+2 hours');
+                    
+                    $TimeStr=$dateTime->format('Y-m-d') . " 00:00:00";
+                    $TimeZoneNameFrom="UTC";
+                    $TimeZoneNameTo="America/Bogota";
+                    $nestedData[] = date_create($TimeStr, new \DateTimeZone($TimeZoneNameFrom))
+                        ->setTimezone(new \DateTimeZone($TimeZoneNameTo))->format("Y-m-d");
+                    
+                    
+                    //$nestedData[] = $dateTime->format('Y-m-d');
+                    //$nestedData[] = date('Y-m-d', $row['datec']);
+                    //$nestedData[] = $this->formatdate(date('Y-m-d', $row['datec']) . ' 00:00:00');
 
                     //calculo fecha limite
                     $next5WD = "";

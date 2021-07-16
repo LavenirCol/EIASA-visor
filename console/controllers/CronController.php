@@ -240,7 +240,7 @@ class CronController extends Controller {
         $this->syncDownloadInvoices();
         exit();
     }
-    
+
     public function actionSynconlyinvoices() {
         echo "Inicio cron job \n"; // your logic for deleting old post goes here
         //verifica directorio raiz
@@ -254,6 +254,22 @@ class CronController extends Controller {
         // modulo facturacion
         $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
 
+        //consulta clientes
+        $query = (new Query())
+                ->from('client')
+                ->orderBy('idClient');
+
+        foreach ($query->batch() as $clients) {
+            // $clients is an array of 100 or fewer rows from the client table
+
+            foreach ((array) $clients as $client) {
+                echo "----------------------------------------\n";
+                echo "Inicio Cliente " . date("Y-m-d H:i:s") . "\n";
+                echo "Procesando. " . $client['name'] . "\n";
+                $this->processinvoices($client['idClient']);
+            }
+        }
+
         // sincroniza archivos
         echo "Sincronizando Archivos Facturas...\n"; // your logic for deleting old post goes here        
         $this->syncDownloadInvoices();
@@ -264,19 +280,19 @@ class CronController extends Controller {
         echo "Inicio cron job \n"; // your logic for deleting old post goes here
         //consulta clientes
         $query = (new Query())
-            ->from('client')
-            ->orderBy('idClient');
+                ->from('client')
+                ->orderBy('idClient');
 
         foreach ($query->batch() as $clients) {
             // $clients is an array of 100 or fewer rows from the client table
-                    
+
             foreach ((array) $clients as $client) {
-                    echo "----------------------------------------\n";
-                    echo "Inicio Cliente " . date("Y-m-d H:i:s") . "\n";
-                    echo "Procesando. " . $client['name'] . "\n";
-                    // DELETE (table name, condition)
-                    Yii::$app->db->createCommand("DELETE FROM tickets where socid = ". $client['idClient'])->execute();
-                    $this->processtickets($client['idClient']);
+                echo "----------------------------------------\n";
+                echo "Inicio Cliente " . date("Y-m-d H:i:s") . "\n";
+                echo "Procesando. " . $client['name'] . "\n";
+                // DELETE (table name, condition)
+                Yii::$app->db->createCommand("DELETE FROM tickets where socid = " . $client['idClient'])->execute();
+                $this->processtickets($client['idClient']);
             }
         }
 
@@ -284,6 +300,7 @@ class CronController extends Controller {
         echo "fin job synctickets...\n"; // your logic for deleting old post goes here        
         exit();
     }
+
     /*
      * Sincroniza clientes, contratos y crea folders sucriptores y facturacion
      */
@@ -307,7 +324,7 @@ class CronController extends Controller {
             foreach ((array) $clientSearch as $client) {
                 echo "----------------------------------------\n";
                 echo "Inicio Cliente " . date("Y-m-d H:i:s") . "\n";
-                echo "Procesando. ". $client['idprof6'] . ' - ' . $client['name'] . "\n";
+                echo "Procesando. " . $client['idprof6'] . ' - ' . $client['name'] . "\n";
                 $currentclient = Client::find()->where(['idClient' => $client['id']])->one();
                 if (!isset($currentclient)) {
                     //Cliente nuevo
@@ -318,14 +335,11 @@ class CronController extends Controller {
                     $newclient->access_id = $client['idprof6'];
                     $newclient->address = str_replace(array("\n", "\r", "\r\n", "\xE2\x80\x9010"), ' ', $client['address']);
                     $newclient->name = str_replace("\xC5\x84", 'ñ', $client['name']);
-                    if (isset($client['array_options'])) 
-                    {
-                        if (isset($client['array_options']["options_lat"])) 
-                        {
+                    if (isset($client['array_options'])) {
+                        if (isset($client['array_options']["options_lat"])) {
                             $newclient->lat = $client['array_options']["options_lat"];
                         }
-                        if (isset($client['array_options']["options_lon"])) 
-                        {
+                        if (isset($client['array_options']["options_lon"])) {
                             $newclient->lng = $client['array_options']["options_lon"];
                         }
                     }
@@ -422,9 +436,8 @@ class CronController extends Controller {
                             }
                         }
                     }
-                }else
-                {
-                    echo $suscfolder['error']."\n";
+                } else {
+                    echo $suscfolder['error'] . "\n";
                 }
             }
         }
@@ -527,53 +540,59 @@ class CronController extends Controller {
         foreach ((array) $invoices as $invoice) {
 
             if (isset($invoice['ref'])) {
-                // crea folder de cliente en modulo suscriptores                        
-                $suscfolder = $this->Createfolder($this->idmodulefact, 0, $invoice['ref']);
 
-                if ($suscfolder['error'] == "") {
-                    //crear disco path
-                    $fpath = $this->root_path . '/' . $this->modulofact->moduleName . '/' . $suscfolder['data']->folderName;
-                    $vpath = $this->root_vpath . '/' . $this->modulofact->moduleName . '/' . $suscfolder['data']->folderName . '/';
+                //verifica si existe
+                $currentInvoices = Invoices::find()->where(['=', 'id', $invoice['id']])->one();
+                if (isset($currentInvoices)) {
+                    echo "factura ya existe " . $invoice['id'] . "\n";
+                } else {
+                    // crea folder de cliente en modulo suscriptores                        
+                    $suscfolder = $this->Createfolder($this->idmodulefact, 0, $invoice['ref']);
 
-                    // crea invoice
-                    $newinvoice = new Invoices();
-                    $newinvoice->id = $invoice['id'];
-                    $newinvoice->entity = $invoice['entity'];
-                    $newinvoice->socid = $invoice['socid'];
-                    $newinvoice->ref = $invoice['ref'];
-                    $newinvoice->idFolder = $suscfolder['data']->idfolder;
-                    $newinvoice->save(false);
+                    if ($suscfolder['error'] == "") {
+                        //crear disco path
+                        $fpath = $this->root_path . '/' . $this->modulofact->moduleName . '/' . $suscfolder['data']->folderName;
+                        $vpath = $this->root_vpath . '/' . $this->modulofact->moduleName . '/' . $suscfolder['data']->folderName . '/';
 
-                    // consulta documentos invoices
-                    $documents = json_decode($this->CallAPI("GET", "documents", array(
-                                "modulepart" => "invoice",
-                                "sortfield" => "name",
-                                "sortorder" => "ASC",
-                                "id" => $invoice['id']
-                                    )
-                            ), true);
+                        // crea invoice
+                        $newinvoice = new Invoices();
+                        $newinvoice->id = $invoice['id'];
+                        $newinvoice->entity = $invoice['entity'];
+                        $newinvoice->socid = $invoice['socid'];
+                        $newinvoice->ref = $invoice['ref'];
+                        $newinvoice->idFolder = $suscfolder['data']->idfolder;
+                        $newinvoice->save(false);
 
-                    if (isset($documents["error"]) && $documents["error"]["code"] >= 300) {
-                        echo "procesando documents invoices (0)\n";
-                    } else {
-                        echo "procesando documents invoices (" . sizeof($documents) . ")\n";
-                        foreach ((array) $documents as $document) {
-                            //var_dump($document);      
-                            if (isset($document['name'])) {
-                                $name = $document['name'];
+                        // consulta documentos invoices
+                        $documents = json_decode($this->CallAPI("GET", "documents", array(
+                                    "modulepart" => "invoice",
+                                    "sortfield" => "name",
+                                    "sortorder" => "ASC",
+                                    "id" => $invoice['id']
+                                        )
+                                ), true);
 
-                                if ($name === 'response.json') {
-                                    $newdocument = new Document();
-                                    $newdocument->attributes = $document;
-                                    $newdocument->date = isset($document['date']) ? gmdate("Y-m-d H:i:s", $document['date']) : "";
-                                    $newdocument->iddocumentType = 4; // documento invoices
-                                    $newdocument->idFolder = $suscfolder['data']->idfolder;
-                                    $newdocument->type = 'pending';
-                                    $newdocument->path = $fpath;
-                                    $newdocument->name = $document['level1name'] . '.pdf';
-                                    $newdocument->relativename = $vpath . $document['level1name'] . '.pdf'; // $document['name'];
-                                    $newdocument->save(false);
-                                }
+                        if (isset($documents["error"]) && $documents["error"]["code"] >= 300) {
+                            echo "procesando documents invoices (0)\n";
+                        } else {
+                            echo "procesando documents invoices (" . sizeof($documents) . ")\n";
+                            foreach ((array) $documents as $document) {
+                                //var_dump($document);      
+                                if (isset($document['name'])) {
+                                    $name = $document['name'];
+
+                                    if ($name === 'response.json') {
+                                        $newdocument = new Document();
+                                        $newdocument->attributes = $document;
+                                        $newdocument->date = isset($document['date']) ? gmdate("Y-m-d H:i:s", $document['date']) : "";
+                                        $newdocument->iddocumentType = 4; // documento invoices
+                                        $newdocument->idFolder = $suscfolder['data']->idfolder;
+                                        $newdocument->type = 'pending';
+                                        $newdocument->path = $fpath;
+                                        $newdocument->name = $document['level1name'] . '.pdf';
+                                        $newdocument->relativename = $vpath . $document['level1name'] . '.pdf'; // $document['name'];
+                                        $newdocument->save(false);
+                                    }
 
 //                                $names = explode('.', $name );
 //                                $ext = end($names);
@@ -582,6 +601,7 @@ class CronController extends Controller {
 //                                }else{
 //
 //                                }
+                                }
                             }
                         }
                     }
@@ -610,10 +630,8 @@ class CronController extends Controller {
         }
 
         echo "procesando tickets (" . sizeof($tickets) . ")\n";
-        foreach ((array) $tickets as $ticket) 
-        {
-            try
-            {
+        foreach ((array) $tickets as $ticket) {
+            try {
                 if (isset($ticket['ref'])) {
                     // crea ticket
                     $newticket = new Tickets();
@@ -631,15 +649,14 @@ class CronController extends Controller {
                     $newticket->date_read = $ticket['date_read'];
                     $newticket->date_close = $ticket['date_close'];
                     $newticket->messages = '';
-                    $newticket->fk_statut =$ticket['fk_statut'];
+                    $newticket->fk_statut = $ticket['fk_statut'];
 
                     $newticket->save(false);
 
                     $this->processticketdetail($ticket['id']);
                 }
-            }catch(Exception $ex)
-            {
-                echo $ex->getMessage()."\n";
+            } catch (Exception $ex) {
+                echo $ex->getMessage() . "\n";
             }
         }
     }
@@ -708,7 +725,7 @@ class CronController extends Controller {
     }
 
     function base64ToFile($base64_string, $output_file) {
-        echo "guardando archivo ".$output_file."\n";
+        echo "guardando archivo " . $output_file . "\n";
         $file = fopen($output_file, "wb");
         fwrite($file, base64_decode($base64_string));
         fclose($file);
@@ -723,7 +740,7 @@ class CronController extends Controller {
         shell_exec('sudo find /eiasadocs/tmp/. -maxdepth 1 -name "MY*" -exec rm -r {} \;');
 
         $limitrows = 100;
-        $itemcount = Document::find()->where(['type' => 'pending','iddocumentType'=> '4'])->count();
+        $itemcount = Document::find()->where(['type' => 'pending', 'iddocumentType' => '4'])->count();
 
         echo "procesando total facturas (" . $itemcount . ")\n";
 
@@ -731,7 +748,7 @@ class CronController extends Controller {
         for ($i = 0; $i <= $batches; $i++) {
             $offset = $i * $limitrows; // MySQL Limit offset number
 
-            $documents = Document::find()->where(['type' => 'pending','iddocumentType'=> '4'])->offset($offset)->limit($limitrows)->all();
+            $documents = Document::find()->where(['type' => 'pending', 'iddocumentType' => '4'])->offset($offset)->limit($limitrows)->all();
             echo "batch: " . $i . " - procesando facturas (" . sizeof($documents) . ")\n";
 
             $urls = array();
@@ -757,7 +774,7 @@ class CronController extends Controller {
                         $url = $content["resultado"]["url_representacion_grafica"];
 
                         $urlarr = [
-                            "url" =>  $url,
+                            "url" => $url,
                             "name" => $document['name'],
                         ];
                         echo "url " . $url . "\n";
@@ -777,15 +794,15 @@ class CronController extends Controller {
         }
 
         sleep(30);
-        
+
         // actualiza documentos
-        $documents = Document::find()->where(['type' => 'pending','iddocumentType'=> '4'])->all();
+        $documents = Document::find()->where(['type' => 'pending', 'iddocumentType' => '4'])->all();
         echo "actualizando facturas (" . sizeof($documents) . ")\n";
 
         // actualiza documentos
         foreach ($documents as $document) {
             $file = '/eiasadocs/tmp' . '/' . $document->name;
-            echo "moviendo archivo ".$file."\n";
+            echo "moviendo archivo " . $file . "\n";
             if (is_file($file)) {
                 //actualiza document
                 $document->type = 'application/pdf';
@@ -794,12 +811,12 @@ class CronController extends Controller {
                 $document->save(false);
 
                 // mueve el archivo
-                rename($file, $document->path.'/'.$document->name);
+                rename($file, $document->path . '/' . $document->name);
             }
         }
 
         unset($documents);
-        
+
         echo "Fin syncfacturas " . date("Y-m-d H:i:s") . "\n";
     }
 
@@ -903,7 +920,6 @@ class CronController extends Controller {
 
     public function actionSyncnetworknew() {
         echo "Inicio cron job network nuevos clientes \n"; // your logic for deleting old post goes here
-
         //verifica directorio raiz
         $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
         $this->root_path = $keyfolderraiz->value;
@@ -928,7 +944,7 @@ class CronController extends Controller {
 
         exit();
     }
-    
+
     public function actionSyncinventory() {
         echo "Inicio cron job iventario \n"; // your logic for deleting old post goes here
 
@@ -986,7 +1002,7 @@ class CronController extends Controller {
             echo "procesando inventario pagina ($i) (" . sizeof($inventories["data"]) . ")\n";
 
             foreach ((array) $inventories["data"] as $inv) {
-                $currenthstock = Hsstock::find()->where(['id' => $inv['id'],'uuid' => $inv['uuid']])->one();
+                $currenthstock = Hsstock::find()->where(['id' => $inv['id'], 'uuid' => $inv['uuid']])->one();
                 if (!isset($currenthstock)) {
                     // crea inventario
                     $newinv = new Hsstock();
@@ -1033,7 +1049,6 @@ class CronController extends Controller {
 
                     $currenthstock->save(false);
                 }
-                
             }
         }
 
@@ -1105,7 +1120,7 @@ class CronController extends Controller {
                     $newtask->account = $task['account'];
                     $newtask->account_id = $task['account_id'];
                     $newtask->save(false);
-                }else{
+                } else {
                     // actualiza task
                     $currenthstask->uuid = $task['uuid'];
                     $currenthstask->datecreate = $task['datecreate'];
@@ -1196,7 +1211,7 @@ class CronController extends Controller {
         shell_exec('sudo find /eiasadocs/tmp/. -maxdepth 1 -name "*.pdf" -exec rm -r {} \;');
 
         $limitrows = 25;
-        $itemcount = Document::find()->where(['size' => '-1','iddocumentType'=> '5'])->count();
+        $itemcount = Document::find()->where(['size' => '-1', 'iddocumentType' => '5'])->count();
 
         echo "procesando total archivos instalacion (" . $itemcount . ")\n";
 
@@ -1204,7 +1219,7 @@ class CronController extends Controller {
         for ($i = 0; $i <= $batches; $i++) {
             $offset = $i * $limitrows; // MySQL Limit offset number
 
-            $documents = Document::find()->where(['size' => '-1','iddocumentType'=> '5'])->offset($offset)->limit($limitrows)->all();
+            $documents = Document::find()->where(['size' => '-1', 'iddocumentType' => '5'])->offset($offset)->limit($limitrows)->all();
             echo "batch: " . $i . " - procesando archivos instalacion (" . sizeof($documents) . ")\n";
 
             $urls = array();
@@ -1212,7 +1227,7 @@ class CronController extends Controller {
             foreach ($documents as $document) {
                 //consulta documento
                 $urlarr = [
-                    "url" =>  $document['type'],
+                    "url" => $document['type'],
                     "name" => $document['name'],
                 ];
                 echo "url " . $document['type'] . "\n";
@@ -1224,23 +1239,23 @@ class CronController extends Controller {
             $this->multiple_download($urls, '/eiasadocs/tmp');
 
             echo "Fin syncinstalationfiles downloading " . date("Y-m-d H:i:s") . "\n";
-                        
+
             unset($urls);
             unset($documents);
         }
 
         sleep(30);
-        
+
         // actualiza documentos
-        $documents = Document::find()->where(['size' => '-1','iddocumentType'=> '5'])->all();
+        $documents = Document::find()->where(['size' => '-1', 'iddocumentType' => '5'])->all();
         echo "actualizando archivos instalacion (" . sizeof($documents) . ")\n";
 
         // actualiza documentos
         foreach ($documents as $document) {
             $file = '/eiasadocs/tmp' . '/' . $document->name;
-            echo "moviendo archivo ".$file."\n";
+            echo "moviendo archivo " . $file . "\n";
             if (is_file($file)) {
-                if ( filesize($file) > 40000){
+                if (filesize($file) > 40000) {
                     //actualiza document
                     $document->type = 'application/pdf';
                     $document->size = filesize($file);
@@ -1248,16 +1263,16 @@ class CronController extends Controller {
                     $document->save(false);
 
                     // mueve el archivo
-                    rename($file, $document->path.'/'.$document->name);
+                    rename($file, $document->path . '/' . $document->name);
                 }
             }
         }
 
         unset($documents);
-        
+
         echo "Fin syncinstalationfiles " . date("Y-m-d H:i:s") . "\n";
     }
-    
+
     function multiple_download(array $urls, $save_path = '/tmp') {
         $multi_handle = curl_multi_init();
         $file_pointers = [];
@@ -1265,7 +1280,7 @@ class CronController extends Controller {
 
         // Add curl multi handles, one per file we don't already have
         foreach ($urls as $key => $urlarr) {
-            
+
             $file = $save_path . '/' . basename($urlarr["name"]);
             if (!is_file($file)) {
                 $curl_handles[$key] = curl_init($urlarr["url"]);
@@ -1291,222 +1306,192 @@ class CronController extends Controller {
             //echo 'running - '.$running;
         } while ($running > 0);
 
-
         // Free up objects
         foreach ($urls as $key => $urlarr) {
             fwrite($file_pointers[$key], curl_multi_getcontent($curl_handles[$key]));
             curl_multi_remove_handle($multi_handle, $curl_handles[$key]);
             curl_close($curl_handles[$key]);
-            fclose($file_pointers[$key]);           
+            fclose($file_pointers[$key]);
         }
         curl_multi_close($multi_handle);
     }
 
-    public function actionRabbitmqSendClients()
-    {
+    public function actionRabbitmqSendClients() {
         $rabbitMQ = new RabbitMQ();
         $limit = 100;
         $cycles = 400; // 28000 clientes aprox
         for ($i = 0; $i <= $cycles; $i++) {
-            $rabbitMQ->publishMessageList("clientsFromDolibarr",$this->getClientsFromDolibarr($limit, $i));
-        }       
+            $rabbitMQ->publishMessageList("clientsFromDolibarr", $this->getClientsFromDolibarr($limit, $i));
+        }
     }
 
-    public function getClientsFromDolibarr($limit, $page)
-    {
+    public function getClientsFromDolibarr($limit, $page) {
         $clientSearch = json_decode($this->CallAPI("GET", "thirdparties", array(
-            "sortfield" => "t.rowid",
-            "sortorder" => "ASC",
-            "mode" => "0",
-            "limit" => $limit,
-            "page" => $page,
-            "sqlfilters" => "(t.idprof6 != '')"
-                )
-        ), true);
+                    "sortfield" => "t.rowid",
+                    "sortorder" => "ASC",
+                    "mode" => "0",
+                    "limit" => $limit,
+                    "page" => $page,
+                    "sqlfilters" => "(t.idprof6 != '')"
+                        )
+                ), true);
         if (isset($clientSearch["error"]) && $clientSearch["error"]["code"] >= "300") {
             echo "($page) Error Clientes " . $clientSearch["error"]["message"] . "\n";
             return null;
-        } else {           
-            return (array) $clientSearch;        
+        } else {
+            return (array) $clientSearch;
         }
     }
 
-
-    public function saveClientDB($client)
-    {   
+    public function saveClientDB($client) {
         $currentclient = Client::find()->where(['idClient' => $client->id])->one();
-        if (!isset($currentclient))
-        {         
+        if (!isset($currentclient)) {
             $newclient = new Client();
-            $newclient->attributes = (array)$client;
-            $newclient->idClient = $client->id;            
+            $newclient->attributes = (array) $client;
+            $newclient->idClient = $client->id;
             $newclient->state_id = $client->state_id;
-            $newclient->access_id = $client->idprof6;            
+            $newclient->access_id = $client->idprof6;
             $newclient->address = str_replace(array("\n", "\r", "\r\n", "\xE2\x80\x9010"), ' ', $client->address);
             $newclient->name = str_replace("\xC5\x84", 'ñ', $client->name);
             print_r($client->array_options);
-            if (isset($client->array_options)) 
-            {
-                if (isset($client->array_options->options_lat)) 
-                {
+            if (isset($client->array_options)) {
+                if (isset($client->array_options->options_lat)) {
                     $newclient->lat = $client->array_options->options_lat;
                 }
-                if (isset($client->array_options->options_lon)) 
-                {
+                if (isset($client->array_options->options_lon)) {
                     $newclient->lng = $client->array_options->options_lon;
                 }
             }
-            $newclient->save(false);            
+            $newclient->save(false);
             $this->processtickets($client->id);
-        }
-        else
-        {
+        } else {
             echo "Cliente encontraro \n";
         }
     }
 
-    public function actionSaveClientFromQueue()
-    {
+    public function actionSaveClientFromQueue() {
         $rabbitMQ = new RabbitMQ();
-        $callback = function($message)
-        {
+        $callback = function ($message) {
             $client = json_decode($message->body);
             echo $client->id;
             $this->saveClientDB($client);
             echo "\n";
             $message->ack();
         };
-        $rabbitMQ->getMessage('clientsFromDolibarr',$callback);
+        $rabbitMQ->getMessage('clientsFromDolibarr', $callback);
     }
 
-    function listDocumentsTicket($ref)
-    {
-        return json_decode($this->callAPI("GET", "documents",  array("modulepart"=>"ticket", "ref"=>$ref)));
+    function listDocumentsTicket($ref) {
+        return json_decode($this->callAPI("GET", "documents", array("modulepart" => "ticket", "ref" => $ref)));
     }
 
-    function getContentDocument($document)
-    {
-        $original_file = $document->level1name."/".$document->name;
-        return json_decode($this->callAPI("GET", "documents/download",  array("modulepart"=>"ticket", "original_file"=>$original_file)));
+    function getContentDocument($document) {
+        $original_file = $document->level1name . "/" . $document->name;
+        return json_decode($this->callAPI("GET", "documents/download", array("modulepart" => "ticket", "original_file" => $original_file)));
     }
 
-    function getDocumentsTicket($idTicket)
-    {       
-       $listDocumentsTicket =  $this->listDocumentsTicket($idTicket);       
-       $index=0;
-       foreach($listDocumentsTicket as $document)
-       {          
-           try
-           {
+    function getDocumentsTicket($idTicket) {
+        $listDocumentsTicket = $this->listDocumentsTicket($idTicket);
+        $index = 0;
+        foreach ($listDocumentsTicket as $document) {
+            try {
 
-            
-                    
-          
-           if (isset($document->name))
-           {   
-                if($index == 0)
-                {
-                    $index++;
-                    $folder = $this->Createfolder(9, 0, $idTicket);
-                    $module = Module::find()->where(['idmodule' => 9])->one();       
-                    $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
-                    $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
-                    $fpath = $keyfolderraiz->value . '/' . $module->moduleName . '/' . $folder['data']->folderName. '/';
-                    $vpath = $keyurlbase->value . '/' . $module->moduleName . '/' . $folder['data']->folderName . '/';
-                    Document::deleteAll(['level1name' => $idTicket, 'idFolder' => $folder['data']->idfolder]);
+
+
+
+                if (isset($document->name)) {
+                    if ($index == 0) {
+                        $index++;
+                        $folder = $this->Createfolder(9, 0, $idTicket);
+                        $module = Module::find()->where(['idmodule' => 9])->one();
+                        $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
+                        $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+                        $fpath = $keyfolderraiz->value . '/' . $module->moduleName . '/' . $folder['data']->folderName . '/';
+                        $vpath = $keyurlbase->value . '/' . $module->moduleName . '/' . $folder['data']->folderName . '/';
+                        Document::deleteAll(['level1name' => $idTicket, 'idFolder' => $folder['data']->idfolder]);
+                    }
+
+                    echo "\n" . $document->name . "\n";
+                    $name = $document->name;
+                    $names = explode('.', $name);
+                    $ext = end($names);
+                    if ($ext !== 'odt' && $ext !== 'json') {
+                        $this->base64ToFile(($this->getContentDocument($document))->content, $fpath . $document->name);
+                        $newdocument = new Document();
+                        $newdocument->size = $document->size;
+                        $newdocument->date = isset($document->date) ? gmdate("Y-m-d H:i:s", $document->date) : "";
+                        $newdocument->name = $document->name;
+                        $newdocument->level1name = $document->level1name;
+                        $newdocument->iddocumentType = 6;
+                        $newdocument->idFolder = $folder['data']->idfolder;
+                        $newdocument->type = $document->type;
+                        $newdocument->path = $fpath;
+                        $newdocument->fullname = $document->fullname;
+                        $newdocument->relativename = $vpath . $document->name;
+                        $newdocument->save(false);
+                    }
                 }
-                
-                echo "\n".$document->name."\n";  
-                $name = $document->name;
-                $names = explode('.', $name);
-                $ext = end($names);                
-                if ($ext !== 'odt' && $ext !== 'json') 
-                {
-                    $this->base64ToFile(($this->getContentDocument($document))->content, $fpath . $document->name);
-                    $newdocument = new Document();                    
-                    $newdocument->size = $document->size;
-                    $newdocument->date = isset($document->date) ? gmdate("Y-m-d H:i:s", $document->date) : "";
-                    $newdocument->name = $document->name;
-                    $newdocument->level1name = $document->level1name;
-                    $newdocument->iddocumentType = 6;
-                    $newdocument->idFolder = $folder['data']->idfolder;
-                    $newdocument->type = $document->type;
-                    $newdocument->path = $fpath;
-                    $newdocument->fullname = $document->fullname;
-                    $newdocument->relativename = $vpath . $document->name;
-                    $newdocument->save(false);
-                }
+            } catch (Exception $exc) {
+                echo "Error " . $exc->getMessage();
             }
-
-
-           }catch(Exception $exc)
-           {
-               echo "Error ". $exc->getMessage();
-           }
-       }
+        }
     }
 
-    function actionSyncTicketClients()
-    {
+    function actionSyncTicketClients() {
         // $clientList = Client::find()->where(['>','idClient', 29432])->all();
         // foreach($clientList as $client)
         // {
         //     $this->processtickets($client->idClient);
         // }
         $ticketsList = Tickets::find()->all();
-        foreach($ticketsList as $tickect)
-        {
+        foreach ($ticketsList as $tickect) {
             $this->getDocumentsTicket($tickect->ref);
-            echo $tickect->ref."\n";
+            echo $tickect->ref . "\n";
         }
     }
 
-    function actionSyncClient()
-    {
-        $clientList = Client::find()->where(['=','sync', 1])->all();
+    function actionSyncClient() {
+        $clientList = Client::find()->where(['=', 'sync', 1])->all();
         $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
-        
-        foreach($clientList as $client)
-        {
-            echo $client->name." - ";
+
+        foreach ($clientList as $client) {
+            echo $client->name . " - ";
             $task = Hstask::find()->andWhere(['=', 'account_id', $client->idprof1])->one();
             $document = Document::find()->where(["=", 'level1name', $task->uuid])->one();
-            if(isset($task))echo $task->pdf;
+            if (isset($task))
+                echo $task->pdf;
             $client_http = new \GuzzleHttp\Client();
             $response = $client_http->request('GET', $task->pdf);
             $file = fopen($document->fullname, "wb");
             fwrite($file, (string) $response->getBody()->getContents());
             fclose($file);
-            echo $keyfolderraiz["value"]. $client->idprof1.".pdf"."\n";
+            echo $keyfolderraiz["value"] . $client->idprof1 . ".pdf" . "\n";
         }
     }
-    
-    function actionUpdateInstalationsFilesClients()
-    {
-        $clientList = Client::find()->where(['=','sync', 1])->all();        
-        $i=0;
-        foreach($clientList as $client)
-        {
-            echo ++$i." - ". $client->name."\n";
+
+    function actionUpdateInstalationsFilesClients() {
+        $clientList = Client::find()->where(['=', 'sync', 1])->all();
+        $i = 0;
+        foreach ($clientList as $client) {
+            echo ++$i . " - " . $client->name . "\n";
             $task = Hstask::find()->andWhere(['=', 'account_id', $client->idprof1])->one();
             $document = Document::find()->where(["=", 'level1name', $task->uuid])->one();
-            if(isset($task))echo $task->pdf;
+            if (isset($task))
+                echo $task->pdf;
             $client_http = new \GuzzleHttp\Client();
             $response = $client_http->request('GET', $task->pdf);
-            if(file_exists($document->fullname))
-            {
+            if (file_exists($document->fullname)) {
                 unlink($document->fullname);
-                echo "Se elimina ".$document->fullname."\n";
+                echo "Se elimina " . $document->fullname . "\n";
             }
             $file = fopen($document->fullname, "wb");
             fwrite($file, (string) $response->getBody()->getContents());
             fclose($file);
-            echo "Se crea nuevo ".$document->fullname."\n";            
+            echo "Se crea nuevo " . $document->fullname . "\n";
         }
     }
 
-    function actionUpdateContractFileClient()
-    {
+    function actionUpdateContractFileClient() {
         $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
         $this->root_path = $keyfolderraiz->value;
         //varifica urlbase raiz
@@ -1516,19 +1501,17 @@ class CronController extends Controller {
         $this->modulosusc = Module::find()->where(['idmodule' => $this->idmodulesusc])->one();
         // modulo facturacion
         $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
-        $clientList = Client::find()->where(['=','sync', 1])->all();        
-        $i=0;
-        foreach($clientList as $client)
-        {
-            echo ++$i." - ". $client->name." => ".$client->idClient."\n";
+        $clientList = Client::find()->where(['=', 'sync', 1])->all();
+        $i = 0;
+        foreach ($clientList as $client) {
+            echo ++$i . " - " . $client->name . " => " . $client->idClient . "\n";
             $this->processUpdateContracts($client->idClient);
         }
 
         $this->syncFiles();
     }
 
-    function actionUpdateInvoicesFilesClient()
-    {
+    function actionUpdateInvoicesFilesClient() {
         $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
         $this->root_path = $keyfolderraiz->value;
         //varifica urlbase raiz
@@ -1538,11 +1521,10 @@ class CronController extends Controller {
         $this->modulosusc = Module::find()->where(['idmodule' => $this->idmodulesusc])->one();
         // modulo facturacion
         $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
-        $clientList = Client::find()->where(['=','sync', 1])->all();        
-        $i=0;
-        foreach($clientList as $client)
-        {
-            echo ++$i." - ". $client->name." => ".$client->idClient."\n";
+        $clientList = Client::find()->where(['=', 'sync', 1])->all();
+        $i = 0;
+        foreach ($clientList as $client) {
+            echo ++$i . " - " . $client->name . " => " . $client->idClient . "\n";
             $this->processUpdatesInvoices($client->idClient);
         }
 
@@ -1577,12 +1559,9 @@ class CronController extends Controller {
                     $vpath = $this->root_vpath . '/' . $this->modulofact->moduleName . '/' . $suscfolder['data']->folderName . '/';
 
                     $currentInvoices = Invoices::find()->where(['=', 'id', $invoice['id']])->one();
-                    if(isset($currentInvoices))
-                    {
-                        echo "factura ya existe ".$invoice['id']."\n";
-                    }
-                    else
-                    {
+                    if (isset($currentInvoices)) {
+                        echo "factura ya existe " . $invoice['id'] . "\n";
+                    } else {
                         // crea invoice
                         $newinvoice = new Invoices();
                         $newinvoice->id = $invoice['id'];
@@ -1660,7 +1639,7 @@ class CronController extends Controller {
             // crea folder de cliente en modulo suscriptores
             // se adiciona la verificacion de estado en servicio
             if (isset($contract['ref']) && (intval($contract['nbofservicesopened']) == 1 || intval($contract['nbofservicesexpired']) == 1)) {
-                
+
                 $suscfolder = $this->Createfolder($this->idmodulesusc, 0, $contract['ref']);
 
                 if ($suscfolder['error'] == "") {
@@ -1669,12 +1648,9 @@ class CronController extends Controller {
                     $vpath = $this->root_vpath . '/' . $this->modulosusc->moduleName . '/' . $suscfolder['data']->folderName . '/';
 
                     $currentContract = Contract::find()->where(['=', 'id', $contract['id']])->one();
-                    if(isset($currentContract))
-                    {
-                        echo "contrato ya existe ".$contract['id']."\n";
-                    }
-                    else
-                    {
+                    if (isset($currentContract)) {
+                        echo "contrato ya existe " . $contract['id'] . "\n";
+                    } else {
                         $newcontracts = new Contract();
                         $newcontracts->id = $contract['id'];
                         $newcontracts->entity = $contract['entity'];
@@ -1685,7 +1661,7 @@ class CronController extends Controller {
                         $newcontracts->save(false);
                     }
 
-                    
+
                     (new Query)->createCommand()->delete('document', ['idFolder' => $suscfolder['data']->idfolder, 'iddocumentType' => '2'])->execute();
                     // consulta documentos contract
                     $documents = json_decode($this->CallAPI("GET", "documents", array(
@@ -1723,11 +1699,11 @@ class CronController extends Controller {
                             }
                         }
                     }
-                }else
-                {
-                    echo $suscfolder['error']."\n";
+                } else {
+                    echo $suscfolder['error'] . "\n";
                 }
             }
         }
     }
+
 }

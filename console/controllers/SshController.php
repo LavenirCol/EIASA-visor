@@ -47,10 +47,14 @@ class SshController extends Controller {
 
     /// Accion que procesa puertos de servicio
 
-    public function actionExecport() {
+    public function actionExecport($idolt) {
 
         // consulta OLT's en estado activo
-        $olts = TraficoOlts::find()->where(['activo' => 1])->orderBy('id')->all();
+        if(isset($idolt)){
+             $olts = TraficoOlts::find()->where(['id' => $idolt])->orderBy('id')->all();
+        }else{
+             $olts = TraficoOlts::find()->where(['activo' => 1])->orderBy('id')->all();
+        }
 
         echo date("Y-m-d H:i:s") . " - " . "Procesando olts (" . sizeof($olts) . ")\n";
         foreach ($olts as $olt) {
@@ -183,13 +187,15 @@ class SshController extends Controller {
         }
         //procesa puertos en servicio
         $output = $this->ssh->getOutput();
-
+        
         try {
 
             foreach ($output as $line) {
 
                 $line = str_replace("/", " ", $line);
                 $line = str_replace("  ", " ", $line);
+                $line = str_replace("  ", " ", $line);
+                $line = str_replace("  ", " ", $line);                
                 $linearr = explode(' ', $line);
 
                 $index = $linearr[0];
@@ -215,8 +221,8 @@ class SshController extends Controller {
                     $newservice->vci = $linearr[8];
                     $newservice->flow_type = $linearr[9];
                     $newservice->flow_para = $linearr[10];
-                    $newservice->rx = $linearr[11];
-                    $newservice->tx = $linearr[12];
+                    $newservice->rx = is_int($linearr[11]) ? $linearr[11] : 0 ;
+                    $newservice->tx = is_int($linearr[12]) ? $linearr[12] : 0 ;
                     $newservice->last_state = $current_state;
                     $newservice->created_at = date("Y-m-d H:i:s");
                     $newservice->save();
