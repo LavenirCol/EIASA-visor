@@ -2003,6 +2003,7 @@ class ReportsController extends Controller {
         ->select(['id' => 'ID', 'poblacion' => 'POBLACION'])
         ->from('trafico_olts')
         ->where(['=','activo', '1'])
+        ->orderBy(['poblacion' => SORT_ASC])
         ->all();
 
         return $this->render('comportamientoreddash', [
@@ -2262,5 +2263,58 @@ class ReportsController extends Controller {
             'olt' => $olt,
             'status' => $status
         ]);        
-    }    
+    }
+    
+    public function actionComportamientoredpings() {
+        $requestData = $_REQUEST; 
+        
+        $olt = (new \yii\db\Query())
+        ->select('*')
+        ->from('trafico_olts')
+        ->where(['id' => $requestData['olt']])
+        ->one();
+                
+        // TODO: FILTRO en consulta
+        $details = (new \yii\db\Query())
+        ->select(['timestamp' => 'UNIX_TIMESTAMP(created_at)*1000', 
+            'olt_id',
+            'created_at', 
+            'bytes_of_data', 
+            'packets_transmitted', 
+            'packets_recived', 
+            'packets_lost_percent', 
+            'packets_lost_percent_inv' => '(100 - packets_lost_percent)',
+            'packets_time', 
+            'rtt_min', 
+            'rtt_avg', 
+            'rtt_max', 
+            'rtt_mdev'
+            ])
+        ->from('trafico_olts_ping')
+        ->where(['olt_id' => $requestData['olt']])
+        ->all();       
+        
+        $percent = (new \yii\db\Query())
+        ->select(['timestamp' => 'UNIX_TIMESTAMP(created_at)*1000', 
+            'packets_lost_percent',
+            ])
+        ->from('trafico_olts_ping')
+        ->where(['olt_id' => $requestData['olt']])
+        ->all(); 
+        
+        $avg = (new \yii\db\Query())
+        ->select(['timestamp' => 'UNIX_TIMESTAMP(created_at)*1000', 
+            'rtt_avg',
+            ])
+        ->from('trafico_olts_ping')
+        ->where(['olt_id' => $requestData['olt']])
+        ->all(); 
+                
+        return $this->render('comportamientoredpings', [
+            'olt' => $olt,
+            'details' => $details,
+            'percent' => $percent,
+            'avg' => $avg
+        ]);        
+    }
 }

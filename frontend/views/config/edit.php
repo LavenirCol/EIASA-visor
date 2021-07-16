@@ -54,7 +54,7 @@ function configIsCheck($config,$configList)
                      foreach((array) $categoryList as $category){ ?>
                     <tr>
                         <td><?php echo $category['category_label'] ?></td>
-                        <td><div class="checkbox checkbox-success"><input onclick="saveConfigTickets()" type="checkbox" <?php echo configIsCheck($category['category_label'],$configList) ?> id=<?php echo $index?>" name="<?php echo $category['category_label'] ?>"><label for="<?php echo $index?>"></label></td>                        
+                        <td><div class="checkbox checkbox-success"><input onclick="saveConfigTickets()" type="checkbox" <?php echo configIsCheck($category['category_label'],$configList) ?> id="<?php echo $index?>" name="<?php echo $category['category_label'] ?>"><label for="<?php echo $index?>"></label></td>                        
                         <td></td>
                     </tr>                    
                     <?php 

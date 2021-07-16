@@ -23,6 +23,7 @@ use app\models\TraficoServicesPort;
 use app\models\TraficoServicesHistory;
 use app\models\TraficoOltHistory;
 use app\models\TraficoOltStatusHistory;
+use app\models\TraficoOltsPing;
 use common\models\RabbitMQ;
 use console\controllers\ComponentSSH;
 use Exception;
@@ -144,6 +145,22 @@ class SshController extends Controller {
         }
     }
 
+    /// Accion que procesa los ping de coenxion de cada OLT
+    public function actionExecpingstatus() {
+       
+        // consulta OLT's en estado activo
+        $olts = TraficoOlts::find()->where(['activo' => 1])->orderBy('id')->all();
+
+        echo date("Y-m-d H:i:s") . " - " . "Procesando olts (" . sizeof($olts) . ")\n";
+        foreach ($olts as $olt) {
+            echo date("Y-m-d H:i:s") . " - " . "Procesando olt (" . $olt['id'] . " - " . $olt['poblacion'] . ") \n";
+
+            $result = $this->pinglost($olt['wan_olt']);
+            $this->processOltStatusLost($olt, $result);
+
+        }
+    }
+    
     /// Consulta puertos de servicio por cada OLT
     public function processServicePort($olt) {
 
@@ -354,6 +371,55 @@ class SshController extends Controller {
             echo $ex->getMessage();
         }
     }
+    
+    /// Consulta stado de red de cada OLT con ping y retorna detalle de ping
+    public function processOltStatusLost($olt, $result) {
+        var_dump($result);
+        try {                      
+            $newoltp = new TraficoOltsPing();
+            $newoltp->olt_id = $olt['id'];
+            $newoltp->created_at = date("Y-m-d H:i:s");
+            
+            //procesa resultado bytes
+            $arrb = explode(" ", $result[0]);
+            preg_match('#\((.*?)\)#', $arrb[3], $match);
+            $bytes = $match[1];
+            $newoltp->bytes_of_data = intval($bytes);
+            
+            $conteo = count($result);
+            
+            //statistics
+            $arrs = explode(",", $result[$conteo-2]);
+            $pt = str_replace(" packets transmitted","",$arrs[0]);
+            $newoltp->packets_transmitted = intval($pt);
+            
+            $pr = trim(str_replace(" received","",$arrs[1]));
+            $newoltp->packets_recived = intval($pr);
+
+            $pl = trim(str_replace("% packet loss","",$arrs[2]));
+            $newoltp->packets_lost_percent = intval($pl);
+            
+            $pti = trim(str_replace(array(" time","ms"),"",$arrs[3]));
+            $newoltp->packets_time = intval($pti);
+                        
+            //rtt
+            $arrt = explode("/", str_replace(array("rtt min/avg/max/mdev = "," ms"),"",$result[$conteo -1]));
+            if(count($arrt) > 3){
+                $newoltp->rtt_min = floatval($arrt[0]);
+                $newoltp->rtt_avg = floatval($arrt[1]);
+                $newoltp->rtt_max = floatval($arrt[2]);
+                $newoltp->rtt_mdev = floatval($arrt[3]);
+            }else{
+                $newoltp->rtt_min = 0;
+                $newoltp->rtt_avg = 0;
+                $newoltp->rtt_max = 0;
+                $newoltp->rtt_mdev = 0;                
+            }
+            $newoltp->save(false);
+        } catch (Exception $ex) {
+            echo $ex->getMessage();
+        }
+    }
 
     /// HELPERS
     /// ejecuta acciones comunes de SSH
@@ -399,4 +465,18 @@ class SshController extends Controller {
         return false;
     }
 
+    // ejecuta pinglost
+    public function pinglost($ip_addr) {
+        // Pings a ejecutar
+        $pingscount = 10;
+        $pingsinterval = 10;
+        $output = "";         
+        if ($this->myOS()) {
+            // not implemented windows
+        } else {
+            exec("ping -c $pingscount -w $pingsinterval " . $ip_addr . " ", $output, $status);
+        }
+
+        return $output;
+    }
 }

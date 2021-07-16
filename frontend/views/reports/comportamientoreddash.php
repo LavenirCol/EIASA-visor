@@ -69,6 +69,9 @@ use \yii\helpers\Url;
                 <div class="col-lg-2">
                     <button type="button" class="btn btn-primary btn-sm" id="btnshowtotalgraphic" style="width:100%">Gráfica Tráfico</button><br>
                     <button type="button" class="btn btn-primary btn-sm mt-2" id="btnshowothergraphic" style="width:100%">Otras Gráficas</button>
+                    <?php if (Yii::$app->user->identity->attributes['idProfile'] < 3) { ?>
+                        <button type="button" class="btn btn-primary btn-sm mt-2" id="btnshowpings" style="width:100%">Pings</button>
+                    <?php } ?>
                 </div>
             </div>  
         </div>
@@ -125,6 +128,14 @@ $this->registerJs("
         }else{
             window.location.href = '/reports/comportamientoredothergraph?olt='+ olt; //olt
         }
-    });    
+    });   
+    $('#btnshowpings').click(function(){
+        var olt = $('#oltCodeFilter').val();
+        if(olt == '-1'){
+            window.alert('Debe seleccionar una OLT para consultar');
+        }else{
+            window.location.href = '/reports/comportamientoredpings?olt='+ olt; //olt
+        }
+    }); 
 ", View::POS_END, 'totalgrpah');
 ?>

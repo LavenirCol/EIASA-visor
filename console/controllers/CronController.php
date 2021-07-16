@@ -422,6 +422,9 @@ class CronController extends Controller {
                             }
                         }
                     }
+                }else
+                {
+                    echo $suscfolder['error']."\n";
                 }
             }
         }
@@ -705,6 +708,7 @@ class CronController extends Controller {
     }
 
     function base64ToFile($base64_string, $output_file) {
+        echo "guardando archivo ".$output_file."\n";
         $file = fopen($output_file, "wb");
         fwrite($file, base64_decode($base64_string));
         fclose($file);
@@ -1454,6 +1458,256 @@ class CronController extends Controller {
         {
             $this->getDocumentsTicket($tickect->ref);
             echo $tickect->ref."\n";
+        }
+    }
+
+    function actionUpdateInstalationsFilesClients()
+    {
+        $clientList = Client::find()->where(['=','sync', 1])->all();        
+        $i=0;
+        foreach($clientList as $client)
+        {
+            echo ++$i." - ". $client->name."\n";
+            $task = Hstask::find()->andWhere(['=', 'account_id', $client->idprof1])->one();
+            $document = Document::find()->where(["=", 'level1name', $task->uuid])->one();
+            if(isset($task))echo $task->pdf;
+            $client_http = new \GuzzleHttp\Client();
+            $response = $client_http->request('GET', $task->pdf);
+            if(file_exists($document->fullname))
+            {
+                unlink($document->fullname);
+                echo "Se elimina ".$document->fullname."\n";
+            }
+            $file = fopen($document->fullname, "wb");
+            fwrite($file, (string) $response->getBody()->getContents());
+            fclose($file);
+            echo "Se crea nuevo ".$document->fullname."\n";            
+        }
+    }
+
+    function actionUpdateContractFileClient()
+    {
+        $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+        $this->root_path = $keyfolderraiz->value;
+        //varifica urlbase raiz
+        $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
+        $this->root_vpath = $keyurlbase->value;        // modulo suscriptores
+        //modulo suscriptores
+        $this->modulosusc = Module::find()->where(['idmodule' => $this->idmodulesusc])->one();
+        // modulo facturacion
+        $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
+        $clientList = Client::find()->where(['=','sync', 1])->all();        
+        $i=0;
+        foreach($clientList as $client)
+        {
+            echo ++$i." - ". $client->name." => ".$client->idClient."\n";
+            $this->processUpdateContracts($client->idClient);
+        }
+
+        $this->syncFiles();
+    }
+
+    function actionUpdateInvoicesFilesClient()
+    {
+        $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+        $this->root_path = $keyfolderraiz->value;
+        //varifica urlbase raiz
+        $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
+        $this->root_vpath = $keyurlbase->value;        // modulo suscriptores
+        //modulo suscriptores
+        $this->modulosusc = Module::find()->where(['idmodule' => $this->idmodulesusc])->one();
+        // modulo facturacion
+        $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
+        $clientList = Client::find()->where(['=','sync', 1])->all();        
+        $i=0;
+        foreach($clientList as $client)
+        {
+            echo ++$i." - ". $client->name." => ".$client->idClient."\n";
+            $this->processUpdatesInvoices($client->idClient);
+        }
+
+        $this->syncDownloadInvoices();
+    }
+
+    public function processUpdatesInvoices($thirdparty_id) {
+        // consulta invoices
+        echo "consultando invoices thirdparty_id(" . $thirdparty_id . ")\n";
+        $invoices = json_decode($this->CallAPI("GET", "invoices", array(
+                    "sortfield" => "t.rowid",
+                    "sortorder" => "ASC",
+                    "thirdparty_ids" => $thirdparty_id
+                        )
+                ), true);
+
+        if (isset($invoices["error"]) && $invoices["error"]["code"] >= 300) {
+            echo "procesando invoices (0)\n";
+            return;
+        }
+
+        echo "procesando invoices (" . sizeof($invoices) . ")\n";
+        foreach ((array) $invoices as $invoice) {
+
+            if (isset($invoice['ref'])) {
+                // crea folder de cliente en modulo suscriptores                        
+                $suscfolder = $this->Createfolder($this->idmodulefact, 0, $invoice['ref']);
+
+                if ($suscfolder['error'] == "") {
+                    //crear disco path
+                    $fpath = $this->root_path . '/' . $this->modulofact->moduleName . '/' . $suscfolder['data']->folderName;
+                    $vpath = $this->root_vpath . '/' . $this->modulofact->moduleName . '/' . $suscfolder['data']->folderName . '/';
+
+                    $currentInvoices = Invoices::find()->where(['=', 'id', $invoice['id']])->one();
+                    if(isset($currentInvoices))
+                    {
+                        echo "factura ya existe ".$invoice['id']."\n";
+                    }
+                    else
+                    {
+                        // crea invoice
+                        $newinvoice = new Invoices();
+                        $newinvoice->id = $invoice['id'];
+                        $newinvoice->entity = $invoice['entity'];
+                        $newinvoice->socid = $invoice['socid'];
+                        $newinvoice->ref = $invoice['ref'];
+                        $newinvoice->idFolder = $suscfolder['data']->idfolder;
+                        $newinvoice->save(false);
+                    }
+                    // consulta documentos invoices
+                    $documents = json_decode($this->CallAPI("GET", "documents", array(
+                                "modulepart" => "invoice",
+                                "sortfield" => "name",
+                                "sortorder" => "ASC",
+                                "id" => $invoice['id']
+                                    )
+                            ), true);
+
+                    if (isset($documents["error"]) && $documents["error"]["code"] >= 300) {
+                        echo "procesando documents invoices (0)\n";
+                    } else {
+                        echo "procesando documents invoices (" . sizeof($documents) . ")\n";
+                        (new Query)->createCommand()->delete('document', ['idFolder' => $suscfolder['data']->idfolder, 'iddocumentType' => '4'])->execute();
+                        foreach ((array) $documents as $document) {
+                            //var_dump($document);      
+                            if (isset($document['name'])) {
+                                $name = $document['name'];
+
+                                if ($name === 'response.json') {
+                                    $newdocument = new Document();
+                                    $newdocument->attributes = $document;
+                                    $newdocument->date = isset($document['date']) ? gmdate("Y-m-d H:i:s", $document['date']) : "";
+                                    $newdocument->iddocumentType = 4; // documento invoices
+                                    $newdocument->idFolder = $suscfolder['data']->idfolder;
+                                    $newdocument->type = 'pending';
+                                    $newdocument->path = $fpath;
+                                    $newdocument->name = $document['level1name'] . '.pdf';
+                                    $newdocument->relativename = $vpath . $document['level1name'] . '.pdf'; // $document['name'];
+                                    $newdocument->save(false);
+                                }
+
+//                                $names = explode('.', $name );
+//                                $ext = end($names);
+//                                if($ext === 'odt' || $ext === 'json'){
+//                                    //no inserta tipo odt, json
+//                                }else{
+//
+//                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public function processUpdateContracts($thirdparty_id) {
+        // consulta contratos
+        echo "consultando contracts thirdparty_id(" . $thirdparty_id . ")\n";
+        $contracts = json_decode($this->CallAPI("GET", "contracts", array(
+                    "sortfield" => "t.rowid",
+                    "sortorder" => "ASC",
+                    "thirdparty_ids" => $thirdparty_id
+                        )
+                ), true);
+
+        if (isset($contracts["error"]) && $contracts["error"]["code"] >= 300) {
+            echo "procesando contracts (0)\n";
+            return;
+        }
+
+        echo "procesando contracts (" . sizeof($contracts) . ")\n";
+        foreach ((array) $contracts as $contract) {
+
+            // crea folder de cliente en modulo suscriptores
+            // se adiciona la verificacion de estado en servicio
+            if (isset($contract['ref']) && (intval($contract['nbofservicesopened']) == 1 || intval($contract['nbofservicesexpired']) == 1)) {
+                
+                $suscfolder = $this->Createfolder($this->idmodulesusc, 0, $contract['ref']);
+
+                if ($suscfolder['error'] == "") {
+                    //crear disco path
+                    $fpath = $this->root_path . '/' . $this->modulosusc->moduleName . '/' . $suscfolder['data']->folderName;
+                    $vpath = $this->root_vpath . '/' . $this->modulosusc->moduleName . '/' . $suscfolder['data']->folderName . '/';
+
+                    $currentContract = Contract::find()->where(['=', 'id', $contract['id']])->one();
+                    if(isset($currentContract))
+                    {
+                        echo "contrato ya existe ".$contract['id']."\n";
+                    }
+                    else
+                    {
+                        $newcontracts = new Contract();
+                        $newcontracts->id = $contract['id'];
+                        $newcontracts->entity = $contract['entity'];
+                        $newcontracts->socid = $contract['socid'];
+                        $newcontracts->ref = $contract['ref'];
+                        $newcontracts->fk_soc = $contract['fk_soc'];
+                        $newcontracts->idFolder = $suscfolder['data']->idfolder;
+                        $newcontracts->save(false);
+                    }
+
+                    
+                    (new Query)->createCommand()->delete('document', ['idFolder' => $suscfolder['data']->idfolder, 'iddocumentType' => '2'])->execute();
+                    // consulta documentos contract
+                    $documents = json_decode($this->CallAPI("GET", "documents", array(
+                                "modulepart" => "contract",
+                                "sortfield" => "name",
+                                "sortorder" => "ASC",
+                                "id" => $contract['id']
+                                    )
+                            ), true);
+
+                    if (isset($proposals["error"]) && $proposals["error"]["code"] >= 300) {
+                        echo "procesando documents contract (0)\n";
+                    } else {
+
+                        echo "procesando documents contract (" . sizeof($documents) . ")\n";
+                        foreach ((array) $documents as $document) {
+                            //var_dump($document);
+                            if (isset($document['name'])) {
+                                $name = $document['name'];
+                                $names = explode('.', $name);
+                                $ext = end($names);
+                                if ($ext === 'odt' || $ext === 'json') {
+                                    //no inserta tipo odt, json
+                                } else {
+                                    $newdocument = new Document();
+                                    $newdocument->attributes = $document;
+                                    $newdocument->date = isset($document['date']) ? gmdate("Y-m-d H:i:s", $document['date']) : "";
+                                    $newdocument->iddocumentType = 2; // documento contract
+                                    $newdocument->idFolder = $suscfolder['data']->idfolder;
+                                    $newdocument->type = 'pending';
+                                    $newdocument->path = $fpath;
+                                    $newdocument->relativename = $vpath . $document['name'];
+                                    $newdocument->save(false);
+                                }
+                            }
+                        }
+                    }
+                }else
+                {
+                    echo $suscfolder['error']."\n";
+                }
+            }
         }
     }
 }
