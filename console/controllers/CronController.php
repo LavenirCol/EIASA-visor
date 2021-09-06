@@ -236,8 +236,8 @@ class CronController extends Controller {
         echo "Sincronizando Archivos Instalacion...\n"; // your logic for deleting old post goes here        
         $this->syncDownloadInstalationfiles();
 
-        echo "Sincronizando Archivos Facturas...\n"; // your logic for deleting old post goes here        
-        $this->syncDownloadInvoices();
+        //echo "Sincronizando Archivos Facturas...\n"; // your logic for deleting old post goes here        
+        //$this->syncDownloadInvoices();
         exit();
     }
 

@@ -68,6 +68,8 @@ class AccesosinstalacionController extends Controller {
 
     public function actionUpload() {
         ini_set('memory_limit', '2048M');
+        ini_set('max_execution_time', 0);
+        set_time_limit(0);
         $request = Yii::$app->request;
         if ($request->isGet) {
             $returndata = ['data' => '', 'error' => ''];
@@ -98,8 +100,6 @@ class AccesosinstalacionController extends Controller {
                 //var_dump($targetFile);exit;
                 move_uploaded_file($tempFile, $targetFile);
 
-                set_time_limit(600);
-
                 $input = Yii::$app->request->post();
                 $filetype = $input['filetype'];
 
@@ -112,10 +112,16 @@ class AccesosinstalacionController extends Controller {
 
                 if ($filetype == "1") { // archivo sabanas
                     Yii::$app->db->createCommand()->truncateTable('sabana_reporte_instalacion')->execute();
-//                    var_dump($data);                    
+//                    var_dump($data);   
                     $i = 0;
                     foreach ($data as $rowData) {
                         if ($i > 1) {
+                            if(!isset($rowData[0]) || empty($rowData[0])){
+                                continue;
+                            }
+                            if(sizeof($rowData)<55){
+                                continue;
+                            }
                             $newrec = new SabanaReporteInstalacion();
                             $newrec->Operador = $rowData[0];
                             $newrec->Documento_cliente_acceso = $rowData[1];
