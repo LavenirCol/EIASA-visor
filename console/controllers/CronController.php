@@ -799,6 +799,19 @@ class CronController extends Controller {
         echo "Fin syncfacturas " . date("Y-m-d H:i:s") . "\n";
     }
 
+    function actionUpdatesizefiles()
+    {
+        $documents = Document::find()
+        ->where(['size'=> '-1'])
+        ->all();
+        foreach($documents as $document)
+        {
+            $document->size = filesize($document->path.'/'.$document->name);
+            $document->save();
+            echo $document->path.'/'.$document->name." ".$document->size."\n";
+        }
+    }
+
     /*     * ********UMBRELLA ********* */
 
     /*
