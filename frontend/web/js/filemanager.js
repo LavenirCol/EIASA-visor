@@ -658,7 +658,7 @@ $(document).ready(function () {
         uploadMultiple: true, // uplaod files in a single request
         parallelUploads: 100, // use it with uploadMultiple
         maxFilesize: 1024, // MB
-        maxFiles: 25,
+        maxFiles: 2500,
         //chunking: true,
         timeout: 180000,
         //acceptedFiles: ".jpg, .jpeg, .png, .gif, .pdf",
