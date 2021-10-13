@@ -820,6 +820,25 @@ class CronController extends Controller {
         echo "Fin syncfacturas " . date("Y-m-d H:i:s") . "\n";
     }
 
+    function actionUpdatesizefiles()
+    {
+        $documents = Document::find()
+        ->where(['size'=> '-1'])
+        ->orWhere(['type'=> 'pending'])
+        ->all();
+        foreach($documents as $document)
+        {
+            if(file_exists($document->path.'/'.$document->name)){
+                $document->size = filesize($document->path.'/'.$document->name);
+                $document->type = mime_content_type($document->path.'/'.$document->name);
+                $document->save(false);
+                echo $document->path.'/'.$document->name." ".$document->size."\n";
+            }else{
+                echo "No existe: ".$document->iddocument . $document->path.'/'.$document->name."\n";
+            }
+        }
+    }
+    
     /*     * ********UMBRELLA ********* */
 
     /*
@@ -1104,23 +1123,25 @@ class CronController extends Controller {
             foreach ((array) $tasks["data"] as $task) {
                 $currenthstask = Hstask::find()->where(['uuid' => $task['uuid']])->one();
                 if (!isset($currenthstask)) {
-                    // crea task
-                    $newtask = new Hstask();
-                    $newtask->uuid = $task['uuid'];
-                    $newtask->datecreate = $task['datecreate'];
-                    $newtask->dateupdate = $task['dateupdate'];
-                    $newtask->reference = $task['reference'];
-                    $newtask->template = $task['template'];
-                    $newtask->address = $task['address'];
-                    $newtask->city = $task['city'];
-                    $newtask->district = $task['district'];
-                    $newtask->code = $task['code'];
-                    $newtask->status = $task['status'];
-                    $newtask->pdf = $task['pdf'];
-                    $newtask->account = $task['account'];
-                    $newtask->account_id = $task['account_id'];
-                    $newtask->save(false);
-                } else {
+                    if($task['template'] == 'INSTALACIÓN'){
+                        // crea task
+                        $newtask = new Hstask();
+                        $newtask->uuid = $task['uuid'];
+                        $newtask->datecreate = $task['datecreate'];
+                        $newtask->dateupdate = $task['dateupdate'];
+                        $newtask->reference = $task['reference'];
+                        $newtask->template = $task['template'];
+                        $newtask->address = $task['address'];
+                        $newtask->city = $task['city'];
+                        $newtask->district = $task['district'];
+                        $newtask->code = $task['code'];
+                        $newtask->status = $task['status'];
+                        $newtask->pdf = $task['pdf'];
+                        $newtask->account = $task['account'];
+                        $newtask->account_id = $task['account_id'];
+                        $newtask->save(false);
+                    }
+                }else{
                     // actualiza task
                     $currenthstask->uuid = $task['uuid'];
                     $currenthstask->datecreate = $task['datecreate'];
@@ -1511,6 +1532,26 @@ class CronController extends Controller {
         $this->syncFiles();
     }
 
+    function actionUpdateProposalsFileClient() {
+        $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+        $this->root_path = $keyfolderraiz->value;
+        //varifica urlbase raiz
+        $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
+        $this->root_vpath = $keyurlbase->value;        // modulo suscriptores
+        //modulo suscriptores
+        $this->modulosusc = Module::find()->where(['idmodule' => $this->idmodulesusc])->one();
+        // modulo facturacion
+        $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
+        $clientList = Client::find()->where(['=', 'sync', 1])->all();
+        $i = 0;
+        foreach ($clientList as $client) {
+            echo ++$i . " - " . $client->name . " => " . $client->idClient . "\n";
+            $this->processUpdateProposals($client->idClient);
+        }
+
+        $this->syncFiles();
+    }
+    
     function actionUpdateInvoicesFilesClient() {
         $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
         $this->root_path = $keyfolderraiz->value;
@@ -1636,6 +1677,7 @@ class CronController extends Controller {
         echo "procesando contracts (" . sizeof($contracts) . ")\n";
         foreach ((array) $contracts as $contract) {
 
+            //var_dump($contract);
             // crea folder de cliente en modulo suscriptores
             // se adiciona la verificacion de estado en servicio
             if (isset($contract['ref']) && (intval($contract['nbofservicesopened']) == 1 || intval($contract['nbofservicesexpired']) == 1)) {
@@ -1704,6 +1746,83 @@ class CronController extends Controller {
                 }
             }
         }
+    }
+
+    public function processUpdateProposals($thirdparty_id) {
+        // consulta proposal
+        echo "consultando proposals thirdparty_id(" . $thirdparty_id . ")\n";
+        $proposals = json_decode($this->CallAPI("GET", "proposals", array(
+                    "sortfield" => "t.rowid",
+                    "sortorder" => "ASC",
+                    "thirdparty_ids" => $thirdparty_id
+                        )
+                ), true);
+
+        if (isset($proposals["error"]) && $proposals["error"]["code"] >= 300) {
+            echo "procesando proposals (0)\n";
+            return;
+        }
+
+        echo "procesando proposals (" . sizeof($proposals) . ")\n";
+        foreach ((array) $proposals as $proposal) {
+
+            if (isset($proposal['ref'])) {
+                // crea folder de cliente en modulo suscriptores                        
+                $suscfolder = $this->Createfolder($this->idmodulesusc, 0, $proposal['ref']);
+
+                if ($suscfolder['error'] == "") {
+                    //crear disco path
+                    $fpath = $this->root_path . '/' . $this->modulosusc->moduleName . '/' . $suscfolder['data']->folderName;
+                    $vpath = $this->root_vpath . '/' . $this->modulosusc->moduleName . '/' . $suscfolder['data']->folderName . '/';
+                    $currentProposal = Proposal::find()->where(['=', 'id', $proposal['id']])->one();
+                    if (isset($currentProposal)) {
+                        echo "proposal ya existe " . $proposal['id'] . "\n";
+                    } else {
+                    
+                        // crea proposal
+                        $newproposal = new Proposal();
+                        $newproposal->id = $proposal['id'];
+                        $newproposal->entity = $proposal['entity'];
+                        $newproposal->socid = $proposal['socid'];
+                        $newproposal->ref = $proposal['ref'];
+                        $newproposal->idFolder = $suscfolder['data']->idfolder;
+                        $newproposal->save(false);
+                    }
+
+                    (new Query)->createCommand()->delete('document', ['idFolder' => $suscfolder['data']->idfolder, 'iddocumentType' => '2'])->execute();
+                    
+                    // consulta documentos proposal
+                    $documents = json_decode($this->CallAPI("GET", "documents", array(
+                                "modulepart" => "proposal",
+                                "sortfield" => "name",
+                                "sortorder" => "ASC",
+                                "id" => $proposal['id']
+                                    )
+                            ), true);
+
+                    if (isset($proposals["error"]) && $proposals["error"]["code"] >= 300) {
+                        echo "procesando documents contract (0)\n";
+                    } else {
+                        echo "procesando documents proposal (" . sizeof($documents) . ")\n";
+                        foreach ((array) $documents as $document) {
+                            //var_dump($document);                 
+                            if (isset($document['name'])) {
+                                $newdocument = new Document();
+                                $newdocument->attributes = $document;
+                                $newdocument->date = isset($document['date']) ? gmdate("Y-m-d H:i:s", $document['date']) : "";
+                                $newdocument->iddocumentType = 3; // documento proposal
+                                $newdocument->idFolder = $suscfolder['data']->idfolder;
+                                $newdocument->type = 'pending';
+                                $newdocument->path = $fpath;
+                                $newdocument->relativename = $vpath . $document['name'];
+                                $newdocument->name = str_replace(array("\n", "\r", "\r\n", "\xE2\x80\x9010", "\xE2\x80\xAC", "\xE2\x99\xA0"), '', $document['name']);
+                                $newdocument->save(false);
+                            }
+                        }
+                    }
+                }
+            }
+        }        
     }
 
 }
