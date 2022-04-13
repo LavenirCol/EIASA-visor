@@ -808,8 +808,8 @@ class ReportsController extends Controller {
                 $nestedData[] = $row["measure"];
                 $nestedData[] = $row["quantity"];
                 $nestedData[] = $row["lat"] . ',' . $row["lng"];
-                $nestedData[] = $row["city_code"] == '' ? '-' : 'Operativo';
-                $nestedData[] = 'Recursos de Fomento';
+                $nestedData[] = $row["Estado"];
+                $nestedData[] = $row["FuenteFinanciacion"];
                 $data[] = $nestedData;
             }
 
