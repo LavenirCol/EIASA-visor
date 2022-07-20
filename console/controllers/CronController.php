@@ -38,10 +38,10 @@ class CronController extends Controller {
     function callAPI($method, $entity, $data = false) {
         //prod
         $apikey = 'gFmK1A57ZQolc0V33727Jo4ohxyAGIPh';
-        $url = 'https://megayacrm.lavenirapps.co/api/index.php/' . $entity;
+        //$url = 'https://megayacrm.lavenirapps.co/api/index.php/' . $entity;
         //dev
         //$apikey = '3BEzwP1RIEa1Pui6P5k6ynOhRfy8V380';
-        //$url = 'https://eiasa-dev.lavenirapps.co/api/index.php/' . $entity;
+        $url = 'https://eiasa-dev.lavenirapps.co/api/index.php/' . $entity;
         $curl = curl_init();
         $httpheader = ['DOLAPIKEY: ' . $apikey];
 
@@ -68,6 +68,7 @@ class CronController extends Controller {
                     $url = sprintf("%s?%s", $url, http_build_query($data));
         }
 
+        //var_dump($url); exit();
         // Optional Authentication:
         //    curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
         //    curl_setopt($curl, CURLOPT_USERPWD, "username:password");
@@ -77,7 +78,9 @@ class CronController extends Controller {
         curl_setopt($curl, CURLOPT_HTTPHEADER, $httpheader);
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
-
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 0);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 0);
+        
         $result = curl_exec($curl);
         if ($result === false) {
             $err = 'Curl error: ' . curl_error($curl);
@@ -216,6 +219,124 @@ class CronController extends Controller {
         exit();
     }
 
+    /*
+     *  funcion publica de inicio data en tiempos
+     */
+    
+    public function actionSyncdatalast() {
+
+        // minutos para buscar clientes modificados
+        // 1440 mins 24 hrs
+        $mtime = 86400;//1440*30;
+
+        echo "Inicio cron job \n"; //
+        //verifica directorio raiz
+        $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+        $this->root_path = $keyfolderraiz->value;
+        //varifica urlbase raiz
+        $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
+        $this->root_vpath = $keyurlbase->value;        // modulo suscriptores
+        //modulo suscriptores
+        $this->modulosusc = Module::find()->where(['idmodule' => $this->idmodulesusc])->one();
+        // modulo facturacion
+        $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
+
+        echo "Consultando Clientes LAST Minutos $mtime ...\n";
+        
+        // consulta lista de clientes
+        $clientSearch = json_decode($this->CallAPI("GET", "thirdparties/lastthirdpartyupdate", array(
+                    "sortfield" => "t.rowid",
+                    "sortorder" => "ASC",
+                    "mtime" => $mtime
+                    )
+                ), true);
+
+        //mock data
+        //$json_data = file_get_contents('D:\wamp32\www\wwweiasa\clientupdate.json');
+        //$clientSearch = json_decode($json_data, true);
+        
+        //var_dump($clientSearch);
+        if (!isset($clientSearch)){
+            echo "Error Consultando Clientes LAST : array NULL" . "\n";
+        } else {
+            echo "Clientes Encontrados: " . sizeof($clientSearch) . "\n";
+            foreach ((array) $clientSearch as $id => $client) {
+                echo "----------------------------------------\n";
+                echo "Inicio Cliente " . date("Y-m-d H:i:s") . "\n";
+                echo "Procesando. " . $client['siren'] . ' - ' . $client['code_client'] . "\n";
+                // consulta lista de clientes
+                $clientData = json_decode($this->CallAPI("GET", "thirdparties/$id"), true);
+                if (isset($clientData["error"]) && $clientData["error"]["code"] >= "300"){
+                    echo "($id) Error Data Cliente " . $clientData["error"]["message"] . "\n";
+                    continue;
+                }
+                
+                $currentclient = Client::find()->where(['idClient' => $id])->one();
+                if (!isset($currentclient)) {
+                    //Cliente nuevo
+                    echo "Cliente Nuevo thirdparty_id(" . $id . ") \n";
+                    $newclient = new Client();
+                    $newclient->attributes = $clientData;
+                    $newclient->idClient = $id;
+                    $newclient->access_id = $client['code_client'];
+                    $newclient->address = str_replace(array("\n", "\r", "\r\n", "\xE2\x80\x9010"), ' ', $clientData['address']);
+                    $newclient->name = str_replace("\xC5\x84", 'ñ', $clientData['name']);
+                    if (isset($clientData['array_options'])) {
+                        if (isset($clientData['array_options']["options_lat"])) {
+                            $newclient->lat = $clientData['array_options']["options_lat"];
+                        }
+                        if (isset($clientData['array_options']["options_lon"])) {
+                            $newclient->lng = $clientData['array_options']["options_lon"];
+                        }
+                    }
+                                       
+                    $newclient->save(false);
+                    $this->processcontracts($id);
+                    $this->processproposals($id);
+                    $this->processinvoices($id);
+                    $this->processtickets($id);
+                    
+                } else {
+
+                    //Cliente existe
+                    echo "Cliente Existente thirdparty_id(" . $id . ") \n";
+                    
+                    $currentclient->attributes = $clientData;
+                    $currentclient->idClient = $id;
+                    $currentclient->access_id = $client['code_client'];
+                    $currentclient->address = str_replace(array("\n", "\r", "\r\n", "\xE2\x80\x9010"), ' ', $clientData['address']);
+                    $currentclient->name = str_replace("\xC5\x84", 'ñ', $clientData['name']);
+                    if (isset($clientData['array_options'])) {
+                        if (isset($clientData['array_options']["options_lat"])) {
+                            $currentclient->lat = $clientData['array_options']["options_lat"];
+                        }
+                        if (isset($clientData['array_options']["options_lon"])) {
+                            $currentclient->lng = $clientData['array_options']["options_lon"];
+                        }
+                    }
+                                       
+                    $currentclient->save(false);
+                    $this->processUpdateContracts($id);
+                    $this->processUpdateProposals($id);
+                    $this->processUpdatesInvoices($id);
+                    $this->processtickets($id);
+                }
+
+                echo "Fin Cliente " . date("Y-m-d H:i:s") . "\n";
+            }
+        }
+        
+        // sincroniza archivos
+        echo "Sincronizando Archivos...\n"; // your logic for deleting old post goes here
+        $this->syncFiles();
+
+        // sincroniza facturas
+        echo "Sinncronizando Facturas...\n"; // your logic for deleting old post goes here
+        $this->syncDownloadInvoices();
+
+        exit();
+    }
+    
     public function actionSynconlyfiles() {
         echo "Inicio cron job \n"; // your logic for deleting old post goes here
         //verifica directorio raiz
@@ -950,7 +1071,7 @@ class CronController extends Controller {
         // modulo facturacion
         $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
 
-        $this->syncInventory();
+        //$this->syncInventory();
         $this->syncTasks();
 
         // sincroniza archivos instalacion
@@ -1329,10 +1450,12 @@ class CronController extends Controller {
 
         // Free up objects
         foreach ($urls as $key => $urlarr) {
-            fwrite($file_pointers[$key], curl_multi_getcontent($curl_handles[$key]));
-            curl_multi_remove_handle($multi_handle, $curl_handles[$key]);
-            curl_close($curl_handles[$key]);
-            fclose($file_pointers[$key]);
+            if(array_key_exists($key, $file_pointers) && array_key_exists($key, $curl_handles)){
+                fwrite($file_pointers[$key], curl_multi_getcontent($curl_handles[$key]));
+                curl_multi_remove_handle($multi_handle, $curl_handles[$key]);
+                curl_close($curl_handles[$key]);
+                fclose($file_pointers[$key]);
+            }
         }
         curl_multi_close($multi_handle);
     }
@@ -1496,19 +1619,22 @@ class CronController extends Controller {
         foreach ($clientList as $client) {
             echo ++$i . " - " . $client->name . "\n";
             $task = Hstask::find()->andWhere(['=', 'account_id', $client->idprof1])->one();
-            $document = Document::find()->where(["=", 'level1name', $task->uuid])->one();
-            if (isset($task))
+            if (isset($task)){
                 echo $task->pdf;
-            $client_http = new \GuzzleHttp\Client();
-            $response = $client_http->request('GET', $task->pdf);
-            if (file_exists($document->fullname)) {
-                unlink($document->fullname);
-                echo "Se elimina " . $document->fullname . "\n";
+                $document = Document::find()->where(["=", 'level1name', $task->uuid])->one();
+                $client_http = new \GuzzleHttp\Client();
+                $response = $client_http->request('GET', $task->pdf);
+                if (file_exists($document->fullname)) {
+                    unlink($document->fullname);
+                    echo "Se elimina " . $document->fullname . "\n";
+                }
+                $file = fopen($document->fullname, "wb");
+                fwrite($file, (string) $response->getBody()->getContents());
+                fclose($file);
+                echo "Se crea nuevo " . $document->fullname . "\n";
+            }else{
+                echo "CLIENTE SIN TASK - " . $client->name . "\n";
             }
-            $file = fopen($document->fullname, "wb");
-            fwrite($file, (string) $response->getBody()->getContents());
-            fclose($file);
-            echo "Se crea nuevo " . $document->fullname . "\n";
         }
     }
 

@@ -1,0 +1,323 @@
+{
+  "256": {
+    "siren": "39318777",
+    "idprof6": "1",
+    "active": "1",
+    "code_client": "CL2007-000256",
+    "docs_client": false,
+    "data_client": false,
+    "documents": {
+      "contract": [],
+      "commande": [],
+      "propale": [],
+      "facture": {
+        "560190": {
+          "ref": "SETT0001688",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560191": {
+          "ref": "SETT0001689",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560192": {
+          "ref": "SETT0001690",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560193": {
+          "ref": "SETT0001691",
+          "doc_update": true,
+          "data_update": null
+        }
+      }
+    }
+  },
+  "7455": {
+    "siren": "1",
+    "idprof6": "1",
+    "active": "1",
+    "code_client": "CL2009-007440",
+    "docs_client": false,
+    "data_client": false,
+    "documents": {
+      "contract": {
+        "46487": {
+          "ref": "CT2205-46061",
+          "doc_update": null,
+          "data_update": true
+        }
+      },
+      "commande": [],
+      "propale": [],
+      "facture": {
+        "560174": {
+          "ref": "SETT0001672",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560175": {
+          "ref": "SETT0001673",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560176": {
+          "ref": "SETT0001674",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560177": {
+          "ref": "SETT0001675",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560178": {
+          "ref": "SETT0001676",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560179": {
+          "ref": "SETT0001677",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560180": {
+          "ref": "SETT0001678",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560181": {
+          "ref": "SETT0001679",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560182": {
+          "ref": "SETT0001680",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560183": {
+          "ref": "SETT0001681",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560184": {
+          "ref": "SETT0001682",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560185": {
+          "ref": "SETT0001683",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560186": {
+          "ref": "SETT0001684",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560187": {
+          "ref": "SETT0001685",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560188": {
+          "ref": "SETT0001686",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560189": {
+          "ref": "SETT0001687",
+          "doc_update": true,
+          "data_update": null
+        }
+      }
+    }
+  },
+  "26007": {
+    "siren": "70907026",
+    "idprof6": "1",
+    "active": "1",
+    "code_client": "CL2101-025935",
+    "docs_client": false,
+    "data_client": false,
+    "documents": {
+      "contract": [],
+      "commande": [],
+      "propale": [],
+      "facture": {
+        "560167": {
+          "ref": "SETT0001667",
+          "doc_update": true,
+          "data_update": null
+        }
+      }
+    }
+  },
+  "44235": {
+    "siren": "33197415",
+    "idprof6": "1",
+    "active": "1",
+    "code_client": "CL2109-044102",
+    "docs_client": false,
+    "data_client": false,
+    "documents": {
+      "contract": [],
+      "commande": {
+        "41791": {
+          "ref": "CO2109-41378",
+          "doc_update": true,
+          "data_update": null
+        }
+      },
+      "propale": [],
+      "facture": []
+    }
+  },
+  "48162": {
+    "siren": "43462220",
+    "idprof6": "1",
+    "active": "1",
+    "code_client": "CL2203-048022",
+    "docs_client": false,
+    "data_client": false,
+    "documents": {
+      "contract": [],
+      "commande": {
+        "45657": {
+          "ref": "CO2203-45213",
+          "doc_update": true,
+          "data_update": null
+        }
+      },
+      "propale": [],
+      "facture": []
+    }
+  },
+  "48597": {
+    "siren": "1076382087",
+    "idprof6": "1",
+    "active": "1",
+    "code_client": "CL2203-048457",
+    "docs_client": false,
+    "data_client": false,
+    "documents": {
+      "contract": [],
+      "commande": {
+        "45961": {
+          "ref": "CO2203-45514",
+          "doc_update": true,
+          "data_update": null
+        }
+      },
+      "propale": [],
+      "facture": []
+    }
+  },
+  "48652": {
+    "siren": "1037501030",
+    "idprof6": "1",
+    "active": "1",
+    "code_client": "CL2204-048512",
+    "docs_client": false,
+    "data_client": false,
+    "documents": {
+      "contract": [],
+      "commande": [],
+      "propale": [],
+      "facture": {
+        "560199": {
+          "ref": "SETT0001697",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560200": {
+          "ref": "SETT0001698",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560201": {
+          "ref": "SETT0001699",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560202": {
+          "ref": "SETT0001700",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560203": {
+          "ref": "SETT0001701",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560204": {
+          "ref": "SETT0001702",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560205": {
+          "ref": "SETT0001703",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560206": {
+          "ref": "SETT0001704",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560207": {
+          "ref": "SETT0001705",
+          "doc_update": true,
+          "data_update": null
+        },
+        "560208": {
+          "ref": "SETT0001706",
+          "doc_update": true,
+          "data_update": null
+        }
+      }
+    }
+  },
+  "48662": {
+    "siren": "21831983",
+    "idprof6": "1",
+    "active": "1",
+    "code_client": "CL2204-048522",
+    "docs_client": false,
+    "data_client": false,
+    "documents": {
+      "contract": [],
+      "commande": {
+        "46168": {
+          "ref": "CO2204-45719",
+          "doc_update": true,
+          "data_update": null
+        }
+      },
+      "propale": [],
+      "facture": []
+    }
+  },
+  "48695": {
+    "siren": "22027373",
+    "idprof6": "1",
+    "active": "1",
+    "code_client": "CL2204-048555",
+    "docs_client": false,
+    "data_client": true,
+    "documents": {
+      "contract": [],
+      "commande": {
+        "46215": {
+          "ref": "CO2204-45766",
+          "doc_update": true,
+          "data_update": null
+        }
+      },
+      "propale": [],
+      "facture": []
+    }
+  }
+}
