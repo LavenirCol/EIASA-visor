@@ -38,10 +38,10 @@ class CronController extends Controller {
     function callAPI($method, $entity, $data = false) {
         //prod
         $apikey = 'gFmK1A57ZQolc0V33727Jo4ohxyAGIPh';
-        //$url = 'https://megayacrm.lavenirapps.co/api/index.php/' . $entity;
+        $url = 'https://megayacrm.lavenirapps.co/api/index.php/' . $entity;
         //dev
         //$apikey = '3BEzwP1RIEa1Pui6P5k6ynOhRfy8V380';
-        $url = 'https://eiasa-dev.lavenirapps.co/api/index.php/' . $entity;
+        //$url = 'https://eiasa-dev.lavenirapps.co/api/index.php/' . $entity;
         $curl = curl_init();
         $httpheader = ['DOLAPIKEY: ' . $apikey];
 
@@ -68,7 +68,6 @@ class CronController extends Controller {
                     $url = sprintf("%s?%s", $url, http_build_query($data));
         }
 
-        //var_dump($url); exit();
         // Optional Authentication:
         //    curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
         //    curl_setopt($curl, CURLOPT_USERPWD, "username:password");
@@ -1618,7 +1617,8 @@ class CronController extends Controller {
         $i = 0;
         foreach ($clientList as $client) {
             echo ++$i . " - " . $client->name . "\n";
-            $task = Hstask::find()->andWhere(['=', 'account_id', $client->idprof1])->one();
+	    $task = Hstask::find()->andWhere(['=', 'account_id', $client->idprof1])->one();
+	    echo "Revisando cliente: " . $client->idprof1 . "\n";
             if (isset($task)){
                 echo $task->pdf;
                 $document = Document::find()->where(["=", 'level1name', $task->uuid])->one();
