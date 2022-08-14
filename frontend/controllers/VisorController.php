@@ -13,6 +13,8 @@ use yii\base\Exception;
 use tpmanc\imagick\Imagick;
 use Fpdf\Fpdf;
 use yii\filters\AccessControl;
+use yii\db\Query;
+
 /**
  * Clase visor manager
  *
@@ -799,4 +801,31 @@ class VisorController extends \yii\web\Controller {
         }
     }
 
+    public function actionMarkforsync() {
+        if (Yii::$app->request->isAjax) {
+
+            try {
+                $input = Yii::$app->request->post();
+                $idclient = $input['idclient'];
+
+                $client = Client::find()->where(['idClient'=>$idclient])->one();
+                
+                if(isset($client)){
+                    Yii::$app->db->createCommand("UPDATE `client` SET sync = 2 where idClient = $idclient")->execute();
+                    $returndata = ['data' => 'Cliente marcado correctamente', 'error' => ''];
+                    return $this->result($returndata);
+                }else{
+                    $returndata = ['data' => '', 'error' => 'Cliente no existe'];
+                    return $this->result($returndata);  
+                }                                                          
+
+            } catch (\Exception $ex) {
+                $returndata = ['data' => '', 'error' => $ex->getMessage()];
+                return $this->result($returndata);
+            }
+
+        } else {
+            throw new \yii\web\BadRequestHttpException;
+        }
+    }
 }

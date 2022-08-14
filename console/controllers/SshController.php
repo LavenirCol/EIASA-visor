@@ -47,7 +47,7 @@ class SshController extends Controller {
 
     /// Accion que procesa puertos de servicio
 
-    public function actionExecport($idolt) {
+    public function actionExecport($idolt = NULL) {
 
         // consulta OLT's en estado activo
         if(isset($idolt)){
@@ -266,6 +266,7 @@ class SshController extends Controller {
             $results = array_unique($this->ssh->getOutput());
             $output = array_values($results);
             //var_dump($output);
+            //var_dump($services);
             // cierra ssh        
             $this->makesshaction('close', $olt);
 
@@ -274,24 +275,29 @@ class SshController extends Controller {
                 try {
                     $cmd = sprintf('display current-configuration ont %s/%s/%s %s', $service->frame, $service->slot, $service->port, $service->vpi);
                     $linecmd = array_search($cmd, $output, true);                    
-                    $sn_auth = str_replace('"', '', explode(' ', $output[$linecmd + 1])[5]);
-                    $port = explode(' ', $output[$linecmd + 3])[0];
-                    $ups = explode(' ', $output[$linecmd + 3])[1];
-                    $down = explode(' ', $output[$linecmd + 3])[2];
+                    $line_sn = explode(' ', $output[$linecmd + 1]);
+                    if(count($line_sn) > 5){
+                       $sn_auth = str_replace('"', '', $line_sn[5]);
+                       $port = explode(' ', $output[$linecmd + 3])[0];
+                       $ups = explode(' ', $output[$linecmd + 3])[1];
+                       $down = explode(' ', $output[$linecmd + 3])[2];
 
-                    $service->last_sn = $sn_auth;
-                    $service->updated_at = date("Y-m-d H:i:s");
-                    $service->save();
+                       if(is_numeric($ups) == 1 && is_numeric($down) == 1){
+                           $service->last_sn = $sn_auth;
+                           $service->updated_at = date("Y-m-d H:i:s");
+                           $service->save();
 
-                    $newserviceh = new TraficoServicesHistory();
-                    $newserviceh->service_port = $service->index;
-                    $newserviceh->ont_id = $service->vpi;
-                    $newserviceh->state = $service->last_state;
-                    $newserviceh->sn = $sn_auth;
-                    $newserviceh->downstream = $down;
-                    $newserviceh->upstream = $ups;
-                    $newserviceh->created_at = $service->updated_at;
-                    $newserviceh->save();
+                           $newserviceh = new TraficoServicesHistory();
+                           $newserviceh->service_port = $service->index;
+                           $newserviceh->ont_id = $service->vpi;
+                           $newserviceh->state = $service->last_state;
+                           $newserviceh->sn = $sn_auth;
+                           $newserviceh->downstream = $down;
+                           $newserviceh->upstream = $ups;
+                           $newserviceh->created_at = $service->updated_at;
+                           $newserviceh->save();
+                       }
+                    }
                 } catch (Exception $ex) {
                      echo date("Y-m-d H:i:s")." Error procesando service ".$service->index. " ". $ex->getMessage() . PHP_EOL;
                 }

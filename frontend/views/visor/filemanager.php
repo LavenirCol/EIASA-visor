@@ -210,7 +210,10 @@ use \yii\helpers\Url;
                                 <small><b>Correo</b></small><br><small id="data-8"></small>
                             </div>
                         </div>
-                        <div class="row"><div class="col-md-12"><button class="btn btn-sm btn-primary" style="padding:5px 7px;font-size: 10px;" id="btnclosecard"><< Atrás</button></div></div>
+                        <div class="row">
+                            <div class="col-md-6"><button class="btn btn-sm btn-primary" style="padding:5px 7px;font-size: 10px;" id="btnclosecard"><< Atrás</button></div>
+                            <div class="col-md-6 text-right"><button class="btn btn-sm btn-primary" style="padding:5px 7px;font-size: 10px;" id="btnmarksync"><i class="fa fa-sync pr-2"></i>Sync</button></div>
+                        </div>
                     </div>
                 </div>
 

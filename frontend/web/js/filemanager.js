@@ -127,7 +127,9 @@ $(document).ready(function () {
                 var idcliente = $(this).data("idcliente");
                 //get folders client
                 active_folder = 0; // siempre en = para buscar en clientes
+                $("#btnmarksync").data("idcliente", idcliente);
                 getFolders(idcliente);
+                
             });
             
             $("#btnclosecard").off('click').on('click', function(e){
@@ -143,6 +145,13 @@ $(document).ready(function () {
                 if(active_module === 2){
                     $("#navmodulos").find(".nav-link:nth-child(2)").trigger("click");
                 }
+            });
+            
+            //sync total
+            $("#btnmarksync").off('click').on('click', function(e){
+                e.preventDefault();
+                var idcliente = $(this).data("idcliente");
+                markforsync(idcliente);
             });
 
         } else {
@@ -164,7 +173,7 @@ function getFolders(idcliente) {
         type: 'POST',
         traditional: true,
         data: {idmodule: active_module, idfolder: active_folder, idcliente: idcliente},
-        url: '/visor/getfolders'
+        url: baseurl + '/visor/getfolders'
     }).then(function (result) {
         //console.log(result);
         $("#divfoldercontainer").show();
@@ -266,7 +275,7 @@ function getFilesFolder() {
         type: 'POST',
         traditional: true,
         data: {idfolder: active_folder},
-        url: '/visor/getfilesfolder'
+        url: baseurl + '/visor/getfilesfolder'
     }).then(function (result) {
         //console.log(result);
         processfiles(result, 0);
@@ -324,9 +333,9 @@ function processfiles(result, isfolder) {
                     || ext.indexOf('png') > -1) {
                 color = "";
                 fileicon = "";
-                filestyle = 'background-image: url(/visor/getfile?id=' + item.iddocument + '&t=true); filter: opacity(0.5);';
+                filestyle = 'background-image: url(' + baseurl + '/visor/getfile?id=' + item.iddocument + '&t=true); filter: opacity(0.5);';
             }else{
-                filepreview = '//docs.google.com/gview?url=/visor/getfile?id=' + item.iddocument + '&embedded=true';
+                filepreview = '//docs.google.com/gview?url=' + baseurl + '/visor/getfile?id=' + item.iddocument + '&embedded=true';
             }
 
             htmlf += filetemplate.replace('{{FILENAME}}', item.name)
@@ -337,7 +346,7 @@ function processfiles(result, isfolder) {
                     .replace('{{FILEDATE}}', item.date)
                     .replace('{{FILECOLOR}}', color)
                     .replace('{{FILESTYLE}}', filestyle)
-                    .replace('{{FILEDOWNLOAD}}', '/visor/getfile?id=' + item.iddocument + '&d=true')
+                    .replace('{{FILEDOWNLOAD}}', baseurl + '/visor/getfile?id=' + item.iddocument + '&d=true')
                     .replace('{{FILEPREVIEW}}', filepreview);
 
 
@@ -376,7 +385,7 @@ function processfiles(result, isfolder) {
             var iddocument = $(this).closest(".colfile").data("iddocument");
             deletefile(iddocument);
         });
-
+        
     }
 }
 
@@ -404,7 +413,7 @@ function addFolder() {
                 type: 'POST',
                 traditional: true,
                 data: {idmodule: active_module, idfolder: active_folder, foldername: foldername},
-                url: '/visor/createfolder'
+                url: baseurl + '/visor/createfolder'
             }).then(function (result) {
                 //console.log(result);
                 if (result.error !== '') {
@@ -474,7 +483,7 @@ function search() {
         type: 'POST',
         traditional: true,
         data: {term: term},
-        url: '/visor/getfilessearch'
+        url: baseurl + '/visor/getfilessearch'
     }).then(function (result) {
         //console.log(result);
         processfiles(result, 1);
@@ -499,7 +508,7 @@ function renamefolder(idfolder) {
                 type: 'POST',
                 traditional: true,
                 data: {idmodule: active_module, idfolder: idfolder, newname: newfoldername},
-                url: '/visor/renamefolder'
+                url: baseurl + '/visor/renamefolder'
             }).then(function (result) {
                 //console.log(result);
                 if (result.error !== '') {
@@ -542,7 +551,7 @@ function deletefolder(idfolder) {
                 type: 'POST',
                 traditional: true,
                 data: {idfolder: idfolder},
-                url: '/visor/deletefolder'
+                url: baseurl + '/visor/deletefolder'
             }).then(function (resultado) {
                 //console.log(result);
                 if (resultado.error !== '') {
@@ -581,7 +590,7 @@ function renamefile(iddocument) {
                 type: 'POST',
                 traditional: true,
                 data: {idmodule: active_module, idfolder: active_folder, idfile: iddocument, newname: newfilename},
-                url: '/visor/renamefile'
+                url: baseurl + '/visor/renamefile'
             }).then(function (result) {
                 //console.log(result);
                 if (result.error !== '') {
@@ -623,7 +632,7 @@ function deletefile(iddocument) {
                 type: 'POST',
                 traditional: true,
                 data: {idfile: iddocument},
-                url: '/visor/deletefile'
+                url: baseurl + '/visor/deletefile'
             }).then(function (resultado) {
                 //console.log(result);
                 if (resultado.error !== '') {
@@ -645,6 +654,45 @@ function deletefile(iddocument) {
     });    
 }
 
+function markforsync(idclient) {
+    console.log(idclient);
+
+    Swal.fire({
+        title: 'Está seguro de marcar este cliente para sincronización?',
+        text: "Se marcará el cliente para realizar una sincronizacion total!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Si, Marcar el cliente!'
+    }).then((result) => {
+        if (result.isConfirmed) {            
+            $.ajax({
+                type: 'POST',
+                traditional: true,
+                data: {idclient: idclient},
+                url: baseurl + '/visor/markforsync'
+            }).then(function (resultado) {
+                //console.log(result);
+                if (resultado.error !== '') {
+                    Swal.fire({
+                        icon: 'error',
+                        text: resultado.error
+                    });
+                } else {
+                    
+                    getFilesFolder();
+                    Swal.fire({
+                        icon: 'success',
+                        text: 'Usuario marcado correctamente'
+                    });
+                }
+            });
+
+        }
+    });    
+}
+
 ///DROPZONE
 Dropzone.autoDiscover = false;
 
@@ -652,7 +700,7 @@ Dropzone.autoDiscover = false;
 $(document).ready(function () {
 
     var myDropzone = new Dropzone("#myDropzone", {
-        url: "/visor/upload",
+        url: baseurl + "/visor/upload",
         paramName: "file",
         autoProcessQueue: false,
         uploadMultiple: true, // uplaod files in a single request

@@ -110,7 +110,7 @@ $(document).ready(function(){
                 {
                     text: 'Excel',
                     action: function ( e, dt, node, config ) {
-                        var url = ajaxcall;
+                        var url = baseurl + ajaxcall;
                         url = url + '?dptos='+$('#dptos').val();
                         url = url + '&mpios='+$('#mpios').val();
                         url = url + '&materials='+$('#materials').val();
@@ -124,7 +124,7 @@ $(document).ready(function(){
                 },
             ],
             "ajax": {
-                url: ajaxcall,
+                url: baseurl + ajaxcall,
                 type: "post",
                 error: function(e)
                 {

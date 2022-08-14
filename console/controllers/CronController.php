@@ -38,10 +38,10 @@ class CronController extends Controller {
     function callAPI($method, $entity, $data = false) {
         //prod
         $apikey = 'gFmK1A57ZQolc0V33727Jo4ohxyAGIPh';
-        $url = 'https://megayacrm.lavenirapps.co/api/index.php/' . $entity;
+        //$url = 'https://megayacrm.lavenirapps.co/api/index.php/' . $entity;
         //dev
         //$apikey = '3BEzwP1RIEa1Pui6P5k6ynOhRfy8V380';
-        //$url = 'https://eiasa-dev.lavenirapps.co/api/index.php/' . $entity;
+        $url = 'https://eiasa-dev.lavenirapps.co/api/index.php/' . $entity;
         $curl = curl_init();
         $httpheader = ['DOLAPIKEY: ' . $apikey];
 
@@ -79,7 +79,7 @@ class CronController extends Controller {
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 0);
         curl_setopt($curl, CURLOPT_TIMEOUT, 0);
-        
+
         $result = curl_exec($curl);
         if ($result === false) {
             $err = 'Curl error: ' . curl_error($curl);
@@ -221,12 +221,12 @@ class CronController extends Controller {
     /*
      *  funcion publica de inicio data en tiempos
      */
-    
+
     public function actionSyncdatalast() {
 
         // minutos para buscar clientes modificados
         // 1440 mins 24 hrs
-        $mtime = 86400;//1440*30;
+        $mtime = 1440;
 
         echo "Inicio cron job \n"; //
         //verifica directorio raiz
@@ -241,21 +241,20 @@ class CronController extends Controller {
         $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
 
         echo "Consultando Clientes LAST Minutos $mtime ...\n";
-        
+
         // consulta lista de clientes
         $clientSearch = json_decode($this->CallAPI("GET", "thirdparties/lastthirdpartyupdate", array(
                     "sortfield" => "t.rowid",
                     "sortorder" => "ASC",
                     "mtime" => $mtime
-                    )
+                        )
                 ), true);
 
         //mock data
         //$json_data = file_get_contents('D:\wamp32\www\wwweiasa\clientupdate.json');
         //$clientSearch = json_decode($json_data, true);
-        
         //var_dump($clientSearch);
-        if (!isset($clientSearch)){
+        if (!isset($clientSearch)) {
             echo "Error Consultando Clientes LAST : array NULL" . "\n";
         } else {
             echo "Clientes Encontrados: " . sizeof($clientSearch) . "\n";
@@ -265,11 +264,11 @@ class CronController extends Controller {
                 echo "Procesando. " . $client['siren'] . ' - ' . $client['code_client'] . "\n";
                 // consulta lista de clientes
                 $clientData = json_decode($this->CallAPI("GET", "thirdparties/$id"), true);
-                if (isset($clientData["error"]) && $clientData["error"]["code"] >= "300"){
+                if (isset($clientData["error"]) && $clientData["error"]["code"] >= "300") {
                     echo "($id) Error Data Cliente " . $clientData["error"]["message"] . "\n";
                     continue;
                 }
-                
+
                 $currentclient = Client::find()->where(['idClient' => $id])->one();
                 if (!isset($currentclient)) {
                     //Cliente nuevo
@@ -288,18 +287,17 @@ class CronController extends Controller {
                             $newclient->lng = $clientData['array_options']["options_lon"];
                         }
                     }
-                                       
+
                     $newclient->save(false);
                     $this->processcontracts($id);
                     $this->processproposals($id);
                     $this->processinvoices($id);
                     $this->processtickets($id);
-                    
                 } else {
 
                     //Cliente existe
                     echo "Cliente Existente thirdparty_id(" . $id . ") \n";
-                    
+
                     $currentclient->attributes = $clientData;
                     $currentclient->idClient = $id;
                     $currentclient->access_id = $client['code_client'];
@@ -313,7 +311,7 @@ class CronController extends Controller {
                             $currentclient->lng = $clientData['array_options']["options_lon"];
                         }
                     }
-                                       
+
                     $currentclient->save(false);
                     $this->processUpdateContracts($id);
                     $this->processUpdateProposals($id);
@@ -324,7 +322,7 @@ class CronController extends Controller {
                 echo "Fin Cliente " . date("Y-m-d H:i:s") . "\n";
             }
         }
-        
+
         // sincroniza archivos
         echo "Sincronizando Archivos...\n"; // your logic for deleting old post goes here
         $this->syncFiles();
@@ -335,7 +333,166 @@ class CronController extends Controller {
 
         exit();
     }
-    
+
+    public function actionSyncresetclients() {
+        $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+        $this->root_path = $keyfolderraiz->value;
+        //varifica urlbase raiz
+        $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
+        $this->root_vpath = $keyurlbase->value;        // modulo suscriptores
+        //modulo suscriptores
+        $this->modulosusc = Module::find()->where(['idmodule' => $this->idmodulesusc])->one();
+        // modulo facturacion
+        $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
+        $clientList = Client::find()->where(['=', 'sync', 2])->all();
+        $i = 0;
+        foreach ($clientList as $client) {
+            echo ++$i . " - Procesando." . $client->name . " => " . $client->idClient . "\n";
+            $id = $client->idClient;
+
+            //elimina tablas hijas de cliente
+
+            //Contracts
+            $contractList = Contract::find()->where(['=', 'socid', $id])->all();
+            foreach ($contractList as $contract) {
+                $idFolder = $contract->idFolder;
+                //elimina documentos
+                Yii::$app->db->createCommand("DELETE FROM `document` where idFolder = $idFolder")->execute();
+                //elimina objeto
+                $contract->delete();                
+                //elimina folder
+                Yii::$app->db->createCommand("DELETE FROM `folder` where idfolder = $idFolder")->execute();
+            }
+            
+            //Proposals
+            $proposalList = Proposal::find()->where(['=', 'socid', $id])->all();
+            foreach ($proposalList as $proposal) {
+                $idFolder = $proposal->idFolder;
+                //elimina documentos
+                Yii::$app->db->createCommand("DELETE FROM `document` where idFolder = $idFolder")->execute();
+                //elimina objeto
+                $proposal->delete();
+                //elimina folder
+                Yii::$app->db->createCommand("DELETE FROM `folder` where idfolder = $idFolder")->execute();
+            }
+            
+            //Invoices
+            $invoicesList = Invoices::find()->where(['=', 'socid', $id])->all();
+            foreach ($invoicesList as $invoice) {
+                $idFolder = $invoice->idFolder;
+                //elimina documentos
+                Yii::$app->db->createCommand("DELETE FROM `document` where idFolder = $idFolder")->execute();
+                //elimina objeto
+                $invoice->delete();
+                //elimina folder
+                Yii::$app->db->createCommand("DELETE FROM `folder` where idfolder = $idFolder")->execute();
+            }
+                        
+            //Hstasks
+            $hstaskList = Hstask::find()->where(['=', 'socid', $id])->all();
+            foreach ($hstaskList as $hstask) {
+                $idFolder = $hstask->idFolder;
+                //elimina documentos
+                Yii::$app->db->createCommand("DELETE FROM `document` where idFolder = $idFolder")->execute();
+                //elimina objeto
+                $invoice->delete();
+                //elimina folder
+                Yii::$app->db->createCommand("DELETE FROM `folder` where idfolder = $idFolder")->execute();
+            }
+            
+            //Tickets
+            $ticketList = Tickets::find()->where(['=', 'socid', $id])->all();
+            foreach ($ticketList as $ticket) {
+                //elimina objeto
+                $ticket->delete();
+            }
+            
+            //trae nuevas tablas
+            echo "----------------------------------------\n";
+            echo "Inicio Cliente " . date("Y-m-d H:i:s") . "\n";
+            // consulta lista de clientes
+            $clientData = json_decode($this->CallAPI("GET", "thirdparties/$id"), true);
+            if (isset($clientData["error"]) && $clientData["error"]["code"] >= "300") {
+                echo "($id) Error Data Cliente " . $clientData["error"]["message"] . "\n";
+                continue;
+            }
+
+            var_dump($clientData);
+            $currentclient = Client::find()->where(['idClient' => $id])->one();
+            if (!isset($currentclient)) {
+                //Cliente nuevo
+                echo "Cliente Nuevo thirdparty_id(" . $id . ") \n";
+                $newclient = new Client();
+                $newclient->attributes = $clientData;
+                $newclient->idClient = $id;
+                $newclient->access_id = $client['code_client'];
+                $newclient->address = str_replace(array("\n", "\r", "\r\n", "\xE2\x80\x9010"), ' ', $clientData['address']);
+                $newclient->name = str_replace("\xC5\x84", 'ñ', $clientData['name']);
+                if (isset($clientData['array_options'])) {
+                    if (isset($clientData['array_options']["options_lat"])) {
+                        $newclient->lat = $clientData['array_options']["options_lat"];
+                    }
+                    if (isset($clientData['array_options']["options_lon"])) {
+                        $newclient->lng = $clientData['array_options']["options_lon"];
+                    }
+                }
+
+                $newclient->save(false);
+            } else {
+
+                //Cliente existe
+                echo "Cliente Existente thirdparty_id(" . $id . ") \n";
+
+                $currentclient->attributes = $clientData;
+                $currentclient->idClient = $id;
+                $currentclient->access_id = $client['code_client'];
+                $currentclient->address = str_replace(array("\n", "\r", "\r\n", "\xE2\x80\x9010"), ' ', $clientData['address']);
+                $currentclient->name = str_replace("\xC5\x84", 'ñ', $clientData['name']);
+                if (isset($clientData['array_options'])) {
+                    if (isset($clientData['array_options']["options_lat"])) {
+                        $currentclient->lat = $clientData['array_options']["options_lat"];
+                    }
+                    if (isset($clientData['array_options']["options_lon"])) {
+                        $currentclient->lng = $clientData['array_options']["options_lon"];
+                    }
+                }
+
+                $currentclient->save(false);
+            }
+
+            $this->processcontracts($id);
+            $this->processproposals($id);
+            $this->processinvoices($id);
+            $this->processtickets($id);
+
+            //PRocesar tareas solo del cliente            
+            //TASk by account_id
+            $this->syncTasksbyAccount($clientData['idprof1']);
+
+            echo "Fin Cliente " . date("Y-m-d H:i:s") . "\n";
+        }
+
+        // sincroniza archivos
+        echo "Sincronizando Archivos...\n"; // your logic for deleting old post goes here
+        $this->syncFiles();
+
+        // sincroniza facturas
+        echo "Sinncronizando Facturas...\n"; // your logic for deleting old post goes here
+        $this->syncDownloadInvoices();
+
+        // sincroniza archivos instalacion
+        echo "Sincronizando Archivos Instalacion...\n"; // your logic for deleting old post goes here        
+        $this->syncInstalationfiles();
+
+        // sincroniza archivos instalacion
+        echo "Descargando Archivos Instalacion...\n"; // your logic for deleting old post goes here        
+        $this->syncDownloadInstalationfiles();
+
+        echo "Actualiza estado clientes sync ...\n"; // your logic for deleting old post goes here        
+        Yii::$app->db->createCommand("UPDATE `client` set sync = null where sync = 2")->execute();
+        exit();
+    }
+
     public function actionSynconlyfiles() {
         echo "Inicio cron job \n"; // your logic for deleting old post goes here
         //verifica directorio raiz
@@ -940,25 +1097,23 @@ class CronController extends Controller {
         echo "Fin syncfacturas " . date("Y-m-d H:i:s") . "\n";
     }
 
-    function actionUpdatesizefiles()
-    {
+    function actionUpdatesizefiles() {
         $documents = Document::find()
-        ->where(['size'=> '-1'])
-        ->orWhere(['type'=> 'pending'])
-        ->all();
-        foreach($documents as $document)
-        {
-            if(file_exists($document->path.'/'.$document->name)){
-                $document->size = filesize($document->path.'/'.$document->name);
-                $document->type = mime_content_type($document->path.'/'.$document->name);
+                ->where(['size' => '-1'])
+                ->orWhere(['type' => 'pending'])
+                ->all();
+        foreach ($documents as $document) {
+            if (file_exists($document->path . '/' . $document->name)) {
+                $document->size = filesize($document->path . '/' . $document->name);
+                $document->type = mime_content_type($document->path . '/' . $document->name);
                 $document->save(false);
-                echo $document->path.'/'.$document->name." ".$document->size."\n";
-            }else{
-                echo "No existe: ".$document->iddocument . $document->path.'/'.$document->name."\n";
+                echo $document->path . '/' . $document->name . " " . $document->size . "\n";
+            } else {
+                echo "No existe: " . $document->iddocument . $document->path . '/' . $document->name . "\n";
             }
         }
     }
-    
+
     /*     * ********UMBRELLA ********* */
 
     /*
@@ -967,9 +1122,9 @@ class CronController extends Controller {
 
     function callAPIUmbrella($method, $entity, $data = false) {
         //prod
-        $url = 'https://megaya.lavenirapps.co/api/' . $entity;
+        //$url = 'https://megaya.lavenirapps.co/api/' . $entity;
         //dev
-        //$url = 'http://dev-umbrellav2.lavenirapps.co/web/api/' . $entity;
+        $url = 'https://34.209.138.62/api/' . $entity;
         $curl = curl_init();
         $httpheader = [];
 
@@ -1005,6 +1160,8 @@ class CronController extends Controller {
         curl_setopt($curl, CURLOPT_HTTPHEADER, $httpheader);
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 0);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 0);
 
         $result = curl_exec($curl);
         if ($result === false) {
@@ -1084,6 +1241,34 @@ class CronController extends Controller {
         exit();
     }
 
+    // consulta umbrella con ultimos cambios
+    public function actionSyncnetworklast() {
+        echo "Inicio cron job network nuevos clientes \n"; // your logic for deleting old post goes here
+        //verifica directorio raiz
+        $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+        $this->root_path = $keyfolderraiz->value;
+        //varifica urlbase raiz
+        $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
+        $this->root_vpath = $keyurlbase->value;        // modulo suscriptores
+        //modulo suscriptores
+        $this->modulosusc = Module::find()->where(['idmodule' => $this->idmodulesusc])->one();
+        // modulo facturacion
+        $this->modulofact = Module::find()->where(['idmodule' => $this->idmodulefact])->one();
+
+        //$this->syncInventory();
+        $this->syncTaskslast();
+
+        // sincroniza archivos instalacion
+        echo "Sincronizando Archivos Instalacion...\n"; // your logic for deleting old post goes here        
+        $this->syncInstalationfiles();
+
+        // sincroniza archivos instalacion
+        echo "Descargando Archivos Instalacion...\n"; // your logic for deleting old post goes here        
+        $this->syncDownloadInstalationfiles();
+
+        exit();
+    }
+
     public function actionSyncinventory() {
         echo "Inicio cron job iventario \n"; // your logic for deleting old post goes here
 
@@ -1106,7 +1291,7 @@ class CronController extends Controller {
                     "rows" => "1",
                     "page" => "0"
                                 )
-                )), true);
+                        )), true);
 
         if ($inventories["code"] === '0') {
             echo "procesando inventario error " . $inventories['error'] . " \n";
@@ -1132,7 +1317,7 @@ class CronController extends Controller {
                         "rows" => $rows,
                         "page" => $i
                                     )
-                    )), true);
+                            )), true);
 
             if ($inventories["code"] === '0') {
                 echo "procesando inventario pagina ($i) error " . $inventories['error'] . " \n";
@@ -1206,7 +1391,7 @@ class CronController extends Controller {
                     "rows" => "1",
                     "page" => "0"
                                 )
-                )), true);
+                        )), true);
 
         if ($tasks["code"] === '0') {
             echo "procesando tasks error " . $tasks['error'] . " \n";
@@ -1232,7 +1417,7 @@ class CronController extends Controller {
                         "rows" => $rows,
                         "page" => $i
                                     )
-                    )), true);
+                            )), true);
 
             if ($tasks["code"] === '0') {
                 echo "procesando tasks pagina ($i) error " . $tasks['error'] . " \n";
@@ -1243,7 +1428,7 @@ class CronController extends Controller {
             foreach ((array) $tasks["data"] as $task) {
                 $currenthstask = Hstask::find()->where(['uuid' => $task['uuid']])->one();
                 if (!isset($currenthstask)) {
-                    if($task['template'] == 'INSTALACIÓN'){
+                    if ($task['template'] == 'INSTALACIÓN') {
                         // crea task
                         $newtask = new Hstask();
                         $newtask->uuid = $task['uuid'];
@@ -1261,7 +1446,7 @@ class CronController extends Controller {
                         $newtask->account_id = $task['account_id'];
                         $newtask->save(false);
                     }
-                }else{
+                } else {
                     // actualiza task
                     $currenthstask->uuid = $task['uuid'];
                     $currenthstask->datecreate = $task['datecreate'];
@@ -1277,6 +1462,180 @@ class CronController extends Controller {
                     $currenthstask->account = $task['account'];
                     $currenthstask->account_id = $task['account_id'];
                     $currenthstask->save(false);
+                }
+            }
+        }
+
+        echo "Fin synctasks " . date("Y-m-d H:i:s") . "\n";
+    }
+
+    /*
+     * Sincroniza servicios
+     */
+
+    public function syncTaskslast() {
+        echo "----------------------------------------\n";
+        echo "Inicio synctasks " . date("Y-m-d H:i:s") . "\n";
+
+        // ultimo dia por defecto
+        $ndate = date('Y-m-d', strtotime("-1 days"));
+        $ndate = array($ndate . " 00:00:00", date('Y-m-d') . " 23:59:59");
+
+        $tasks = json_decode($this->callAPIUmbrella("POST", "hsTask", json_encode(array(
+                    "dateupdate" => $ndate,
+                    "rows" => "1",
+                    "page" => "0"
+                                )
+                        )), true);
+        if ($tasks["code"] === '0') {
+            echo "procesando tasks error " . $tasks["error"] . " \n";
+            return;
+        }
+
+        $filter = $tasks["filter"];
+        $rows = 1000;
+        $total = (int) $filter["items"];
+        if ($total == 0) {
+            echo "procesando total tasks (0)\n";
+            return;
+        }
+
+        $pages = ceil($total / $rows);
+
+        echo "procesando total tasks (" . $total . ")\n";
+        echo "procesando paginas tasks (" . $pages . ")\n";
+
+        for ($i = 0; $i < $pages; $i++) {
+
+            $tasks = json_decode($this->callAPIUmbrella("POST", "hsTask", json_encode(array(
+                        "dateupdate" => $ndate,
+                        "rows" => $rows,
+                        "page" => $i
+                                    )
+                            )), true);
+
+            if ($tasks["code"] === '0') {
+                echo "procesando tasks pagina ($i) error " . $tasks["error"] . " \n";
+                continue;
+            }
+
+            echo "procesando tasks pagina ($i) (" . sizeof($tasks["data"]) . ")\n";
+
+            foreach ((array) $tasks["data"] as $task) {
+                $currenthstask = Hstask::find()->where(['uuid' => $task['uuid']])->one();
+                if (!isset($currenthstask)) {
+                    if ($task['template'] == 'INSTALACIÓN') {
+                        // crea task
+                        $newtask = new Hstask();
+                        $newtask->uuid = $task['uuid'];
+                        $newtask->datecreate = $task['datecreate'];
+                        $newtask->dateupdate = $task['dateupdate'];
+                        $newtask->reference = $task['reference'];
+                        $newtask->template = $task['template'];
+                        $newtask->address = $task['address'];
+                        $newtask->city = $task['city'];
+                        $newtask->district = $task['district'];
+                        $newtask->code = $task['code'];
+                        $newtask->status = $task['status'];
+                        $newtask->pdf = $task['pdf'];
+                        $newtask->account = $task['account'];
+                        $newtask->account_id = $task['account_id'];
+                        $newtask->save(false);
+                    }
+                } else {
+                    // actualiza task
+                    $currenthstask->uuid = $task['uuid'];
+                    $currenthstask->datecreate = $task['datecreate'];
+                    $currenthstask->dateupdate = $task['dateupdate'];
+                    $currenthstask->reference = $task['reference'];
+                    $currenthstask->template = $task['template'];
+                    $currenthstask->address = $task['address'];
+                    $currenthstask->city = $task['city'];
+                    $currenthstask->district = $task['district'];
+                    $currenthstask->code = $task['code'];
+                    $currenthstask->status = $task['status'];
+                    $currenthstask->pdf = $task['pdf'];
+                    $currenthstask->account = $task['account'];
+                    $currenthstask->account_id = $task['account_id'];
+                    $currenthstask->save(false);
+
+                    //actualiza el documento en -1 y el type poner la URL de la tarea                    
+                    $currentdocument = Document::find()->where(['name' => $task['uuid'] . '.pdf'])->one();
+                    if (!isset($currentdocument)) {
+                        $currentdocument->size = '-1';
+                        $currentdocument->type = $task['pdf'];
+                        $currentdocument->save(false);
+                    }
+                }
+            }
+        }
+
+        echo "Fin synctasks " . date("Y-m-d H:i:s") . "\n";
+    }
+
+    /*
+     * Sincroniza servicios por cuenta
+     */
+
+    public function syncTasksbyAccount($account_id) {
+        echo "----------------------------------------\n";
+        echo "Inicio synctasks by acccount" . date("Y-m-d H:i:s") . "\n";
+
+        $tasks = json_decode($this->callAPIUmbrella("POST", "hsTask", json_encode(array(
+                    "account_id" => $account_id,
+                    "rows" => 100,
+                    "page" => 0))), true);
+
+        if ($tasks["code"] === '0') {
+            echo "procesando tasks error " . $tasks["error"] . " \n";
+        }
+
+        echo "procesando tasks (" . sizeof($tasks["data"]) . ")\n";
+
+        foreach ((array) $tasks["data"] as $task) {
+            $currenthstask = Hstask::find()->where(['uuid' => $task['uuid']])->one();
+            if (!isset($currenthstask)) {
+                if ($task['template'] == 'INSTALACIÓN') {
+                    // crea task
+                    $newtask = new Hstask();
+                    $newtask->uuid = $task['uuid'];
+                    $newtask->datecreate = $task['datecreate'];
+                    $newtask->dateupdate = $task['dateupdate'];
+                    $newtask->reference = $task['reference'];
+                    $newtask->template = $task['template'];
+                    $newtask->address = $task['address'];
+                    $newtask->city = $task['city'];
+                    $newtask->district = $task['district'];
+                    $newtask->code = $task['code'];
+                    $newtask->status = $task['status'];
+                    $newtask->pdf = $task['pdf'];
+                    $newtask->account = $task['account'];
+                    $newtask->account_id = $task['account_id'];
+                    $newtask->save(false);
+                }
+            } else {
+                // actualiza task
+                $currenthstask->uuid = $task['uuid'];
+                $currenthstask->datecreate = $task['datecreate'];
+                $currenthstask->dateupdate = $task['dateupdate'];
+                $currenthstask->reference = $task['reference'];
+                $currenthstask->template = $task['template'];
+                $currenthstask->address = $task['address'];
+                $currenthstask->city = $task['city'];
+                $currenthstask->district = $task['district'];
+                $currenthstask->code = $task['code'];
+                $currenthstask->status = $task['status'];
+                $currenthstask->pdf = $task['pdf'];
+                $currenthstask->account = $task['account'];
+                $currenthstask->account_id = $task['account_id'];
+                $currenthstask->save(false);
+
+                //actualiza el documento en -1 y el type poner la URL de la tarea                    
+                $currentdocument = Document::find()->where(['name' => $task['uuid'] . '.pdf'])->one();
+                if (!isset($currentdocument)) {
+                    $currentdocument->size = '-1';
+                    $currentdocument->type = $task['pdf'];
+                    $currentdocument->save(false);
                 }
             }
         }
@@ -1449,7 +1808,7 @@ class CronController extends Controller {
 
         // Free up objects
         foreach ($urls as $key => $urlarr) {
-            if(array_key_exists($key, $file_pointers) && array_key_exists($key, $curl_handles)){
+            if (array_key_exists($key, $file_pointers) && array_key_exists($key, $curl_handles)) {
                 fwrite($file_pointers[$key], curl_multi_getcontent($curl_handles[$key]));
                 curl_multi_remove_handle($multi_handle, $curl_handles[$key]);
                 curl_close($curl_handles[$key]);
@@ -1617,9 +1976,9 @@ class CronController extends Controller {
         $i = 0;
         foreach ($clientList as $client) {
             echo ++$i . " - " . $client->name . "\n";
-	    $task = Hstask::find()->andWhere(['=', 'account_id', $client->idprof1])->one();
-	    echo "Revisando cliente: " . $client->idprof1 . "\n";
-            if (isset($task)){
+            $task = Hstask::find()->andWhere(['=', 'account_id', $client->idprof1])->one();
+            echo "Revisando cliente: " . $client->idprof1 . "\n";
+            if (isset($task)) {
                 echo $task->pdf;
                 $document = Document::find()->where(["=", 'level1name', $task->uuid])->one();
                 $client_http = new \GuzzleHttp\Client();
@@ -1632,7 +1991,7 @@ class CronController extends Controller {
                 fwrite($file, (string) $response->getBody()->getContents());
                 fclose($file);
                 echo "Se crea nuevo " . $document->fullname . "\n";
-            }else{
+            } else {
                 echo "CLIENTE SIN TASK - " . $client->name . "\n";
             }
         }
@@ -1677,7 +2036,7 @@ class CronController extends Controller {
 
         $this->syncFiles();
     }
-    
+
     function actionUpdateInvoicesFilesClient() {
         $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
         $this->root_path = $keyfolderraiz->value;
@@ -1904,7 +2263,7 @@ class CronController extends Controller {
                     if (isset($currentProposal)) {
                         echo "proposal ya existe " . $proposal['id'] . "\n";
                     } else {
-                    
+
                         // crea proposal
                         $newproposal = new Proposal();
                         $newproposal->id = $proposal['id'];
@@ -1916,7 +2275,7 @@ class CronController extends Controller {
                     }
 
                     (new Query)->createCommand()->delete('document', ['idFolder' => $suscfolder['data']->idfolder, 'iddocumentType' => '2'])->execute();
-                    
+
                     // consulta documentos proposal
                     $documents = json_decode($this->CallAPI("GET", "documents", array(
                                 "modulepart" => "proposal",
@@ -1948,7 +2307,7 @@ class CronController extends Controller {
                     }
                 }
             }
-        }        
+        }
     }
 
 }
