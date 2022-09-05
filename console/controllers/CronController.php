@@ -41,7 +41,7 @@ class CronController extends Controller {
         //$url = 'https://megayacrm.lavenirapps.co/api/index.php/' . $entity;
         //dev
         //$apikey = '3BEzwP1RIEa1Pui6P5k6ynOhRfy8V380';
-        $url = 'https://eiasa-dev.lavenirapps.co/api/index.php/' . $entity;
+        $url = 'http://eiasa-dev.lavenirapps.co/api/index.php/' . $entity;
         $curl = curl_init();
         $httpheader = ['DOLAPIKEY: ' . $apikey];
 
@@ -395,7 +395,7 @@ class CronController extends Controller {
                 //elimina documentos
                 Yii::$app->db->createCommand("DELETE FROM `document` where idFolder = $idFolder")->execute();
                 //elimina objeto
-                $invoice->delete();
+                $hstask->delete();
                 //elimina folder
                 Yii::$app->db->createCommand("DELETE FROM `folder` where idfolder = $idFolder")->execute();
             }
@@ -1476,7 +1476,14 @@ class CronController extends Controller {
     public function syncTaskslast() {
         echo "----------------------------------------\n";
         echo "Inicio synctasks " . date("Y-m-d H:i:s") . "\n";
-
+        
+        //verifica directorio raiz
+        $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+        $root_fpath = $keyfolderraiz->value;
+        //varifica urlbase raiz
+        $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
+        $root_vpath = $keyurlbase->value;  
+        //
         // ultimo dia por defecto
         $ndate = date('Y-m-d', strtotime("-1 days"));
         $ndate = array($ndate . " 00:00:00", date('Y-m-d') . " 23:59:59");
@@ -1561,7 +1568,12 @@ class CronController extends Controller {
 
                     //actualiza el documento en -1 y el type poner la URL de la tarea                    
                     $currentdocument = Document::find()->where(['name' => $task['uuid'] . '.pdf'])->one();
-                    if (!isset($currentdocument)) {
+                    if (isset($currentdocument)) {                        
+                        $cpath = $currentdocument->path; // /eiasadocs/Suscriptores/TS621540-1FB40C
+                        $cpath = str_replace($root_fpath, $root_vpath, $cpath);
+                        $currentdocument->relativename = $cpath . '/' . $task['uuid'] . '.pdf';
+                        echo "actualiza documento : " .$cpath;
+                        $currentdocument->date = date("Y-m-d H:i:s");                                
                         $currentdocument->size = '-1';
                         $currentdocument->type = $task['pdf'];
                         $currentdocument->save(false);
@@ -1580,7 +1592,13 @@ class CronController extends Controller {
     public function syncTasksbyAccount($account_id) {
         echo "----------------------------------------\n";
         echo "Inicio synctasks by acccount" . date("Y-m-d H:i:s") . "\n";
-
+        //verifica directorio raiz
+        $keyfolderraiz = Settings::find()->where(['key' => 'RUTARAIZDOCS'])->one();
+        $root_fpath = $keyfolderraiz->value;
+        //varifica urlbase raiz
+        $keyurlbase = Settings::find()->where(['key' => 'URLBASE'])->one();
+        $root_vpath = $keyurlbase->value; 
+        
         $tasks = json_decode($this->callAPIUmbrella("POST", "hsTask", json_encode(array(
                     "account_id" => $account_id,
                     "rows" => 100,
@@ -1632,7 +1650,12 @@ class CronController extends Controller {
 
                 //actualiza el documento en -1 y el type poner la URL de la tarea                    
                 $currentdocument = Document::find()->where(['name' => $task['uuid'] . '.pdf'])->one();
-                if (!isset($currentdocument)) {
+                if (isset($currentdocument)) {
+                    $cpath = $currentdocument->path; // /eiasadocs/Suscriptores/TS621540-1FB40C
+                    $cpath = str_replace($root_fpath, $root_vpath, $cpath);
+                    $currentdocument->relativename = $cpath . '/' . $task['uuid'] . '.pdf';
+                    echo "actualiza documento : " .$cpath;
+                    $currentdocument->date = date("Y-m-d H:i:s");                                
                     $currentdocument->size = '-1';
                     $currentdocument->type = $task['pdf'];
                     $currentdocument->save(false);
